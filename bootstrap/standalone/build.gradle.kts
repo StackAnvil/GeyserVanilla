@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     api(projects.core)
+    implementation(projects.vanillaRuntime)
 
     implementation(libs.terminalconsoleappender) {
         exclude("org.apache.logging.log4j")
@@ -20,7 +21,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("org.geysermc.geyser.platform.standalone.GeyserStandaloneBootstrap")
+    mainClass.set("org.geysermc.geyser.vanilla.runtime.VanillaLauncher")
 }
 
 tasks.named<Jar>("jar") {

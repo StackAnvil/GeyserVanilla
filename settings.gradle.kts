@@ -29,6 +29,8 @@ include(":velocity")
 include(":viaproxy")
 include(":common")
 include(":core")
+include(":vanilla-runtime")
+include(":vanilla-protocol")
 
 // Specify project dirs
 project(":bungeecord").projectDir = file("bootstrap/bungeecord")

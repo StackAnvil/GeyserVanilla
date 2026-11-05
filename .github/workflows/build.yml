@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get Release Info
+        if: ${{ github.repository == 'GeyserMC/Geyser' }}
         id: release-info
         uses: GeyserMC/actions/previous-release@master
         with:

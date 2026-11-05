@@ -243,6 +243,7 @@ nbdist/
 
 ### Gradle ###
 .gradle
+.kotlin/
 
 ### Geyser ###
 run/

@@ -16,13 +16,23 @@ plugins {
     id("dev.architectury.loom-companion")
 }
 
+val vanillaTestRuntime by configurations.creating
+
+tasks.test {
+    // Match the standalone loader: vanilla's libraries precede older bundled platform libraries.
+    classpath = vanillaTestRuntime + classpath
+    systemProperty("java.awt.headless", "true")
+}
+
 dependencies {
+    vanillaTestRuntime(project(path = ":vanilla-protocol", configuration = "vanillaClient"))
     constraints {
         implementation(libs.raknet) // Ensure protocol does not override the RakNet version
     }
 
     api(projects.common)
     api(projects.api)
+    api(projects.vanillaProtocol)
 
     api(libs.yaml) // Used for extensions
     annotationProcessor(libs.configurate.`interface`.ap)

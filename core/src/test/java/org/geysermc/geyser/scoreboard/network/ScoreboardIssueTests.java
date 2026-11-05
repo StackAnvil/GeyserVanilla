@@ -83,6 +83,7 @@ import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNext
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacketMatch;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacketType;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
+import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContext.mockContext;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -97,9 +98,11 @@ public class ScoreboardIssueTests {
         // Needed because some tests here require a proper ENTITY_TYPE registry.
         // This is a temp fix: ideally we wouldn't have a single globally initialised registry for all tests
         // (because some future tests may want to test registering to a registry).
-        DataComponentRegistryPopulator.load(GeyserResources.DEFAULT);
-        BuiltInJavaRegistries.bootstrap();
-        BuiltInJavaRegistries.freeze();
+        mockContext(() -> {
+            DataComponentRegistryPopulator.load(GeyserResources.DEFAULT);
+            BuiltInJavaRegistries.bootstrap();
+            BuiltInJavaRegistries.freeze();
+        });
     }
 
     /**
