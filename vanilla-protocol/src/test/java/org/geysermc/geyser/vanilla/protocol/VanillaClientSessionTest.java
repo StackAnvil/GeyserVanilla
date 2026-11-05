@@ -75,7 +75,8 @@ class VanillaClientSessionTest {
         AtomicReference<Throwable> error = new AtomicReference<>();
         AtomicReference<Vec3> motion = new AtomicReference<>();
         AtomicReference<String> reason = new AtomicReference<>();
-        var client = new VanillaClientSession(profile, null, Runnable::run, CONTEXT, packet -> {
+        var worker = java.util.concurrent.Executors.newSingleThreadExecutor();
+        var client = new VanillaClientSession(profile, null, worker, CONTEXT, packet -> {
             if (packet instanceof ClientboundSetEntityMotionPacket move) {
                 motion.set(move.movement());
             }
@@ -143,6 +144,9 @@ class VanillaClientSessionTest {
             } finally {
                 client.disconnect(Component.literal("Test cleanup"));
             }
+        } finally {
+            worker.shutdownNow();
+            assertTrue(worker.awaitTermination(5, TimeUnit.SECONDS));
         }
     }
 

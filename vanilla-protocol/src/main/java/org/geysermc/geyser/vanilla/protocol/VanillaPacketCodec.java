@@ -26,14 +26,14 @@ public final class VanillaPacketCodec {
     }
 
     public void configuration() {
-        clientbound = ConfigurationProtocols.CLIENTBOUND;
-        serverbound = ConfigurationProtocols.SERVERBOUND;
+        clientbound = VanillaPayload.preserve(ConfigurationProtocols.CLIENTBOUND, ConfigurationProtocols.CLIENTBOUND_TEMPLATE.details());
+        serverbound = VanillaPayload.preserve(ConfigurationProtocols.SERVERBOUND, ConfigurationProtocols.SERVERBOUND_TEMPLATE.details());
     }
 
     public void play(RegistryAccess registries, GameProtocols.Context context) {
         var buffers = RegistryFriendlyByteBuf.decorator(registries);
-        clientbound = GameProtocols.CLIENTBOUND_TEMPLATE.bind(buffers);
-        serverbound = GameProtocols.SERVERBOUND_TEMPLATE.bind(buffers, context);
+        clientbound = VanillaPayload.preserve(GameProtocols.CLIENTBOUND_TEMPLATE.bind(buffers), GameProtocols.CLIENTBOUND_TEMPLATE.details());
+        serverbound = VanillaPayload.preserve(GameProtocols.SERVERBOUND_TEMPLATE.bind(buffers, context), GameProtocols.SERVERBOUND_TEMPLATE.details());
     }
 
     public ConnectionProtocol state() {
