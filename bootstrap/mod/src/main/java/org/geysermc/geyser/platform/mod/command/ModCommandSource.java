@@ -25,73 +25,59 @@
 
 package org.geysermc.geyser.platform.mod.command;
 
-import com.google.gson.JsonElement;
-import com.mojang.serialization.JsonOps;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.resources.RegistryOps;
-import net.minecraft.server.level.ServerPlayer;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.command.GeyserCommandSource;
+import org.geysermc.geyser.platform.mod.host.ModCommandSender;
 import org.geysermc.geyser.text.ChatColor;
 
 import java.util.UUID;
 
+/** Engine command source backed by a server-owned sender handle. */
 public class ModCommandSource implements GeyserCommandSource {
+    private final ModCommandSender source;
 
-    private final CommandSourceStack source;
-
-    public ModCommandSource(CommandSourceStack source) {
+    public ModCommandSource(ModCommandSender source) {
         this.source = source;
-        // todo find locale?
     }
 
     @Override
     public String name() {
-        return source.getTextName();
+        return source.name();
     }
 
     @Override
     public void sendMessage(@NonNull String message) {
-        if (source.getEntity() instanceof ServerPlayer) {
-            ((ServerPlayer) source.getEntity()).sendSystemMessage(Component.literal(message), false);
-        } else {
+        if (source.isConsole()) {
             GeyserImpl.getInstance().getLogger().info(ChatColor.toANSI(message + ChatColor.RESET));
+        } else {
+            source.sendPlain(message);
         }
     }
 
     @Override
     public void sendMessage(net.kyori.adventure.text.Component message) {
-        if (source.getEntity() instanceof ServerPlayer player) {
-            JsonElement jsonComponent = GsonComponentSerializer.gson().serializeToTree(message);
-            player.sendSystemMessage(ComponentSerialization.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, player.registryAccess()), jsonComponent).getOrThrow(), false);
-            return;
+        if (source.isConsole()) {
+            GeyserCommandSource.super.sendMessage(message);
+        } else {
+            source.sendJson(GsonComponentSerializer.gson().serialize(message));
         }
-        GeyserCommandSource.super.sendMessage(message);
     }
 
     @Override
     public boolean isConsole() {
-        return !(source.getEntity() instanceof ServerPlayer);
+        return source.isConsole();
     }
 
     @Override
     public @Nullable UUID playerUuid() {
-        if (source.getEntity() instanceof ServerPlayer player) {
-            return player.getUUID();
-        }
-        return null;
+        return source.playerUuid();
     }
 
     @Override
     public boolean hasPermission(String permission) {
-        // Unlike other bootstraps; we delegate to cloud here too:
-        // On NeoForge; we'd have to keep track of all PermissionNodes - cloud already does that
-        // For Fabric, we won't need to include the Fabric Permissions API anymore - cloud already does that too :p
         return GeyserImpl.getInstance().commandRegistry().hasPermission(this, permission);
     }
 

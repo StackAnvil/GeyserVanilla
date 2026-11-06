@@ -23,6 +23,8 @@ afterEvaluate {
     }
 }
 
+val vanillaTestRuntime by configurations.creating
+
 dependencies {
     api(projects.core)
     compileOnly(libs.mixin)
@@ -30,4 +32,14 @@ dependencies {
 
     // Only here to suppress "unknown enum constant EnvType.CLIENT" warnings. DO NOT USE!
     compileOnly(libs.fabric.loader)
+
+    testImplementation(platform("org.junit:junit-bom:6.0.0"))
+    testImplementation(libs.junit)
+    testImplementation(libs.mockito)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    vanillaTestRuntime(project(path = ":vanilla-protocol", configuration = "vanillaClient"))
+}
+tasks.test {
+    useJUnitPlatform()
+    classpath = vanillaTestRuntime + classpath
 }

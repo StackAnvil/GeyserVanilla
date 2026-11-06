@@ -43,6 +43,9 @@ import org.geysermc.geyser.level.WorldManager;
 import org.geysermc.geyser.ping.GeyserLegacyPingPassthrough;
 import org.geysermc.geyser.ping.IGeyserPingPassthrough;
 import org.geysermc.geyser.platform.mod.platform.GeyserModPlatform;
+import org.geysermc.geyser.platform.mod.host.ServerWorldAccess;
+import org.geysermc.geyser.platform.mod.host.ServerPing;
+import org.geysermc.geyser.platform.mod.host.ModEventBridge;
 import org.geysermc.geyser.platform.mod.world.GeyserModWorldManager;
 import org.geysermc.geyser.text.GeyserLocale;
 
@@ -60,6 +63,7 @@ public abstract class GeyserModBootstrap implements GeyserBootstrap {
 
     @Getter
     private GeyserImpl geyser;
+    private ModEngineEvents engineEvents;
     private Path dataFolder;
 
     @Setter @Getter
@@ -83,6 +87,8 @@ public abstract class GeyserModBootstrap implements GeyserBootstrap {
             return;
         }
         this.geyser = GeyserImpl.load(this);
+        engineEvents = new ModEngineEvents(geyser);
+        ModEventBridge.install(engineEvents);
     }
 
     public void onGeyserEnable() {
@@ -103,7 +109,12 @@ public abstract class GeyserModBootstrap implements GeyserBootstrap {
         if (!geyserConfig.motd().integratedPingPassthrough()) {
             this.geyserPingPassthrough = GeyserLegacyPingPassthrough.init(geyser);
         } else {
-            this.geyserPingPassthrough = new ModPingPassthrough(server, geyserLogger);
+            this.geyserPingPassthrough = new ModPingPassthrough(new ServerPing(server, failure -> {
+                if (geyserLogger.isDebug()) {
+                    geyserLogger.debug("Failed to listen for modified ServerStatus: " + failure.getMessage());
+                    failure.printStackTrace();
+                }
+            }));
         }
 
         // No need to re-register commands, or try to re-inject
@@ -111,7 +122,7 @@ public abstract class GeyserModBootstrap implements GeyserBootstrap {
             return;
         }
 
-        this.geyserWorldManager = new GeyserModWorldManager(server);
+        this.geyserWorldManager = new GeyserModWorldManager(new ServerWorldAccess(server));
 
         // We want to do this late in the server startup process to allow other mods
         // To do their job injecting, then connect into *that*
@@ -130,6 +141,8 @@ public abstract class GeyserModBootstrap implements GeyserBootstrap {
 
     @Override
     public void onGeyserShutdown() {
+        ModEventBridge.clear(engineEvents);
+        engineEvents = null;
         if (geyser != null) {
             geyser.shutdown();
             geyser = null;

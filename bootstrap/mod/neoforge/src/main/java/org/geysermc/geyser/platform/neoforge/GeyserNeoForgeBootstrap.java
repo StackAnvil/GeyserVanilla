@@ -25,7 +25,6 @@
 
 package org.geysermc.geyser.platform.neoforge;
 
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.fml.ModContainer;
@@ -43,6 +42,8 @@ import org.geysermc.geyser.command.GeyserCommandSource;
 import org.geysermc.geyser.platform.mod.GeyserModBootstrap;
 import org.geysermc.geyser.platform.mod.GeyserModUpdateListener;
 import org.geysermc.geyser.platform.mod.command.ModCommandSource;
+import org.geysermc.geyser.platform.mod.host.ModCommandSender;
+import org.geysermc.geyser.platform.mod.host.ServerCommandSender;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.neoforge.NeoForgeServerCommandManager;
@@ -69,16 +70,18 @@ public class GeyserNeoForgeBootstrap extends GeyserModBootstrap {
 
         this.onGeyserInitialize();
 
-        var sourceConverter = CommandSourceConverter.layered(
-                CommandSourceStack.class,
-                id -> getServer().getPlayerList().getPlayer(id),
-                ServerPlayer::createCommandSourceStack,
-                () -> getServer().createCommandSourceStack(),
+        var sourceConverter = new CommandSourceConverter<>(
+                ModCommandSender.class,
+                id -> {
+                    ServerPlayer player = getServer().getPlayerList().getPlayer(id);
+                    return player == null ? null : new ServerCommandSender(player.createCommandSourceStack());
+                },
+                () -> new ServerCommandSender(getServer().createCommandSourceStack()),
                 ModCommandSource::new
         );
         CommandManager<GeyserCommandSource> cloud = new NeoForgeServerCommandManager<>(
                 ExecutionCoordinator.simpleCoordinator(),
-                sourceConverter
+                ServerCommandSender.mapper(sourceConverter::map, sourceConverter::reverse)
         );
         GeyserNeoForgeCommandRegistry registry = new GeyserNeoForgeCommandRegistry(getGeyser(), cloud);
         this.setCommandRegistry(registry);

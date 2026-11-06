@@ -25,117 +25,44 @@
 
 package org.geysermc.geyser.platform.mod.world;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.SharedConstants;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerChunkCache;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStackTemplate;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
-import net.minecraft.world.level.block.entity.PotDecorations;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.GameType;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.geysermc.geyser.level.GeyserWorldManager;
 import org.geysermc.geyser.network.bedrock.GameProtocol;
+import org.geysermc.geyser.platform.mod.host.ModWorldAccess;
 import org.geysermc.geyser.session.GeyserSession;
-import net.minecraft.world.level.GameType;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
+/** Translates server world data without accepting server-owned Minecraft objects. */
 public class GeyserModWorldManager extends GeyserWorldManager {
+    private final ModWorldAccess world;
 
-    private final MinecraftServer server;
-
-    public GeyserModWorldManager(MinecraftServer server) {
-        this.server = server;
+    public GeyserModWorldManager(ModWorldAccess world) {
+        this.world = world;
     }
 
     @Override
     public int getBlockAt(GeyserSession session, int x, int y, int z) {
-        // If the protocol version of Geyser and the server are not the
-        // same, fallback to the chunk cache. May be able to update this
-        // in the future to use ViaVersion however, like Spigot does.
-        if (SharedConstants.getCurrentVersion().protocolVersion() != GameProtocol.getJavaProtocolVersion()) {
+        if (!hasOwnChunkCache()) {
             return super.getBlockAt(session, x, y, z);
         }
-
-        ServerPlayer player = this.getPlayer(session);
-        if (player == null) {
-            return 0;
-        }
-
-        Level level = player.level();
-        if (y < level.getMinY()) {
-            return 0;
-        }
-
-        // Only loads active chunks, and doesn't delegate to main thread
-        ChunkAccess chunk = ((ServerChunkCache) level.getChunkSource()).chunkMap.getChunkToSend(ChunkPos.pack(x >> 4, z >> 4));
-        if (chunk == null) {
-            return 0;
-        }
-
-        int worldOffset = level.getMinY() >> 4;
-        int chunkOffset = (y >> 4) - worldOffset;
-        if (chunkOffset < chunk.getSections().length) {
-            LevelChunkSection section = chunk.getSections()[chunkOffset];
-            if (section != null && !section.hasOnlyAir()) {
-                return Block.getId(section.getBlockState(x & 15, y & 15, z & 15));
-            }
-        }
-
-        return 0;
+        return world.blockAt(session.getPlayerEntity().uuid(), x, y, z);
     }
 
     @Override
     public boolean hasOwnChunkCache() {
-        return SharedConstants.getCurrentVersion().protocolVersion() == GameProtocol.getJavaProtocolVersion();
+        return world.protocolVersion() == GameProtocol.getJavaProtocolVersion();
     }
 
     @Override
     public GameType getDefaultGameMode(GeyserSession session) {
-        return GameType.byId(server.getDefaultGameType().getId());
+        return GameType.byId(world.defaultGameMode());
     }
 
     @Override
     public void getDecoratedPotData(GeyserSession session, Vector3i pos, Consumer<Map<String, String>> apply) {
-        server.execute(() -> {
-            ServerPlayer player = getPlayer(session);
-            if (player == null) {
-                return;
-            }
-
-            BlockPos blockPos = new BlockPos(pos.getX(), pos.getY(), pos.getZ());
-            // Don't create a new block entity if invalid
-            //noinspection resource - level() is just a getter
-            BlockEntity blockEntity = player.level().getChunkAt(blockPos).getBlockEntity(blockPos);
-            if (blockEntity instanceof DecoratedPotBlockEntity pot) {
-                PotDecorations decorations = pot.getDecorations();
-                Map<String, String> toApply = new Object2ObjectOpenHashMap<>();
-                decorations.back().flatMap(GeyserModWorldManager::extractPotteryPattern).ifPresent(pattern -> toApply.put("back", pattern));
-                decorations.left().flatMap(GeyserModWorldManager::extractPotteryPattern).ifPresent(pattern -> toApply.put("left", pattern));
-                decorations.right().flatMap(GeyserModWorldManager::extractPotteryPattern).ifPresent(pattern -> toApply.put("right", pattern));
-                decorations.front().flatMap(GeyserModWorldManager::extractPotteryPattern).ifPresent(pattern -> toApply.put("front", pattern));
-                apply.accept(toApply);
-            }
-        });
-    }
-
-    private static Optional<String> extractPotteryPattern(ItemStackTemplate template) {
-        return Optional.ofNullable(template.get(DataComponents.PROVIDES_POTTERY_PATTERN))
-            .map(holder -> holder.value().assetId().toString());
-    }
-
-    private ServerPlayer getPlayer(GeyserSession session) {
-        return server.getPlayerList().getPlayer(session.getPlayerEntity().uuid());
+        world.decoratedPotAssets(session.getPlayerEntity().uuid(), pos.getX(), pos.getY(), pos.getZ(), apply);
     }
 }

@@ -28,8 +28,6 @@ package org.geysermc.geyser.platform.mod.mixin.server;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Share;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
@@ -37,20 +35,15 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import org.cloudburstmc.math.vector.Vector3i;
-import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.geyser.session.cache.PistonCache;
-import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntity;
-import org.geysermc.geyser.level.physics.PistonAction;
+import org.geysermc.geyser.platform.mod.host.ModEventBridge;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -74,54 +67,35 @@ public class PistonBaseBlockMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/piston/PistonStructureResolver;getToDestroy()Ljava/util/List;")
     )
     private void geyser$onBlocksMove(Level level, BlockPos blockPos, Direction direction, boolean isExtending, CallbackInfoReturnable<Boolean> cir, @Share("pushBlocks") LocalRef<Map<BlockPos, BlockState>> localRef) {
-        PistonAction type = isExtending ? PistonAction.EXTEND : PistonAction.RETRACT;
-        boolean sticky = this.isSticky;
-
-        Object2ObjectMap<Vector3i, org.geysermc.geyser.level.block.type.BlockState> attachedBlocks = new Object2ObjectArrayMap<>();
-        boolean blocksFilled = false;
-
-        for (Map.Entry<UUID, GeyserSession> entry : GeyserImpl.getInstance().getSessionManager().getSessions().entrySet()) {
+        var events = ModEventBridge.events();
+        if (events == null) {
+            return;
+        }
+        var recipients = new ArrayList<UUID>();
+        for (var entry : events.playerRenderDistances().entrySet()) {
             Player player = level.getPlayerByUUID(entry.getKey());
-            //noinspection resource
             if (player == null || !player.level().equals(level)) {
                 continue;
             }
-            GeyserSession session = entry.getValue();
-
             int dX = Math.abs(blockPos.getX() - player.getBlockX()) >> 4;
             int dZ = Math.abs(blockPos.getZ() - player.getBlockZ()) >> 4;
-            if ((dX * dX + dZ * dZ) > session.getServerRenderDistance() * session.getServerRenderDistance()) {
-                // Ignore pistons outside the player's render distance
-                continue;
+            if (dX * dX + dZ * dZ <= entry.getValue() * entry.getValue()) {
+                recipients.add(entry.getKey());
             }
-
-            // Trying to grab the blocks from the world like other platforms would result in the moving piston block
-            // being returned instead.
-            if (!blocksFilled) {
-                Map<BlockPos, net.minecraft.world.level.block.state.BlockState> blocks = localRef.get();
-                for (Map.Entry<BlockPos, BlockState> blockStateEntry : blocks.entrySet()) {
-                    int blockStateId = Block.BLOCK_STATE_REGISTRY.getId(blockStateEntry.getValue());
-                    org.geysermc.geyser.level.block.type.BlockState state = org.geysermc.geyser.level.block.type.BlockState.of(blockStateId);
-                    attachedBlocks.put(geyser$fromBlockPos(blockStateEntry.getKey()), state);
-                }
-                blocksFilled = true;
-            }
-
-            org.geysermc.geyser.level.physics.Direction orientation = org.geysermc.geyser.level.physics.Direction.VALUES[direction.ordinal()];
-
-            Vector3i position = geyser$fromBlockPos(blockPos);
-            session.executeInEventLoop(() -> {
-                PistonCache pistonCache = session.getPistonCache();
-                PistonBlockEntity blockEntity = pistonCache.getPistons().computeIfAbsent(position, pos ->
-                    new PistonBlockEntity(session, position, orientation, sticky, !isExtending));
-                blockEntity.setAction(type, attachedBlocks);
-            });
         }
+        if (recipients.isEmpty()) {
+            return;
+        }
+        Map<BlockPos, BlockState> pushed = localRef.get();
+        int[] blocks = new int[pushed.size() * 4];
+        int index = 0;
+        for (var entry : pushed.entrySet()) {
+            blocks[index++] = entry.getKey().getX();
+            blocks[index++] = entry.getKey().getY();
+            blocks[index++] = entry.getKey().getZ();
+            blocks[index++] = Block.getId(entry.getValue());
+        }
+        events.pistonMoved(recipients.toArray(UUID[]::new), blockPos.getX(), blockPos.getY(), blockPos.getZ(),
+            direction.ordinal(), isSticky, isExtending, blocks);
     }
-
-    @Unique
-    private static Vector3i geyser$fromBlockPos(BlockPos pos) {
-        return Vector3i.from(pos.getX(), pos.getY(), pos.getZ());
-    }
-
 }

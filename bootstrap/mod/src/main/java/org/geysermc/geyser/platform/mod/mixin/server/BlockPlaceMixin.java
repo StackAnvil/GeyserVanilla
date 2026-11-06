@@ -33,11 +33,7 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import org.cloudburstmc.math.vector.Vector3f;
-import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
-import org.cloudburstmc.protocol.bedrock.packet.LevelSoundEventPacket;
-import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.platform.mod.host.ModEventBridge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -53,25 +49,9 @@ public class BlockPlaceMixin {
             return;
         }
 
-        GeyserSession session = GeyserImpl.getInstance().connectionByUuid(player.getUUID());
-        if (session == null) {
-            return;
+        var events = ModEventBridge.events();
+        if (events != null) {
+            events.blockPlaced(player.getUUID(), pos.getX(), pos.getY(), pos.getZ(), Block.getId(placedState));
         }
-
-        Vector3f position = Vector3f.from(
-            pos.getX(),
-            pos.getY(),
-            pos.getZ()
-        );
-
-        LevelSoundEventPacket placeBlockSoundPacket = new LevelSoundEventPacket();
-        placeBlockSoundPacket.setSound(SoundEvent.PLACE);
-        placeBlockSoundPacket.setPosition(position);
-        placeBlockSoundPacket.setBabySound(false);
-        placeBlockSoundPacket.setExtraData(session.getBlockMappings().getBedrockBlockId(Block.BLOCK_STATE_REGISTRY.getId(placedState)));
-        placeBlockSoundPacket.setIdentifier(":");
-        session.sendUpstreamPacket(placeBlockSoundPacket);
-        session.setLastBlockPlacePosition(null);
-        session.setLastBlockPlaced(null);
     }
 }

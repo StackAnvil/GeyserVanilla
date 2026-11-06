@@ -25,81 +25,24 @@
 
 package org.geysermc.geyser.platform.mod;
 
-import com.mojang.serialization.JsonOps;
-import io.netty.channel.ChannelFutureListener;
-import lombok.AllArgsConstructor;
-import net.minecraft.network.Connection;
-import net.minecraft.network.chat.ComponentSerialization;
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.status.ClientboundStatusResponsePacket;
-import net.minecraft.network.protocol.status.ServerStatus;
-import net.minecraft.network.protocol.status.ServerStatusPacketListener;
-import net.minecraft.network.protocol.status.ServerboundStatusRequestPacket;
-import net.minecraft.resources.RegistryOps;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerStatusPacketListenerImpl;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.geysermc.geyser.GeyserLogger;
 import org.geysermc.geyser.ping.GeyserPingInfo;
 import org.geysermc.geyser.ping.IGeyserPingPassthrough;
-import org.jspecify.annotations.NonNull;
+import org.geysermc.geyser.platform.mod.host.ModPing;
 
 import java.net.InetSocketAddress;
-import java.util.Objects;
 
-@AllArgsConstructor
-public class ModPingPassthrough implements IGeyserPingPassthrough {
+/** Converts the host's status result into the engine's ping model. */
+public final class ModPingPassthrough implements IGeyserPingPassthrough {
+    private final ModPing ping;
 
-    private final MinecraftServer server;
-    private final GeyserLogger logger;
-
-    @Nullable
-    @Override
-    public GeyserPingInfo getPingInformation(InetSocketAddress inetSocketAddress) {
-        ServerStatus status = server.getStatus();
-        if (status == null) {
-            return null;
-        }
-
-        try {
-            StatusInterceptor connection = new StatusInterceptor();
-            ServerStatusPacketListener statusPacketListener = new ServerStatusPacketListenerImpl(status, connection);
-
-            statusPacketListener.handleStatusRequest(ServerboundStatusRequestPacket.INSTANCE);
-            // mods like MiniMOTD (that inject into the above method) have now processed the response
-            status = Objects.requireNonNull(connection.status, "status response");
-        } catch (Exception e) {
-            if (logger.isDebug()) {
-                logger.debug("Failed to listen for modified ServerStatus: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
-
-        return new GeyserPingInfo(
-            ComponentSerialization.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, server.registryAccess()), status.description()).getOrThrow().toString(),
-            status.players().map(ServerStatus.Players::max).orElse(1),
-            status.players().map(ServerStatus.Players::online).orElse(0)
-        );
+    public ModPingPassthrough(ModPing ping) {
+        this.ping = ping;
     }
 
-    /**
-     * Custom Connection that intercepts the status response right before it is sent
-     */
-    private static class StatusInterceptor extends Connection {
-
-        ServerStatus status;
-
-        StatusInterceptor() {
-            super(PacketFlow.SERVERBOUND); // we are the server.
-        }
-
-        @Override
-        public void send(@NonNull Packet<?> packet, @Nullable ChannelFutureListener channelFutureListener, boolean bl) {
-            if (packet instanceof ClientboundStatusResponsePacket(ServerStatus serverStatus)) {
-                status = serverStatus;
-            }
-            super.send(packet, channelFutureListener, bl);
-        }
+    @Override
+    public @Nullable GeyserPingInfo getPingInformation(InetSocketAddress address) {
+        ModPing.Result result = ping.query(address);
+        return result == null ? null : new GeyserPingInfo(result.description(), result.maximum(), result.online());
     }
 }
