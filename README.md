@@ -19,12 +19,12 @@ Paper tests cover injected status requests, commands, styled chat, integrated pi
 Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, custom block palettes, components, and core translation behavior.
 Fabric 0.19.5 and NeoForge 26.3.0.1-beta dedicated servers also pass runtime isolation checks.
 These tests cover injected status requests, offline Java login, configuration, chunks, inventory packets, world reads, commands, ping, reload, and independent shutdown.
-The Fabric client passes two LAN publish/unpublish cycles with native Java login, chunks, inventory, and the owner remaining in the world.
-NeoForge client LAN startup still needs a live test.
+The Fabric and NeoForge clients each pass two LAN publish/unpublish cycles with native Java login, chunks, inventory, and the owner remaining in the world.
 The game-test suite runs against the host test registries and passes its required cases, including native item defaults and packet coverage.
 Two optional entity metadata cases still fail for unsupported block and item displays.
 Bedrock gameplay checks on the standalone jar cover encrypted offline login, spawning, chunks, item and creative inventories, recipes, live block changes, cow metadata, chat, server kick messages, and reconnects.
-Broader gameplay and NeoForge client LAN testing remain incomplete, and these development builds are not ready for deployment.
+The Java server also confirms player movement and chest-to-hotbar item transfers made through Bedrock packets.
+These are preview builds. Live Mojang account authentication and additional gameplay scenarios have not been tested.
 
 Build and run the standalone jar with Java 25 or newer.
 The upstream information below describes Geyser's features and protocol targets, rather than a completed compatibility claim for this fork.
