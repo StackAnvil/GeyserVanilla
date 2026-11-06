@@ -33,7 +33,8 @@ public final class VanillaHostedRuntime implements AutoCloseable {
             throw new IllegalStateException("GeyserVanilla requires Java " + manifest.javaVersion() + " or newer");
         }
         var classpath = new ArrayList<>(VanillaRuntime.prepare(cache, logger));
-        classpath.add(pluginLocation(entrypoint.getProtectionDomain().getCodeSource().getLocation()));
+        Path plugin = pluginLocation(entrypoint.getProtectionDomain().getCodeSource().getLocation());
+        classpath.addAll(EmbeddedJars.classpath(plugin, cache.resolve("embedded")));
         var shared = new ArrayList<>(SHARED_APIS);
         shared.addAll(hostApis);
         return new VanillaHostedRuntime(new VanillaClassLoader(VanillaRuntime.urls(classpath), entrypoint.getClassLoader(), shared));
