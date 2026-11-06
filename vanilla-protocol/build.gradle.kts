@@ -5,6 +5,7 @@ plugins {
 }
 
 val runtimeBootstrap by configurations.creating
+val hostFixtureRuntime by configurations.creating
 
 val prepareVanillaRuntime = tasks.register<JavaExec>("prepareVanillaRuntime") {
     group = "build setup"
@@ -43,6 +44,7 @@ val vanillaClient by configurations.creating {
 }
 
 dependencies {
+    hostFixtureRuntime(testFixtures(project(":vanilla-host")))
     vanillaClient(vanillaClasspath)
     runtimeBootstrap(projects.vanillaRuntime)
     api(projects.vanillaRuntime)
@@ -60,6 +62,10 @@ indra {
 }
 
 tasks.test {
+    dependsOn(hostFixtureRuntime)
     useJUnitPlatform()
     systemProperty("java.awt.headless", "true")
+    doFirst {
+        systemProperty("geyser.test.host.classpath", hostFixtureRuntime.asPath)
+    }
 }

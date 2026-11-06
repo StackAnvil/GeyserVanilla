@@ -31,6 +31,7 @@ include(":common")
 include(":core")
 include(":vanilla-runtime")
 include(":vanilla-protocol")
+include(":vanilla-host")
 
 // Specify project dirs
 project(":bungeecord").projectDir = file("bootstrap/bungeecord")
