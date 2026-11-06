@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import net.kyori.adventure.text.Component;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.nbt.NbtMap;
@@ -35,10 +37,7 @@ import org.geysermc.geyser.entity.VanillaEntities;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.ArmorStandEntity;
 import org.geysermc.geyser.util.InteractionResult;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 import java.util.Optional;
 
@@ -77,19 +76,19 @@ public class InteractionEntity extends Entity {
     }
 
     @Override
-    public void setCustomNameVisible(BooleanEntityMetadata entityMetadata) {
+    public void setCustomNameVisible(DataValue<Boolean> entityMetadata) {
         super.setCustomNameVisible(entityMetadata);
         this.updateNameTag();
     }
 
     @Override
-    public void setCustomName(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setCustomName(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         super.setCustomName(entityMetadata);
         this.updateNameTag();
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         // these InteractionResults do mirror the java client
         // but the bedrock client won't arm swing itself because of our armor stand workaround
         if (response) {
@@ -125,23 +124,23 @@ public class InteractionEntity extends Entity {
         super.moveAbsoluteRaw(position, yaw, pitch, headYaw, isOnGround, teleported);
     }
 
-    public void setWidth(FloatEntityMetadata width) {
-        setBoundingBoxWidth(width.getPrimitiveValue());
+    public void setWidth(DataValue<Float> width) {
+        setBoundingBoxWidth(width.value());
     }
 
-    public void setHeight(FloatEntityMetadata height) {
+    public void setHeight(DataValue<Float> height) {
         // Bedrock does *not* like high values being placed here
         // https://gist.github.com/Owen1212055/f5d59169d3a6a5c32f0c173d57eb199d recommend(s/ed) using the tactic
         // https://github.com/GeyserMC/Geyser/issues/4688
-        setBoundingBoxHeight(Math.min(height.getPrimitiveValue(), 64f));
+        setBoundingBoxHeight(Math.min(height.value(), 64f));
 
         if (secondEntity != null) {
             secondEntity.moveAbsoluteRaw(position.up(getBoundingBoxHeight()), yaw, pitch, headYaw, onGround, true);
         }
     }
 
-    public void setResponse(BooleanEntityMetadata response) {
-        this.response = response.getPrimitiveValue();
+    public void setResponse(DataValue<Boolean> response) {
+        this.response = response.value();
     }
 
     @Override

@@ -38,9 +38,9 @@ import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ItemEnchantments;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,14 +52,14 @@ public class EnchantedBookItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
         List<NbtMap> bedrockEnchants = new ArrayList<>();
-        ItemEnchantments enchantments = components.get(DataComponentTypes.STORED_ENCHANTMENTS);
+        ItemEnchantments enchantments = components.get(DataComponents.STORED_ENCHANTMENTS);
         if (enchantments != null) { // TODO don't duplicate code?
-            for (Map.Entry<Integer, Integer> enchantment : enchantments.getEnchantments().entrySet()) {
-                NbtMap bedrockTag = remapEnchantment(session, enchantment.getKey(), enchantment.getValue(), builder);
+            for (var enchantment : enchantments.entrySet()) {
+                NbtMap bedrockTag = remapEnchantment(session, session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getId(enchantment.getKey().value()), enchantment.getIntValue(), builder);
                 if (bedrockTag != null) {
                     bedrockEnchants.add(bedrockTag);
                 }
@@ -72,12 +72,12 @@ public class EnchantedBookItem extends Item {
     }
 
     @Override
-    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull DataComponents components, @NonNull ItemMapping mapping) {
+    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull GeyserDataComponents components, @NonNull ItemMapping mapping) {
         super.translateNbtToJava(session, bedrockTag, components, mapping);
 
         List<NbtMap> enchantmentTag = bedrockTag.getList("ench", NbtType.COMPOUND);
         if (enchantmentTag != null) {
-            Int2IntMap javaEnchantments = new Int2IntOpenHashMap(enchantmentTag.size());
+            ItemEnchantments.Mutable javaEnchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
             for (NbtMap bedrockEnchantment : enchantmentTag) {
                 short bedrockId = bedrockEnchantment.getShort("id");
 
@@ -87,7 +87,7 @@ public class EnchantedBookItem extends Item {
                     for (Enchantment javaEnchantment : session.javaRegistries().registry(JavaRegistries.ENCHANTMENT)) {
                         if (javaEnchantment.bedrockEnchantment() == enchantment) {
                             int level = bedrockEnchantment.getShort("lvl", (short) 1);
-                            javaEnchantments.put(i, level);
+                            javaEnchantments.set(session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).get(i).orElseThrow(), level);
                             break;
                         }
                         i++;
@@ -96,8 +96,8 @@ public class EnchantedBookItem extends Item {
                     GeyserImpl.getInstance().getLogger().debug("Unknown bedrock enchantment: " + bedrockId);
                 }
             }
-            if (!javaEnchantments.isEmpty()) {
-                components.put(DataComponentTypes.STORED_ENCHANTMENTS, new ItemEnchantments(javaEnchantments));
+            if (!javaEnchantments.keySet().isEmpty()) {
+                components.put(DataComponents.STORED_ENCHANTMENTS, javaEnchantments.toImmutable());
             }
         }
     }

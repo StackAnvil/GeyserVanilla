@@ -31,7 +31,7 @@ import org.geysermc.geyser.util.CodeOfConductManager;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundCodeOfConductPacket;
+import net.minecraft.network.protocol.configuration.ClientboundCodeOfConductPacket;
 
 @Translator(packet = ClientboundCodeOfConductPacket.class)
 public class JavaCodeOfConductTranslator extends PacketTranslator<ClientboundCodeOfConductPacket> {
@@ -40,11 +40,11 @@ public class JavaCodeOfConductTranslator extends PacketTranslator<ClientboundCod
     public void translate(GeyserSession session, ClientboundCodeOfConductPacket packet) {
         if (session.hasAcceptedCodeOfConduct()) {
             return;
-        } else if (CodeOfConductManager.getInstance().hasAcceptedCodeOfConduct(session, packet.getCodeOfConduct())) {
+        } else if (CodeOfConductManager.getInstance().hasAcceptedCodeOfConduct(session, packet.codeOfConduct())) {
             session.acceptCodeOfConduct();
             return;
         }
-        showCodeOfConductForm(session, packet.getCodeOfConduct());
+        showCodeOfConductForm(session, packet.codeOfConduct());
     }
 
     private static void showCodeOfConductForm(GeyserSession session, String codeOfConduct) {

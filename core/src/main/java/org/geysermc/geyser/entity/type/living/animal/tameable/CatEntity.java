@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.tameable;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -39,10 +41,7 @@ import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class CatEntity extends TameableEntity implements VariantIntHolder {
 
@@ -75,7 +74,7 @@ public class CatEntity extends TameableEntity implements VariantIntHolder {
     }
 
     @Override
-    public void setTameableFlags(ByteEntityMetadata entityMetadata) {
+    public void setTameableFlags(DataValue<Byte> entityMetadata) {
         super.setTameableFlags(entityMetadata);
         updateCollarColor();
     }
@@ -90,12 +89,12 @@ public class CatEntity extends TameableEntity implements VariantIntHolder {
         metadata.put(EntityDataTypes.VARIANT, bedrockId);
     }
 
-    public void setResting(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.RESTING, entityMetadata.getPrimitiveValue());
+    public void setResting(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.RESTING, entityMetadata.value());
     }
 
-    public void setCollarColor(IntEntityMetadata entityMetadata) {
-        collarColor = (byte) entityMetadata.getPrimitiveValue();
+    public void setCollarColor(DataValue<Integer> entityMetadata) {
+        collarColor = entityMetadata.value().byteValue();
         updateCollarColor();
     }
 
@@ -113,7 +112,7 @@ public class CatEntity extends TameableEntity implements VariantIntHolder {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         boolean tamed = getFlag(EntityFlag.TAMED);
         if (tamed && ownerBedrockId == session.getPlayerEntity().geyserId()) {
             // Toggle sitting
@@ -125,7 +124,7 @@ public class CatEntity extends TameableEntity implements VariantIntHolder {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         boolean tamed = getFlag(EntityFlag.TAMED);
         if (tamed && ownerBedrockId == session.getPlayerEntity().geyserId()) {
             return InteractionResult.SUCCESS;

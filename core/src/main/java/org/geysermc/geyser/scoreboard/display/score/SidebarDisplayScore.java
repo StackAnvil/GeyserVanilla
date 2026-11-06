@@ -33,8 +33,8 @@ import org.geysermc.geyser.scoreboard.Team;
 import org.geysermc.geyser.scoreboard.display.slot.DisplaySlot;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.FixedFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.NumberFormat;
+import net.minecraft.network.chat.numbers.FixedFormat;
+import net.minecraft.network.chat.numbers.NumberFormat;
 
 public final class SidebarDisplayScore extends DisplayScore {
     private ScoreInfo cachedInfo;
@@ -77,7 +77,7 @@ public final class SidebarDisplayScore extends DisplayScore {
             numberFormat = objective.getNumberFormat();
         }
         if (numberFormat instanceof FixedFormat fixedFormat) {
-            finalName += " " + ChatColor.RESET + MessageTranslator.convertMessageRaw(fixedFormat.getValue(), objective.getScoreboard().session().locale());
+            finalName += " " + ChatColor.RESET + MessageTranslator.convertMessageRaw(fixedFormat.value(), objective.getScoreboard().session().locale());
         }
 
         if (order != null) {

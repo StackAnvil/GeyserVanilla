@@ -1,3 +1,18 @@
+# GeyserVanilla
+
+GeyserVanilla is a development fork of [Geyser](https://github.com/GeyserMC/Geyser).
+It replaces MCProtocolLib with the vanilla Minecraft client, including its networking, packet codecs, registries, and item components.
+The launcher downloads the pinned Java 26.3 client and libraries into a local cache and checks their sizes and SHA-1 hashes.
+The built Geyser jar does not contain Minecraft classes.
+
+The standalone jar starts and stops successfully with the downloaded client.
+Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, components, and core translation behavior.
+Hosted platforms compile, but their runtime loading is still under development.
+Plugin and mod jars are not ready for deployment, and full Bedrock-to-Java gameplay testing remains incomplete.
+
+Build and run the standalone jar with Java 25 or newer.
+The upstream information below describes Geyser's features and protocol targets, rather than a completed compatibility claim for this fork.
+
 <img src="https://geysermc.org/img/geyser-1760-860.png" alt="Geyser" width="600"/>
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -40,9 +55,19 @@ Take a look [here](https://geysermc.org/wiki/geyser/setup/) for how to set up Ge
 There are a few things Geyser is unable to support due to various differences between Minecraft Bedrock and Java. For a list of these limitations, see the [Current Limitations](https://geysermc.org/wiki/geyser/current-limitations/) page.
 
 ## Compiling
-1. Clone the repo to your computer
-2. Navigate to the Geyser root directory and run `git submodule update --init --recursive`. This command downloads all the needed submodules for Geyser and is a crucial step in this process.
-3. Run `gradlew build` and locate to `bootstrap/build` folder.
+
+Run these commands from the repository root with Java 25 or newer:
+
+```sh
+git submodule update --init --recursive
+./gradlew :core:test :vanilla-protocol:test :vanilla-runtime:test :standalone:shadowJar
+java -jar bootstrap/standalone/build/libs/Geyser-Standalone.jar --nogui
+```
+
+The build and the first launch need network access to download the pinned client and libraries.
+Later launches use the cache after the launcher checks each artifact.
+The default runtime cache is `cache/vanilla`, relative to the launch directory.
+To change it, pass `-Dgeyser.vanilla.cache=/path/to/cache` before `-jar`.
 
 ## Contributing
 Any contributions are appreciated. Please feel free to reach out to us on [Discord](https://discord.gg/geysermc) if
@@ -51,6 +76,6 @@ you're interested in helping out with Geyser.
 ## Libraries Used:
 - [Adventure Text Library](https://github.com/KyoriPowered/adventure)
 - [CloudburstMC Bedrock Protocol Library](https://github.com/CloudburstMC/Protocol)
-- [GeyserMC's Java Protocol Library](https://github.com/GeyserMC/MCProtocolLib)
+- [Vanilla Minecraft client and libraries](vanilla-runtime/src/main/resources/vanilla-runtime.properties), downloaded at runtime
 - [TerminalConsoleAppender](https://github.com/Minecrell/TerminalConsoleAppender)
 - [Simple Logging Facade for Java (slf4j)](https://github.com/qos-ch/slf4j)

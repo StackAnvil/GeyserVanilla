@@ -29,15 +29,15 @@ import org.cloudburstmc.protocol.bedrock.packet.SetDifficultyPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.setting.Difficulty;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundChangeDifficultyPacket;
+import net.minecraft.world.Difficulty;
+import net.minecraft.network.protocol.game.ClientboundChangeDifficultyPacket;
 
 @Translator(packet = ClientboundChangeDifficultyPacket.class)
 public class JavaChangeDifficultyTranslator extends PacketTranslator<ClientboundChangeDifficultyPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundChangeDifficultyPacket packet) {
-        Difficulty difficulty = packet.getDifficulty();
+        Difficulty difficulty = packet.difficulty();
         session.getWorldCache().setDifficulty(difficulty);
 
         // Peaceful difficulty allows always eating food - hence, we just do not send it to Bedrock.

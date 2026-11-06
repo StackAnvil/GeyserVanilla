@@ -99,7 +99,7 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
 
         // See https://github.com/SpigotMC/BungeeCord/blob/e62fc6c2916a991e00177c580986d8b1a22fdb41/proxy/src/main/java/net/md_5/bungee/netty/PipelineUtils.java#L138
         if (Boolean.getBoolean("bungee.io_uring")) {
-            System.setProperty("Mcpl.io_uring", "true");
+            System.setProperty("Geyser.io_uring", "true");
         }
 
         geyserConfig = loadConfig(GeyserPluginConfig.class);

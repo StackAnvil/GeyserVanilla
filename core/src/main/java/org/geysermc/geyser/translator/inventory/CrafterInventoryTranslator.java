@@ -34,7 +34,7 @@ import org.geysermc.geyser.inventory.updater.CrafterInventoryUpdater;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.BlockEntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 /**
  * Translates the Crafter. Most important thing to know about this class is that
@@ -137,7 +137,7 @@ public class CrafterInventoryTranslator extends AbstractBlockInventoryTranslator
     }
 
     @Override
-    public CrafterContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public CrafterContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         // Java sends the triggered and slot bits incrementally through properties, which we store here
         return new CrafterContainer(session, name, windowId, this.size, containerType);
     }

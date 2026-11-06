@@ -25,13 +25,14 @@
 
 package org.geysermc.geyser.translator.protocol.java.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.geysermc.geyser.entity.EntityTypeDefinition;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 
 @Translator(packet = ClientboundSetEntityDataPacket.class)
 public class JavaSetEntityDataTranslator extends PacketTranslator<ClientboundSetEntityDataPacket> {
@@ -39,15 +40,15 @@ public class JavaSetEntityDataTranslator extends PacketTranslator<ClientboundSet
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public void translate(GeyserSession session, ClientboundSetEntityDataPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.id());
         if (entity == null) return;
 
         EntityTypeDefinition<?> definition = entity.getJavaDefinition();
-        for (EntityMetadata<?, ?> metadata : packet.getMetadata()) {
-            if (metadata.getId() >= definition.translators().size()) {
+        for (DataValue<?> metadata : packet.packedItems()) {
+            if (metadata.id() >= definition.translators().size()) {
                 if (session.getGeyser().config().debugMode()) {
                     // Minecraft client just ignores these
-                    session.getGeyser().getLogger().warning("Metadata ID " + metadata.getId() + " is out of bounds of known entity metadata size " + definition.translators().size() + " for entity type " + entity.getJavaDefinition().type());
+                    session.getGeyser().getLogger().warning("Metadata ID " + metadata.id() + " is out of bounds of known entity metadata size " + definition.translators().size() + " for entity type " + entity.getJavaDefinition().type());
                     session.getGeyser().getLogger().debug(metadata.toString());
                 }
                 continue;

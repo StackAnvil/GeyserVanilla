@@ -31,7 +31,7 @@ import org.geysermc.geyser.session.cache.registry.JavaRegistryTagCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.ChunkUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundStartConfigurationPacket;
+import net.minecraft.network.protocol.game.ClientboundStartConfigurationPacket;
 
 @Translator(packet = ClientboundStartConfigurationPacket.class)
 public class JavaStartConfigurationTranslator extends PacketTranslator<ClientboundStartConfigurationPacket> {

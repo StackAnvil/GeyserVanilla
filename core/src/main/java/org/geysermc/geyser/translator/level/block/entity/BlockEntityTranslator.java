@@ -32,7 +32,7 @@ import org.cloudburstmc.nbt.NbtMapBuilder;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.BlockEntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 /**
  * The class that all block entities (on both Java and Bedrock) should translate with
@@ -43,7 +43,7 @@ public abstract class BlockEntityTranslator {
 
     public abstract void translateTag(GeyserSession session, NbtMapBuilder bedrockNbt, NbtMap javaNbt, BlockState blockState);
 
-    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
+    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType<?> type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
         NbtMapBuilder tagBuilder = getConstantBedrockTag(type, x, y, z);
         if (javaNbt != null || this instanceof RequiresBlockState) {
             // Always process tags if the block state is part of the tag.
@@ -53,7 +53,7 @@ public abstract class BlockEntityTranslator {
         return tagBuilder.build();
     }
 
-    public static NbtMapBuilder getConstantBedrockTag(BlockEntityType type, int x, int y, int z) {
+    public static NbtMapBuilder getConstantBedrockTag(BlockEntityType<?> type, int x, int y, int z) {
         return getConstantBedrockTag(BlockEntityUtils.getBedrockBlockEntityId(type), x, y, z);
     }
 

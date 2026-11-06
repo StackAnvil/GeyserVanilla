@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -38,12 +40,11 @@ import org.geysermc.geyser.item.type.SpawnEggItem;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
 import org.geysermc.geyser.util.ItemUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.Equippable;
 
 public class MobEntity extends LivingEntity implements Leashable {
     /**
@@ -61,8 +62,8 @@ public class MobEntity extends LivingEntity implements Leashable {
         setLeashHolderBedrockId(-1);
     }
 
-    public void setMobFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setMobFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.NO_AI, (xd & 0x01) == 0x01);
     }
 
@@ -73,7 +74,7 @@ public class MobEntity extends LivingEntity implements Leashable {
     }
 
     @Override
-    protected final InteractiveTag testInteraction(Hand hand) {
+    protected final InteractiveTag testInteraction(InteractionHand hand) {
         if (!isAlive()) {
             // dead lol
             return InteractiveTag.NONE;
@@ -94,7 +95,7 @@ public class MobEntity extends LivingEntity implements Leashable {
     }
 
     @Override
-    public final InteractionResult interact(Hand hand) {
+    public final InteractionResult interact(InteractionHand hand) {
         if (!isAlive()) {
             // dead lol
             return InteractionResult.PASS;
@@ -121,9 +122,9 @@ public class MobEntity extends LivingEntity implements Leashable {
                 continue;
             }
 
-            Equippable equippable = equipped.getComponent(DataComponentTypes.EQUIPPABLE);
+            Equippable equippable = equipped.getComponent(DataComponents.EQUIPPABLE);
             if (equippable != null && equippable.canBeSheared()) {
-                if (!ItemUtils.hasEffect(session.javaRegistries(), equipped, EnchantmentComponent.PREVENT_ARMOR_CHANGE) || session.getGameMode() == GameMode.CREATIVE) {
+                if (!ItemUtils.hasEffect(session.javaRegistries(), equipped, EnchantmentComponent.PREVENT_ARMOR_CHANGE) || session.getGameMode() == GameType.CREATIVE) {
                     return true;
                 }
             }
@@ -149,12 +150,12 @@ public class MobEntity extends LivingEntity implements Leashable {
     }
 
     @NonNull
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         return InteractiveTag.NONE;
     }
 
     @NonNull
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         return InteractionResult.PASS;
     }
 

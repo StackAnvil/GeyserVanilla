@@ -36,8 +36,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class TropicalFishBucketItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
         // Prevent name from appearing as "Bucket of"
@@ -57,12 +57,15 @@ public class TropicalFishBucketItem extends Item {
         builder.putString("CustomName", MinecraftLocale.getLocaleString("entity.minecraft.tropical_fish", session.locale()));
 
         // Add Java's client side lore tag
-        Integer pattern = components.get(DataComponentTypes.TROPICAL_FISH_PATTERN);
-        Integer baseColor = components.get(DataComponentTypes.TROPICAL_FISH_BASE_COLOR);
-        Integer patternColor = components.get(DataComponentTypes.TROPICAL_FISH_PATTERN_COLOR);
+        var patternValue = components.get(DataComponents.TROPICAL_FISH_PATTERN);
+        Integer pattern = patternValue == null ? null : patternValue.getPackedId();
+        var baseColorValue = components.get(DataComponents.TROPICAL_FISH_BASE_COLOR);
+        Integer baseColor = baseColorValue == null ? null : baseColorValue.getId();
+        var patternColorValue = components.get(DataComponents.TROPICAL_FISH_PATTERN_COLOR);
+        Integer patternColor = patternColorValue == null ? null : patternColorValue.getId();
 
         // The pattern component decides whether to show the tooltip of all 3 components, as of Java 1.21.5
-        if ((pattern != null || (baseColor != null && patternColor != null)) && tooltip.showInTooltip(DataComponentTypes.TROPICAL_FISH_PATTERN)) {
+        if ((pattern != null || (baseColor != null && patternColor != null)) && tooltip.showInTooltip(DataComponents.TROPICAL_FISH_PATTERN)) {
             //TODO test this for 1.21.5
             int packedVariant = getPackedVariant(pattern, baseColor, patternColor);
             List<String> lore = builder.getOrCreateLore();

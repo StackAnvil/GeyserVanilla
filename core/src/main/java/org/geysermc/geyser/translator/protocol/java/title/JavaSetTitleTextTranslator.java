@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.title;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.title.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import org.cloudburstmc.protocol.bedrock.packet.SetTitlePacket;
 import net.kyori.adventure.text.Component;
 import org.geysermc.geyser.session.GeyserSession;
@@ -41,10 +41,10 @@ public class JavaSetTitleTextTranslator extends PacketTranslator<ClientboundSetT
         session.getWorldCache().synchronizeCorrectTitleTimes();
 
         String text;
-        if (packet.getText() == null || Component.empty().equals(packet.getText())) { // This can happen, see https://github.com/KyoriPowered/adventure/issues/447
+        if (packet.text() == null || Component.empty().equals(packet.text())) { // This can happen, see https://github.com/KyoriPowered/adventure/issues/447
             text = " ";
         } else {
-            text = MessageTranslator.convertMessage(packet.getText(), session.locale());
+            text = MessageTranslator.convertMessage(packet.text(), session.locale());
         }
 
         SetTitlePacket titlePacket = new SetTitlePacket();

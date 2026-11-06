@@ -53,7 +53,7 @@ import org.geysermc.geyser.inventory.PlayerInventory;
 import org.geysermc.geyser.inventory.click.Click;
 import org.geysermc.geyser.inventory.item.GeyserInstrument;
 import org.geysermc.geyser.item.Items;
-import org.geysermc.geyser.item.hashing.DataComponentHashers;
+import org.geysermc.geyser.vanilla.protocol.VanillaItemHashing;
 import org.geysermc.geyser.item.type.BlockItem;
 import org.geysermc.geyser.item.type.BoatItem;
 import org.geysermc.geyser.item.type.Item;
@@ -80,21 +80,20 @@ import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.SoundUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerAction;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.HashedStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Instrument;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundAttackPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundInteractPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPunchPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundSpectatorActionPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundUseItemOnPacket;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.network.HashedStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.Instrument;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
+import net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 
 import java.util.List;
 import java.util.OptionalInt;
@@ -145,18 +144,16 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                             Int2ObjectMap<HashedStack> changedItem;
                             if (dropAll) {
                                 inventory.setItem(hotbarSlot, GeyserItemStack.EMPTY, session);
-                                changedItem = Int2ObjectMaps.singleton(hotbarSlot, null);
+                                changedItem = Int2ObjectMaps.singleton(hotbarSlot, HashedStack.EMPTY);
                             } else {
                                 GeyserItemStack itemStack = inventory.getItem(hotbarSlot);
                                 if (itemStack.isEmpty()) {
                                     return;
                                 }
                                 itemStack.sub(1);
-                                changedItem = Int2ObjectMaps.singleton(hotbarSlot, DataComponentHashers.hashStack(session.javaRegistries(), itemStack.getItemStack()));
+                                changedItem = Int2ObjectMaps.singleton(hotbarSlot, VanillaItemHashing.hashStack(session.vanillaRegistries(), itemStack.getItemStack()));
                             }
-                            ServerboundContainerClickPacket dropPacket = new ServerboundContainerClickPacket(
-                                    inventory.getJavaId(), inventory.getStateId(), hotbarSlot, clickType.actionType, clickType.action,
-                                    DataComponentHashers.hashStack(session.javaRegistries(), inventory.getCursor().getItemStack()), changedItem);
+                            ServerboundContainerClickPacket dropPacket = new ServerboundContainerClickPacket(inventory.getJavaId(), inventory.getStateId(), (short) hotbarSlot, (byte) clickType.action, clickType.actionType, changedItem, VanillaItemHashing.hashStack(session.vanillaRegistries(), inventory.getCursor().getItemStack()));
                             session.sendDownstreamGamePacket(dropPacket);
                             return;
                         }
@@ -164,12 +161,7 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                             return;
                         }
 
-                        ServerboundPlayerActionPacket dropPacket = new ServerboundPlayerActionPacket(
-                                dropAll ? PlayerAction.DROP_ITEM_STACK : PlayerAction.DROP_ITEM,
-                                Vector3i.ZERO,
-                                Direction.DOWN.mcpl(),
-                                0
-                        );
+                        ServerboundPlayerActionPacket dropPacket = new ServerboundPlayerActionPacket(dropAll ? ServerboundPlayerActionPacket.Action.DROP_ALL_ITEMS : ServerboundPlayerActionPacket.Action.DROP_ITEM, org.geysermc.geyser.util.MathUtils.toBlockPos(Vector3i.ZERO), Direction.DOWN.javaDirection(), 0);
                         session.sendDownstreamGamePacket(dropPacket);
 
                         if (dropAll) {
@@ -318,14 +310,7 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                         // Storing the block position allows inconsistencies in block place checking from post-1.19 - pre-1.20.5 to be resolved.
                         int sequence = session.getWorldCache().nextPredictionSequence();
                         session.getWorldCache().markPositionInSequence(blockPos);
-                        ServerboundUseItemOnPacket blockPacket = new ServerboundUseItemOnPacket(
-                                packet.getBlockPosition(),
-                                Direction.getUntrusted(packet, InventoryTransactionPacket::getBlockFace).mcpl(),
-                                Hand.MAIN_HAND,
-                                cursorX, cursorY, cursorZ,
-                                false,
-                                false,
-                                sequence);
+                        ServerboundUseItemOnPacket blockPacket = new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atLowerCornerOf(org.geysermc.geyser.util.MathUtils.toBlockPos(packet.getBlockPosition())).add(cursorX, cursorY, cursorZ), Direction.getUntrusted(packet, InventoryTransactionPacket::getBlockFace).javaDirection(), org.geysermc.geyser.util.MathUtils.toBlockPos(packet.getBlockPosition()), false, false), sequence);
                         session.sendDownstreamGamePacket(blockPacket);
 
                         Item item = session.getPlayerInventory().getItemInHand().asItem();
@@ -374,7 +359,7 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                         }
 
                         if (packet.getActions().isEmpty()) {
-                            if (session.getOpPermissionLevel() >= 2 && session.getGameMode() == GameMode.CREATIVE) {
+                            if (session.getOpPermissionLevel() >= 2 && session.getGameMode() == GameType.CREATIVE) {
                                 // Otherwise insufficient permissions
                                 if (session.getBlockMappings().getJigsawStates().contains(packet.getBlockDefinition())) {
                                     ContainerOpenPacket openPacket = new ContainerOpenPacket();
@@ -427,11 +412,11 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                             } else if (session.getPlayerInventory().getItemInHand().is(Items.GOAT_HORN)) {
                                 // Temporary workaround while we don't have full item/block use tracking.
                                 if (!session.getWorldCache().hasCooldown(session.getPlayerInventory().getItemInHand())) {
-                                    Holder<Instrument> component = session.getPlayerInventory()
+                                    net.minecraft.world.item.component.InstrumentComponent component = session.getPlayerInventory()
                                         .getItemInHand()
-                                        .getComponent(DataComponentTypes.INSTRUMENT);
+                                        .getComponent(DataComponents.INSTRUMENT);
                                     if (component != null) {
-                                        GeyserInstrument instrument = GeyserInstrument.fromComponent(session.javaRegistries(), component);
+                                        GeyserInstrument instrument = GeyserInstrument.fromComponent(session, component);
                                         if (instrument.bedrockInstrument() != null) {
                                             // BDS uses a LevelSoundEvent2Packet, but that doesn't work here... (as of 1.21.20)
                                             LevelSoundEventPacket soundPacket = new LevelSoundEventPacket();
@@ -453,7 +438,7 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                             }
                         }
 
-                        session.useItem(Hand.MAIN_HAND);
+                        session.useItem(InteractionHand.MAIN_HAND);
 
                         session.getBundleCache().awaitRelease();
 
@@ -483,8 +468,8 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                     }
 
                     case 3 -> {
-                        if (session.getPlayerInventory().getItemInHand().getComponent(DataComponentTypes.PIERCING_WEAPON) != null && session.getGameMode() != GameMode.SPECTATOR) {
-                            session.sendDownstreamPacket(new ServerboundPlayerActionPacket(PlayerAction.STAB, Vector3i.ZERO, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.DOWN, 0));
+                        if (session.getPlayerInventory().getItemInHand().getComponent(DataComponents.PIERCING_WEAPON) != null && session.getGameMode() != GameType.SPECTATOR) {
+                            session.sendDownstreamPacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.STAB, org.geysermc.geyser.util.MathUtils.toBlockPos(Vector3i.ZERO), net.minecraft.core.Direction.DOWN, 0));
                             session.sendDownstreamPacket(ServerboundPunchPacket.INSTANCE);
                             CooldownUtils.setCooldownHitTime(session);
                         }
@@ -500,19 +485,19 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                 break;
             case ITEM_USE_ON_ENTITY:
                 // The player can only stab in this case, not attack!
-                if (session.getPlayerInventory().getItemInHand().getComponent(DataComponentTypes.PIERCING_WEAPON) != null && session.getGameMode() != GameMode.SPECTATOR) {
+                if (session.getPlayerInventory().getItemInHand().getComponent(DataComponents.PIERCING_WEAPON) != null && session.getGameMode() != GameType.SPECTATOR) {
                     return;
                 }
 
                 Entity entity = session.getEntityCache().getEntityByGeyserId(packet.getRuntimeEntityId());
                 if (entity == null) {
-                    if (session.getGameMode() == GameMode.SPECTATOR) {
+                    if (session.getGameMode() == GameType.SPECTATOR) {
                         session.sendDownstreamGamePacket(new ServerboundSpectatorActionPacket(OptionalInt.empty()));
                     }
                     return;
                 }
 
-                if (session.getGameMode() == GameMode.SPECTATOR) {
+                if (session.getGameMode() == GameType.SPECTATOR) {
                     session.sendDownstreamGamePacket(new ServerboundSpectatorActionPacket(OptionalInt.of(entity.getEntityId())));
                     return;
                 }
@@ -527,7 +512,7 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                         }
 
                         int entityId;
-                        if (entity.getJavaDefinition().is(EntityType.ENDER_DRAGON)) {
+                        if (entity.getJavaDefinition().is(EntityTypes.ENDER_DRAGON)) {
                             // Redirects the attack to its body entity, this only happens when
                             // attacking the underbelly of the ender dragon
                             entityId = entity.getEntityId() + 3;
@@ -558,10 +543,10 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
         }
 
         Vector3f clickPosition = packet.getClickPosition().sub(entity.bedrockPosition());
-        boolean isSpectator = session.getGameMode() == GameMode.SPECTATOR;
-        for (Hand hand : EntityUtils.HANDS) {
+        boolean isSpectator = session.getGameMode() == GameType.SPECTATOR;
+        for (InteractionHand hand : EntityUtils.HANDS) {
             session.sendDownstreamGamePacket(new ServerboundInteractPacket(entity.getEntityId(),
-                hand, Vector3d.from(clickPosition.getX(), clickPosition.getY(), clickPosition.getZ()),
+                hand, org.geysermc.geyser.util.MathUtils.toVec3(clickPosition),
                 session.isSneaking()));
 
             if (!isSpectator) {
@@ -644,13 +629,13 @@ public class BedrockInventoryTransactionTranslator extends PacketTranslator<Inve
                 return false;
             }
 
-            boolean mayBuild = session.getGameMode() == GameMode.SURVIVAL || session.getGameMode() == GameMode.CREATIVE;
+            boolean mayBuild = session.getGameMode() == GameType.SURVIVAL || session.getGameMode() == GameType.CREATIVE;
             if (mayBuild && BlockRegistries.INTERACTIVE_MAY_BUILD.get().get(blockState)) {
                 return false;
             }
         }
 
-        session.useItem(Hand.MAIN_HAND, useTouchRotation);
+        session.useItem(InteractionHand.MAIN_HAND, useTouchRotation);
         return true;
     }
 

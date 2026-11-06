@@ -55,10 +55,10 @@ import org.geysermc.geyser.translator.collision.BlockCollision;
 import org.geysermc.geyser.translator.collision.SolidCollision;
 import org.geysermc.geyser.util.BlockUtils;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundMoveVehiclePacket;
+import org.geysermc.geyser.level.EffectType;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
 
 public class VehicleComponent<T extends Entity & ClientVehicle> {
     private static final ObjectDoublePair<Fluid> EMPTY_FLUID_PAIR = ObjectDoublePair.of(Fluid.EMPTY, 0.0);
@@ -86,11 +86,11 @@ public class VehicleComponent<T extends Entity & ClientVehicle> {
     public VehicleComponent(T vehicle, float stepHeight) {
         this.vehicle = vehicle;
         this.stepHeight = stepHeight;
-        this.moveSpeed = (float) AttributeType.Builtin.MOVEMENT_SPEED.getDef();
-        this.gravity = AttributeType.Builtin.GRAVITY.getDef();
-        this.waterMovementEfficiency = AttributeType.Builtin.WATER_MOVEMENT_EFFICIENCY.getDef();
-        this.movementEfficiency = AttributeType.Builtin.WATER_MOVEMENT_EFFICIENCY.getDef();
-        this.scale = AttributeType.Builtin.SCALE.getDef();
+        this.moveSpeed = (float) Attributes.MOVEMENT_SPEED.value().getDefaultValue();
+        this.gravity = Attributes.GRAVITY.value().getDefaultValue();
+        this.waterMovementEfficiency = Attributes.WATER_MOVEMENT_EFFICIENCY.value().getDefaultValue();
+        this.movementEfficiency = Attributes.WATER_MOVEMENT_EFFICIENCY.value().getDefaultValue();
+        this.scale = Attributes.SCALE.value().getDefaultValue();
 
         double width = vehicle.getBoundingBoxWidth();
         double height = vehicle.getBoundingBoxHeight();
@@ -130,7 +130,7 @@ public class VehicleComponent<T extends Entity & ClientVehicle> {
         boundingBox.translate(vec);
     }
 
-    public void setEffect(Effect effect, int effectAmplifier) {
+    public void setEffect(EffectType effect, int effectAmplifier) {
         switch (effect) {
             case LEVITATION -> effectLevitation = effectAmplifier + 1;
             case SLOW_FALLING -> effectSlowFalling = true;
@@ -138,7 +138,7 @@ public class VehicleComponent<T extends Entity & ClientVehicle> {
         }
     }
 
-    public void removeEffect(Effect effect) {
+    public void removeEffect(EffectType effect) {
         switch (effect) {
             case LEVITATION -> effectLevitation = 0;
             case SLOW_FALLING -> effectSlowFalling = false;
@@ -237,7 +237,7 @@ public class VehicleComponent<T extends Entity & ClientVehicle> {
         double lavaHeight = getFluidHeightAndApplyMovement(ctx, iter, Fluid.LAVA, vehicle.getSession().getDimensionType().ultrawarm() ? 0.007 : 0.007 / 3, min.getY());
 
         // Apply upward motion if the vehicle is a Strider, and it is submerged in lava
-        if (lavaHeight > 0 && vehicle.getJavaDefinition().is(EntityType.STRIDER)) {
+        if (lavaHeight > 0 && vehicle.getJavaDefinition().is(EntityTypes.STRIDER)) {
             Vector3i blockPos = ctx.centerPos().toInt();
             if (!CollisionManager.FLUID_COLLISION.isBelow(blockPos.getY(), boundingBox) || ctx.getBlock(blockPos.up()).is(Blocks.LAVA)) {
                 vehicle.setMotion(vehicle.getMotion().mul(0.5f).add(0, 0.05f, 0));
@@ -807,7 +807,7 @@ public class VehicleComponent<T extends Entity & ClientVehicle> {
     }
 
     protected void sendServerboundMoveVehiclePacket(Vector3d javaPos) {
-        ServerboundMoveVehiclePacket moveVehiclePacket = new ServerboundMoveVehiclePacket(javaPos, vehicle.getYaw(), vehicle.getPitch(), vehicle.isOnGround());
+        ServerboundMoveVehiclePacket moveVehiclePacket = new ServerboundMoveVehiclePacket(net.minecraft.core.PositionAndRotation.of(org.geysermc.geyser.util.MathUtils.toVec3(javaPos), vehicle.getYaw(), vehicle.getPitch()), vehicle.isOnGround());
         vehicle.getSession().sendDownstreamGamePacket(moveVehiclePacket);
     }
 

@@ -34,7 +34,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.WorldCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 
 @Translator(packet = ClientboundSetScorePacket.class)
 public class JavaSetScoreTranslator extends PacketTranslator<ClientboundSetScorePacket> {
@@ -52,16 +52,16 @@ public class JavaSetScoreTranslator extends PacketTranslator<ClientboundSetScore
         Scoreboard scoreboard = worldCache.getScoreboard();
         int pps = worldCache.increaseAndGetScoreboardPacketsPerSecond();
 
-        Objective objective = scoreboard.getObjective(packet.getObjective());
+        Objective objective = scoreboard.getObjective(packet.objectiveName());
         if (objective == null) {
             if (SHOW_SCOREBOARD_LOGS) {
                 logger.info(String.format(
                     "Tried to update score %s for %s without the existence of its requested objective %s",
-                    packet.getOwner(), session.javaUsername(), packet.getObjective()));
+                    packet.owner(), session.javaUsername(), packet.objectiveName()));
             }
             return;
         }
-        objective.setScore(packet.getOwner(), packet.getValue(), packet.getDisplay(), packet.getNumberFormat());
+        objective.setScore(packet.owner(), packet.score(), packet.display().map(value -> org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(value, session.vanillaRegistries())).orElse(null), packet.numberFormat().orElse(null));
 
         // ScoreboardUpdater will handle it for us if the packets per second
         // (for score and team packets) is higher than the first threshold

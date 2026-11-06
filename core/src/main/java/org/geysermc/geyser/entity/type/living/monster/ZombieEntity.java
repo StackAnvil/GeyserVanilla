@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class ZombieEntity extends MonsterEntity {
     private boolean convertingToDrowned = false;
@@ -36,16 +37,16 @@ public class ZombieEntity extends MonsterEntity {
         super(context);
     }
 
-    public void setZombieBaby(BooleanEntityMetadata entityMetadata) {
-        boolean isBaby = entityMetadata.getPrimitiveValue();
+    public void setZombieBaby(DataValue<Boolean> entityMetadata) {
+        boolean isBaby = entityMetadata.value();
         setScale(isBaby ? .55f : 1.0f);
         setFlag(EntityFlag.BABY, isBaby);
 
         updateMountOffset();
     }
 
-    public void setConvertingToDrowned(BooleanEntityMetadata entityMetadata) {
-        convertingToDrowned = entityMetadata.getPrimitiveValue();
+    public void setConvertingToDrowned(DataValue<Boolean> entityMetadata) {
+        convertingToDrowned = entityMetadata.value();
         setFlag(EntityFlag.SHAKING, isShaking());
     }
 

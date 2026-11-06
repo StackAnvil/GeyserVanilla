@@ -39,14 +39,14 @@ import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSystemChatPacket;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 
 @Translator(packet = ClientboundSystemChatPacket.class)
 public class JavaSystemChatTranslator extends PacketTranslator<ClientboundSystemChatPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSystemChatPacket packet) {
-        if (packet.getContent() instanceof TranslatableComponent component) {
+        if (MessageTranslator.fromVanilla(packet.content(), session.vanillaRegistries()) instanceof TranslatableComponent component) {
             if (component.key().equals("chat.disabled.missingProfileKey")) {
                 // We likely got this message as a response to a player trying to chat
                 // As there SHOULD be no false flags for this, print every time it shows up in chat.
@@ -87,13 +87,13 @@ public class JavaSystemChatTranslator extends PacketTranslator<ClientboundSystem
         textPacket.setPlatformChatId("");
         textPacket.setSourceName("");
         textPacket.setXuid(session.getAuthData().xuid());
-        textPacket.setType(packet.isOverlay() ? TextPacket.Type.JUKEBOX_POPUP : TextPacket.Type.SYSTEM);
+        textPacket.setType(packet.overlay() ? TextPacket.Type.JUKEBOX_POPUP : TextPacket.Type.SYSTEM);
 
         textPacket.setNeedsTranslation(false);
-        if (packet.isOverlay()) {
-            textPacket.setMessage(ChatColor.WHITE + MessageTranslator.convertMessage(packet.getContent(), session.locale()));
+        if (packet.overlay()) {
+            textPacket.setMessage(ChatColor.WHITE + MessageTranslator.convertMessage(packet.content(), session.locale()));
         } else {
-            textPacket.setMessage(MessageTranslator.convertMessage(packet.getContent(), session.locale()));
+            textPacket.setMessage(MessageTranslator.convertMessage(packet.content(), session.locale()));
         }
 
         if (session.isSentSpawnPacket()) {

@@ -41,10 +41,10 @@ import org.geysermc.geyser.translator.inventory.SmithingInventoryTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemStackSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SlotDisplay;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetSlotPacket;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -175,7 +175,7 @@ public class JavaContainerSetSlotTranslator extends PacketTranslator<Clientbound
             }
 
             GeyserShapedRecipe geyserRecipe = new GeyserShapedRecipe(ThreadLocalRandom.current().nextInt(), newRecipeId,
-                    width, height, javaIngredients, new ItemStackSlotDisplay(item));
+                    width, height, javaIngredients, new ItemStackSlotDisplay(net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(item)));
             session.getCraftingRecipes().put(newRecipeId, geyserRecipe);
 
             CraftingDataPacket craftPacket = new CraftingDataPacket();

@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.cloudburstmc.protocol.bedrock.packet.SetEntityDataPacket;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class TNTEntity extends Entity implements Tickable {
     private int currentTick;
@@ -38,8 +39,8 @@ public class TNTEntity extends Entity implements Tickable {
         super(context);
     }
 
-    public void setFuseLength(IntEntityMetadata entityMetadata) {
-        currentTick = entityMetadata.getPrimitiveValue();
+    public void setFuseLength(DataValue<Integer> entityMetadata) {
+        currentTick = entityMetadata.value();
         setFlag(EntityFlag.IGNITED, true);
         metadata.put(EntityDataTypes.FUSE_TIME, currentTick);
     }

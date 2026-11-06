@@ -32,7 +32,7 @@ import org.geysermc.geyser.entity.type.player.SessionPlayerEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundSetExperiencePacket;
+import net.minecraft.network.protocol.game.ClientboundSetExperiencePacket;
 
 import java.util.Arrays;
 
@@ -43,9 +43,9 @@ public class JavaSetExperienceTranslator extends PacketTranslator<ClientboundSet
     public void translate(GeyserSession session, ClientboundSetExperiencePacket packet) {
         SessionPlayerEntity entity = session.getPlayerEntity();
 
-        AttributeData experience = GeyserAttributeType.EXPERIENCE.getAttribute(packet.getExperience());
+        AttributeData experience = GeyserAttributeType.EXPERIENCE.getAttribute(packet.getExperienceProgress());
         entity.getAttributes().put(GeyserAttributeType.EXPERIENCE, experience);
-        AttributeData experienceLevel = GeyserAttributeType.EXPERIENCE_LEVEL.getAttribute(packet.getLevel());
+        AttributeData experienceLevel = GeyserAttributeType.EXPERIENCE_LEVEL.getAttribute(packet.getExperienceLevel());
         entity.getAttributes().put(GeyserAttributeType.EXPERIENCE_LEVEL, experienceLevel);
 
         UpdateAttributesPacket attributesPacket = new UpdateAttributesPacket();

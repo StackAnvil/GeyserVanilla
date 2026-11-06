@@ -30,9 +30,9 @@ import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.Equippable;
 
 /**
  * Bedrock has no glider component; its client only glides with a vanilla elytra in the chest slot.
@@ -48,11 +48,11 @@ public final class GliderUtils {
      * slot, so gliders configured for any other slot are left as they are.
      */
     public static boolean isGlider(GeyserItemStack stack) {
-        if (stack.isEmpty() || stack.getComponent(DataComponentTypes.GLIDER) == null) {
+        if (stack.isEmpty() || stack.getComponent(DataComponents.GLIDER) == null) {
             return false;
         }
-        Equippable equippable = stack.getComponent(DataComponentTypes.EQUIPPABLE);
-        return equippable != null && equippable.slot() == EquipmentSlot.CHESTPLATE;
+        Equippable equippable = stack.getComponent(DataComponents.EQUIPPABLE);
+        return equippable != null && equippable.slot() == EquipmentSlot.CHEST;
     }
 
     /**
@@ -69,7 +69,7 @@ public final class GliderUtils {
 
         ItemData.Builder builder = item.toBuilder().definition(elytra);
         // Bedrock stops gliding when the elytra is about to break, so keep the durability ratio
-        Integer maxDamage = stack.getComponent(DataComponentTypes.MAX_DAMAGE);
+        Integer maxDamage = stack.getComponent(DataComponents.MAX_DAMAGE);
         NbtMap tag = item.getTag();
         if (maxDamage != null && maxDamage > 0 && maxDamage != ELYTRA_DURABILITY && tag != null && tag.containsKey("Damage")) {
             int damage = Math.round(tag.getInt("Damage") * (float) ELYTRA_DURABILITY / maxDamage);

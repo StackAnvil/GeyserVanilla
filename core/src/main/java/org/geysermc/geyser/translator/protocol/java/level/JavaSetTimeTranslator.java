@@ -31,20 +31,20 @@ import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistry;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.level.ClockNetworkState;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSetTimePacket;
+import net.minecraft.world.clock.ClockNetworkState;
+import net.minecraft.network.protocol.game.ClientboundSetTimePacket;
 
 @Translator(packet = ClientboundSetTimePacket.class)
 public class JavaSetTimeTranslator extends PacketTranslator<ClientboundSetTimePacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSetTimePacket packet) {
-        session.setGameTicks(packet.getGameTime());
+        session.setGameTicks(packet.gameTime());
 
         // We only translate the dimension's default clock right now (or, if only one clock exists, we translate that),
         // which will work for vanilla, but probably less so for custom dimensions
         // Nevertheless, this is the best effort we can do right now, and better than just translating the overworld clock
-        ClockNetworkState defaultClockState = packet.getClockUpdates().get(defaultClockId(session));
+        ClockNetworkState defaultClockState = defaultClock(session).map(packet.clockUpdates()::get).orElse(null);
         if (defaultClockState != null) {
             session.setTimeTicks(defaultClockState.totalTicks(), defaultClockState.partialTick());
             // We need to send a gamerule if this changed
@@ -52,14 +52,12 @@ public class JavaSetTimeTranslator extends PacketTranslator<ClientboundSetTimePa
         }
     }
 
-    private static int defaultClockId(GeyserSession session) {
-        JavaRegistry<?> clockRegistry = session.javaRegistries().registry(JavaRegistries.WORLD_CLOCK);
+    private static java.util.Optional<net.minecraft.core.Holder.Reference<net.minecraft.world.clock.WorldClock>> defaultClock(GeyserSession session) {
+        var registry = session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.WORLD_CLOCK);
         Key defaultClock = session.getDimensionType().defaultClock();
         if (defaultClock != null) {
-            return clockRegistry.getIdOrThrow(defaultClock);
-        } else if (clockRegistry.size() == 1) {
-            return 0;
+            return registry.get(net.minecraft.resources.Identifier.parse(defaultClock.asString()));
         }
-        return -1;
+        return registry.size() == 1 ? registry.listElements().findFirst() : java.util.Optional.empty();
     }
 }

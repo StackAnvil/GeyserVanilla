@@ -55,7 +55,7 @@ import org.geysermc.geyser.translator.collision.BlockCollision;
 import org.geysermc.geyser.util.BlockEntityUtils;
 import org.geysermc.geyser.util.BlockUtils;
 import org.geysermc.geyser.util.ChunkUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValueType;
+import org.geysermc.geyser.level.physics.PistonAction;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -70,7 +70,7 @@ public class PistonBlockEntity {
     private final boolean sticky;
 
     @Getter
-    private PistonValueType action;
+    private PistonAction action;
 
     /**
      * A map of attached block positions to Java ids.
@@ -121,11 +121,11 @@ public class PistonBlockEntity {
 
         if (extended) {
             // Fully extended
-            this.action = PistonValueType.PUSHING;
+            this.action = PistonAction.EXTEND;
             this.progress = 1.0f;
         } else {
             // Fully retracted
-            this.action = PistonValueType.PULLING;
+            this.action = PistonAction.RETRACT;
             this.progress = 0.0f;
         }
         this.lastProgress = this.progress;
@@ -134,9 +134,9 @@ public class PistonBlockEntity {
     /**
      * Set whether the piston is pulling or pushing blocks
      *
-     * @param action PULLING or PUSHING or CANCELED_MID_PUSH
+     * @param action RETRACT or PUSHING or CANCELED_MID_PUSH
      */
-    public void setAction(PistonValueType action) {
+    public void setAction(PistonAction action) {
         if (this.action == action) {
             return;
         }
@@ -144,7 +144,7 @@ public class PistonBlockEntity {
         removeMovingBlocks();
 
         this.action = action;
-        if (action == PistonValueType.PUSHING || (action == PistonValueType.PULLING && sticky)) {
+        if (action == PistonAction.EXTEND || (action == PistonAction.RETRACT && sticky)) {
             // Blocks only move when pushing or pulling with sticky pistons
             findAffectedBlocks();
             removeBlocks();
@@ -156,22 +156,22 @@ public class PistonBlockEntity {
 
         // Set progress and lastProgress to allow 0 tick pistons to animate
         switch (action) {
-            case PUSHING -> progress = 0;
-            case PULLING, CANCELLED_MID_PUSH -> progress = 1;
+            case EXTEND -> progress = 0;
+            case RETRACT, DROP -> progress = 1;
         }
         lastProgress = progress;
 
         BlockEntityUtils.updateBlockEntity(session, buildPistonTag(), position);
     }
 
-    public void setAction(PistonValueType action, Map<Vector3i, BlockState> attachedBlocks) {
+    public void setAction(PistonAction action, Map<Vector3i, BlockState> attachedBlocks) {
         // Don't check if this.action == action, since on some Paper versions BlockPistonRetractEvent is called multiple times
         // with the first 1-2 events being empty.
         placeFinalBlocks();
         removeMovingBlocks();
 
         this.action = action;
-        if (action == PistonValueType.PUSHING || (action == PistonValueType.PULLING && sticky)) {
+        if (action == PistonAction.EXTEND || (action == PistonAction.RETRACT && sticky)) {
             // Blocks only move when pushing or pulling with sticky pistons
             if (attachedBlocks.size() <= 12) {
                 this.attachedBlocks.putAll(attachedBlocks);
@@ -186,8 +186,8 @@ public class PistonBlockEntity {
 
         // Set progress and lastProgress to allow 0 tick pistons to animate
         switch (action) {
-            case PUSHING -> progress = 0;
-            case PULLING, CANCELLED_MID_PUSH -> progress = 1;
+            case EXTEND -> progress = 0;
+            case RETRACT, DROP -> progress = 1;
         }
         lastProgress = progress;
 
@@ -246,10 +246,10 @@ public class PistonBlockEntity {
         Vector3i directionOffset = orientation.getUnitVector();
         Vector3i movement = getMovement();
         blocksChecked.add(position); // Don't check the piston itself
-        if (action == PistonValueType.PULLING) {
+        if (action == PistonAction.RETRACT) {
             blocksChecked.add(getPistonHeadPos()); // Don't check the piston head
             blocksToCheck.add(position.add(directionOffset.mul(2)));
-        } else if (action == PistonValueType.PUSHING) {
+        } else if (action == PistonAction.EXTEND) {
             removePistonHead(); // Remove lingering piston heads
             blocksToCheck.add(position.add(directionOffset));
         }
@@ -265,7 +265,7 @@ public class PistonBlockEntity {
             if (state.block() == Blocks.AIR) {
                 continue;
             }
-            if (BlockStateValues.canPistonMoveBlock(state, action == PistonValueType.PUSHING)) {
+            if (BlockStateValues.canPistonMoveBlock(state, action == PistonAction.EXTEND)) {
                 attachedBlocks.put(blockPos, state);
                 if (BlockStateValues.isBlockSticky(state)) {
                     // For honey blocks and slime blocks check the blocks adjacent to it
@@ -281,7 +281,7 @@ public class PistonBlockEntity {
                             continue;
                         }
                         // Ignore the piston head
-                        if (action == PistonValueType.PULLING && position.add(directionOffset).equals(adjacentPos)) {
+                        if (action == PistonAction.RETRACT && position.add(directionOffset).equals(adjacentPos)) {
                             continue;
                         }
                         BlockState adjacentBlockState = session.getGeyser().getWorldManager().blockAt(session, adjacentPos);
@@ -318,10 +318,10 @@ public class PistonBlockEntity {
      * @return The movement of the blocks
      */
     private Vector3i getMovement() {
-        if (action == PistonValueType.PULLING) {
+        if (action == PistonAction.RETRACT) {
             return orientation.reversed().getUnitVector();
         }
-        return orientation.getUnitVector(); // PUSHING and CANCELLED_MID_PUSH
+        return orientation.getUnitVector(); // PUSHING and DROP
     }
 
     /**
@@ -331,7 +331,7 @@ public class PistonBlockEntity {
         for (Vector3i blockPos : attachedBlocks.keySet()) {
             ChunkUtils.updateBlock(session, Block.JAVA_AIR_ID, blockPos);
         }
-        if (action != PistonValueType.PUSHING) {
+        if (action != PistonAction.EXTEND) {
             removePistonHead();
         }
     }
@@ -344,7 +344,7 @@ public class PistonBlockEntity {
     public void pushPlayer() {
         Vector3i direction = orientation.getUnitVector();
         double blockMovement = lastProgress;
-        if (action == PistonValueType.PULLING || action == PistonValueType.CANCELLED_MID_PUSH) {
+        if (action == PistonAction.RETRACT || action == PistonAction.DROP) {
             blockMovement = 1f - lastProgress;
         }
 
@@ -423,7 +423,7 @@ public class PistonBlockEntity {
 
         Direction movementDirection = orientation;
         // Invert direction when pulling
-        if (action == PistonValueType.PULLING) {
+        if (action == PistonAction.RETRACT) {
             movementDirection = movementDirection.reversed();
         }
 
@@ -513,7 +513,7 @@ public class PistonBlockEntity {
             if (blockCollision != null) {
                 Vector3d extend = movement.mul(Math.min(1 - blockMovement, 0.5));
                 Direction movementDirection = orientation;
-                if (action == PistonValueType.PULLING) {
+                if (action == PistonAction.RETRACT) {
                     movementDirection = orientation.reversed();
                 }
 
@@ -548,7 +548,7 @@ public class PistonBlockEntity {
         BlockCollision blockCollision = getCollision(blockPos);
         if (blockCollision != null) {
             double movementProgress = progress;
-            if (action == PistonValueType.PULLING || action == PistonValueType.CANCELLED_MID_PUSH) {
+            if (action == PistonAction.RETRACT || action == PistonAction.DROP) {
                 movementProgress = 1f - progress;
             }
             Vector3i movementVec = getMovement();
@@ -568,7 +568,7 @@ public class PistonBlockEntity {
         BlockCollision blockCollision = getCollision(blockPos);
         if (blockCollision != null) {
             double movementProgress = progress;
-            if (action == PistonValueType.PULLING || action == PistonValueType.CANCELLED_MID_PUSH) {
+            if (action == PistonAction.RETRACT || action == PistonAction.DROP) {
                 movementProgress = 1f - progress;
             }
             Vector3i movementVec = getMovement();
@@ -655,7 +655,7 @@ public class PistonBlockEntity {
                 ChunkUtils.updateBlock(session, session.getGeyser().getWorldManager().blockAt(session, blockPos), blockPos);
             }
         });
-        if (action == PistonValueType.PUSHING) {
+        if (action == PistonAction.EXTEND) {
             Vector3i pistonHeadPos = getPistonHeadPos().add(movement);
             if (!SOLID_BOUNDING_BOX.checkIntersection(pistonHeadPos.toDouble(), playerBoundingBox)) {
                 ChunkUtils.updateBlock(session, Blocks.PISTON_HEAD.defaultBlockState()
@@ -697,8 +697,8 @@ public class PistonBlockEntity {
      */
     private byte getState() {
         return switch (action) {
-            case PUSHING -> (byte) (isDone() ? 2 : 1);
-            case PULLING -> (byte) (isDone() ? 0 : 3);
+            case EXTEND -> (byte) (isDone() ? 2 : 1);
+            case RETRACT -> (byte) (isDone() ? 0 : 3);
             default -> {
                 if (progress == 1.0f) {
                     yield 2;
@@ -712,7 +712,7 @@ public class PistonBlockEntity {
      * @return The starting position of the piston head
      */
     private Vector3i getPistonHeadPos() {
-        if (action == PistonValueType.PUSHING) {
+        if (action == PistonAction.EXTEND) {
             return position;
         }
         return position.add(orientation.getUnitVector());
@@ -723,14 +723,14 @@ public class PistonBlockEntity {
      */
     private void updateProgress() {
         switch (action) {
-            case PUSHING -> {
+            case EXTEND -> {
                 lastProgress = progress;
                 progress += 0.5f;
                 if (progress >= 1.0f) {
                     progress = 1.0f;
                 }
             }
-            case CANCELLED_MID_PUSH, PULLING -> {
+            case DROP, RETRACT -> {
                 lastProgress = progress;
                 progress -= 0.5f;
                 if (progress <= 0.0f) {
@@ -745,8 +745,8 @@ public class PistonBlockEntity {
      */
     public boolean isDone() {
         return switch (action) {
-            case PUSHING -> progress == 1.0f && lastProgress == 1.0f;
-            case PULLING, CANCELLED_MID_PUSH -> progress == 0.0f && lastProgress == 0.0f;
+            case EXTEND -> progress == 1.0f && lastProgress == 1.0f;
+            case RETRACT, DROP -> progress == 0.0f && lastProgress == 0.0f;
         };
     }
 
@@ -802,7 +802,7 @@ public class PistonBlockEntity {
         // Get Bedrock block state data
         NbtMap movingBlock = session.getBlockMappings().getBedrockBlock(state).getState();
         NbtMapBuilder builder = BlockEntityTranslator.getConstantBedrockTag("MovingBlock", position)
-                .putBoolean("expanding", action == PistonValueType.PUSHING)
+                .putBoolean("expanding", action == PistonAction.EXTEND)
                 .putCompound("movingBlock", movingBlock)
                 .putBoolean("isMovable", true)
                 .putInt("pistonPosX", pistonPosition.getX())

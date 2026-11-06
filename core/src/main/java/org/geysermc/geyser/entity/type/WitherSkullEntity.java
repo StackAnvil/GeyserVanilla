@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.registry.Registries;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class WitherSkullEntity extends FireballEntity {
     private boolean isCharged;
@@ -40,8 +41,8 @@ public class WitherSkullEntity extends FireballEntity {
         this.futureTicks = 1;
     }
 
-    public void setDangerous(BooleanEntityMetadata entityMetadata) {
-        boolean newDangerous = entityMetadata.getPrimitiveValue();
+    public void setDangerous(DataValue<Boolean> entityMetadata) {
+        boolean newDangerous = entityMetadata.value();
         if (newDangerous != isCharged) {
             isCharged = newDangerous;
             // Is an entirely new entity in Bedrock but just a metadata type in Java

@@ -34,7 +34,7 @@ import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.LoginEncryptionUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundPlayerLoadedPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket;
 
 @Translator(packet = SetLocalPlayerAsInitializedPacket.class)
 public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslator<SetLocalPlayerAsInitializedPacket> {
@@ -73,7 +73,7 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
                     session.getFormCache().resendAllForms();
 
                     GeyserImpl.getInstance().eventBus().fire(new SessionJoinEvent(session));
-                    session.sendDownstreamGamePacket(ServerboundPlayerLoadedPacket.INSTANCE);
+                    session.sendDownstreamGamePacket(new ServerboundPlayerLoadedPacket());
                 }
             }
         }

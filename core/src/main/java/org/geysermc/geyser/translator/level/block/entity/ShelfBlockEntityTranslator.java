@@ -32,12 +32,12 @@ import org.geysermc.geyser.item.parser.ItemStackParser;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.Arrays;
 import java.util.List;
 
-@BlockEntity(type = BlockEntityType.SHELF)
+@BlockEntity(type = "minecraft:shelf")
 public class ShelfBlockEntityTranslator extends BlockEntityTranslator {
 
     private static final int SLOT_COUNT = 3;

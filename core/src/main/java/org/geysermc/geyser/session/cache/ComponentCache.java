@@ -25,41 +25,57 @@
 
 package org.geysermc.geyser.session.cache;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import org.geysermc.geyser.item.components.resolvable.ResolvableComponent;
 import org.geysermc.geyser.item.components.resolvable.ResolvableComponentGetter;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
-import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-
-import java.util.List;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import org.geysermc.geyser.vanilla.protocol.VanillaCustomItems;
 
 public class ComponentCache implements ResolvableComponentGetter {
-    private final JavaRegistryProvider registries;
-    private final Reference2ObjectMap<Item, DataComponents> resolvedComponents = new Reference2ObjectOpenHashMap<>();
+    private final org.geysermc.geyser.session.GeyserSession session;
+    private final Reference2ObjectMap<Item, GeyserDataComponents> resolvedComponents = new Reference2ObjectOpenHashMap<>();
 
-    public ComponentCache(JavaRegistryProvider registries) {
-        this.registries = registries;
+    public ComponentCache(org.geysermc.geyser.session.GeyserSession session) {
+        this.session = session;
     }
 
     @Override
-    public DataComponents getResolvedComponents(Item item) {
+    public GeyserDataComponents getResolvedComponents(Item item) {
         return resolvedComponents.get(item);
+    }
+
+    @Override
+    public net.minecraft.core.RegistryAccess vanillaRegistries() {
+        return session.vanillaRegistries();
     }
 
     public void resolveComponents() {
         resolvedComponents.clear();
         for (Item item : BuiltInJavaRegistries.ITEM) {
-            List<ResolvableComponent<?>> toResolve = item.resolvableComponents();
-            if (!toResolve.isEmpty()) {
-                DataComponents resolved = new DataComponents(new Object2ObjectOpenHashMap<>());
-                for (ResolvableComponent<?> component : toResolve) {
-                    component.resolve(registries, resolved);
+            var nativeItem = vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.ITEM)
+                .get(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(item.javaKey()));
+            GeyserDataComponents resolved = nativeItem.map(holder -> GeyserDataComponents.from(holder.components()))
+                .orElse(null);
+            boolean custom = nativeItem.filter(holder -> VanillaCustomItems.isCustom(holder.value())).isPresent();
+            if (custom) {
+                resolved = item.gatherComponents(ResolvableComponentGetter.EMPTY, null).copy();
+            }
+            if (!item.resolvableComponents().isEmpty()) {
+                if (resolved == null) {
+                    resolved = item.gatherComponents(ResolvableComponentGetter.EMPTY, null).copy();
                 }
-                resolvedComponents.put(item, resolved);
+                for (ResolvableComponent<?> component : item.resolvableComponents()) {
+                    component.resolve(vanillaRegistries(), resolved);
+                }
+            }
+            if (resolved != null) {
+                if (custom) {
+                    nativeItem.orElseThrow().bindComponents(resolved.toVanilla().split().added());
+                }
+                resolvedComponents.put(item, resolved.immutableCopy());
             }
         }
     }

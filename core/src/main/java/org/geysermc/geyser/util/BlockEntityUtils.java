@@ -32,7 +32,8 @@ import org.cloudburstmc.protocol.bedrock.packet.BlockEntityDataPacket;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.level.block.entity.BlockEntityTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityTypes;
 
 import java.util.Locale;
 import java.util.Map;
@@ -41,24 +42,24 @@ public class BlockEntityUtils {
     /**
      * Contains a list of irregular block entity name translations that can't be fit into the regex
      */
-    public static final Map<BlockEntityType, String> BLOCK_ENTITY_TRANSLATIONS = Map.of(
+    public static final Map<BlockEntityType<?>, String> BLOCK_ENTITY_TRANSLATIONS = Map.of(
             // Bedrock/Java differences
-            BlockEntityType.ENCHANTING_TABLE, "EnchantTable",
-            BlockEntityType.JIGSAW, "JigsawBlock",
-            BlockEntityType.PISTON, "PistonArm",
-            BlockEntityType.POTENT_SULFUR, "PotentSulfurBlock",
-            BlockEntityType.TRAPPED_CHEST, "Chest"
+            BlockEntityTypes.ENCHANTING_TABLE, "EnchantTable",
+            BlockEntityTypes.JIGSAW, "JigsawBlock",
+            BlockEntityTypes.PISTON, "PistonArm",
+            BlockEntityTypes.POTENT_SULFUR, "PotentSulfurBlock",
+            BlockEntityTypes.TRAPPED_CHEST, "Chest"
             // There are some legacy IDs sent but as far as I can tell they are not needed for things to work properly
     );
 
-    public static String getBedrockBlockEntityId(BlockEntityType type) {
+    public static String getBedrockBlockEntityId(BlockEntityType<?> type) {
         // These are the only exceptions when it comes to block entity ids
         String value = BLOCK_ENTITY_TRANSLATIONS.get(type);
         if (value != null) {
             return value;
         }
 
-        String id = type.name();
+        String id = java.util.Objects.requireNonNull(net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(type)).getPath();
         // Split at every space or capital letter - for the latter, some legacy Java block entity tags are the correct format already
         String[] words = id.split("_");
         for (int i = 0; i < words.length; i++) {
@@ -68,7 +69,7 @@ public class BlockEntityUtils {
         return String.join("", words);
     }
 
-    public static BlockEntityTranslator getBlockEntityTranslator(BlockEntityType type) {
+    public static BlockEntityTranslator getBlockEntityTranslator(BlockEntityType<?> type) {
          return Registries.BLOCK_ENTITIES.get(type);
     }
 

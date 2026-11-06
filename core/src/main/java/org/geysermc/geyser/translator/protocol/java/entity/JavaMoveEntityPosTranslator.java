@@ -30,27 +30,19 @@ import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosPacket;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 
-@Translator(packet = ClientboundMoveEntityPosPacket.class)
-public class JavaMoveEntityPosTranslator extends PacketTranslator<ClientboundMoveEntityPosPacket> {
+@Translator(packet = ClientboundMoveEntityPacket.Pos.class)
+public class JavaMoveEntityPosTranslator extends PacketTranslator<ClientboundMoveEntityPacket.Pos> {
 
     @Override
-    public void translate(GeyserSession session, ClientboundMoveEntityPosPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+    public void translate(GeyserSession session, ClientboundMoveEntityPacket.Pos packet) {
+        Entity entity = session.getEntityCache().getEntityByJavaId(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.entityId(packet));
         if (entity == null) return;
 
-        // TODO lerp through the steps
-        Vector3d move;
-        if (packet.getSteps() == null) {
-            move = Vector3d.from(packet.getMoveX(), packet.getMoveY(), packet.getMoveZ());
-        } else {
-            // Each step is relative to the one before it
-            move = Vector3d.ZERO;
-            for (ClientboundMoveEntityPosPacket.DeltaStep step : packet.getSteps()) {
-                move = move.add(step.moveX(), step.moveY(), step.moveZ());
-            }
-        }
+        // Preserve the final delta until Bedrock can represent the individual movement steps.
+        Vector3d move = org.geysermc.geyser.util.MathUtils.toVector3d(
+            org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.movementDelta(packet));
 
         entity.moveRelative(move.getX(), move.getY(), move.getZ(), entity.getYaw(), entity.getPitch(), entity.getHeadYaw(), packet.isOnGround());
     }

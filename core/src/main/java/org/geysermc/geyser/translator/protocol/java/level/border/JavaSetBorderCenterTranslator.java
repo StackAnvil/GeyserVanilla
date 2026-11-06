@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.level.border;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.border.ClientboundSetBorderCenterPacket;
+import net.minecraft.network.protocol.game.ClientboundSetBorderCenterPacket;
 import org.cloudburstmc.math.vector.Vector2d;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.WorldBorder;

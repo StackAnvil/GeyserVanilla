@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import org.cloudburstmc.math.vector.Vector2f;
 import org.cloudburstmc.math.vector.Vector3f;
@@ -37,9 +39,8 @@ import org.geysermc.geyser.entity.vehicle.ClientVehicle;
 import org.geysermc.geyser.entity.vehicle.VehicleComponent;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundPaddleBoatPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.network.protocol.game.ServerboundPaddleBoatPacket;
 
 public class BoatEntity extends Entity implements Tickable, Leashable, ClientVehicle {
 
@@ -127,16 +128,16 @@ public class BoatEntity extends Entity implements Tickable, Leashable, ClientVeh
         moveRelativeRaw(0, 0, 0, yaw + 90, 0, 0, isOnGround);
     }
 
-    public void setPaddlingLeft(BooleanEntityMetadata entityMetadata) {
-        isPaddlingLeft = entityMetadata.getPrimitiveValue();
+    public void setPaddlingLeft(DataValue<Boolean> entityMetadata) {
+        isPaddlingLeft = entityMetadata.value();
         if (!isPaddlingLeft) {
             paddleTimeLeft = 0.0f;
             metadata.put(EntityDataTypes.ROW_TIME_LEFT, 0.0f);
         }
     }
 
-    public void setPaddlingRight(BooleanEntityMetadata entityMetadata) {
-        isPaddlingRight = entityMetadata.getPrimitiveValue();
+    public void setPaddlingRight(DataValue<Boolean> entityMetadata) {
+        isPaddlingRight = entityMetadata.value();
         if (!isPaddlingRight) {
             paddleTimeRight = 0.0f;
             metadata.put(EntityDataTypes.ROW_TIME_RIGHT, 0.0f);
@@ -150,7 +151,7 @@ public class BoatEntity extends Entity implements Tickable, Leashable, ClientVeh
     }
 
     @Override
-    protected InteractiveTag testInteraction(Hand hand) {
+    protected InteractiveTag testInteraction(InteractionHand hand) {
         InteractiveTag tag = super.testInteraction(hand);
         if (tag != InteractiveTag.NONE) {
             return tag;
@@ -165,7 +166,7 @@ public class BoatEntity extends Entity implements Tickable, Leashable, ClientVeh
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         InteractionResult result = super.interact(hand);
         if (result != InteractionResult.PASS) {
             return result;

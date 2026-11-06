@@ -30,8 +30,8 @@ import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.api.waypoint.CustomWaypointStyle;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.AzimuthWaypointData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.WaypointData;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints.Location;
 
 import java.awt.Color;
 import java.util.Optional;
@@ -51,8 +51,8 @@ public class AzimuthWaypoint extends GeyserWaypoint implements TickingWaypoint {
     }
 
     @Override
-    public void setData(WaypointData data) {
-        if (data instanceof AzimuthWaypointData(float azimuthAngle)) {
+    public void setData(Location data) {
+        if (data instanceof VanillaWaypoints.Azimuth(float azimuthAngle)) {
             angle = azimuthAngle;
             updatePosition();
         } else {

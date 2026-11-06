@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
@@ -36,8 +38,6 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.LongEntityMetadata;
 
 public class BeeEntity extends AnimalEntity {
 
@@ -50,8 +50,8 @@ public class BeeEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setBeeFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setBeeFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         // Bee is performing sting attack; trigger animation
         if ((xd & 0x02) == 0x02) {
             EntityEventPacket packet = new EntityEventPacket();
@@ -67,9 +67,9 @@ public class BeeEntity extends AnimalEntity {
         updateBedrockEntityProperties();
     }
 
-    public void setAngerTime(LongEntityMetadata entityMetadata) {
+    public void setAngerTime(DataValue<Long> entityMetadata) {
         // Converting "anger time" to a boolean
-        long time = entityMetadata.getPrimitiveValue();
+        long time = entityMetadata.value();
         setFlag(EntityFlag.ANGRY, time > 0 && time - session.getGameTicks() > 0);
     }
 

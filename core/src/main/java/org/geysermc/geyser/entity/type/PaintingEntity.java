@@ -25,15 +25,16 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.packet.AddPaintingPacket;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.level.PaintingType;
 import org.geysermc.geyser.registry.java.JavaRegistries;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.PaintingVariant;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.world.entity.decoration.painting.PaintingVariant;
+import net.minecraft.core.Direction;
 
 import java.util.Optional;
 
@@ -58,11 +59,9 @@ public class PaintingEntity extends HangingEntity {
         updatePainting();
     }
 
-    public void setPaintingType(ObjectEntityMetadata<Holder<PaintingVariant>> entityMetadata) {
-        if (!entityMetadata.getValue().isId()) {
-            return;
-        }
-        paintingId = entityMetadata.getValue().id();
+    public void setPaintingType(DataValue<Holder<PaintingVariant>> entityMetadata) {
+        paintingId = session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.PAINTING_VARIANT)
+            .getId(entityMetadata.value().value());
         updatePainting();
     }
 

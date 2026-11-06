@@ -39,7 +39,7 @@ import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.registry.type.SoundMapping;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.sound.Sound;
+import net.minecraft.core.Holder;
 
 import java.util.Locale;
 
@@ -102,8 +102,8 @@ public final class SoundUtils {
      * @param position the position
      * @param pitch the pitch
      */
-    public static void playSound(GeyserSession session, Sound javaSound, Vector3f position, float volume, float pitch) {
-        String soundIdentifier = removeMinecraftNamespace(javaSound.getName());
+    public static void playSound(GeyserSession session, Holder<net.minecraft.sounds.SoundEvent> javaSound, Vector3f position, float volume, float pitch) {
+        String soundIdentifier = removeMinecraftNamespace(javaSound.value().location().toString());
 
         SoundMapping soundMapping = Registries.SOUNDS.get(soundIdentifier);
         if (soundMapping == null) {

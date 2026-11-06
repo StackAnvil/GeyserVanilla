@@ -32,6 +32,13 @@ import org.geysermc.geyser.impl.IdentifierImpl;
 import org.intellij.lang.annotations.Subst;
 
 public final class MinecraftKey {
+    public static net.minecraft.resources.Identifier keyToVanilla(Key key) {
+        return net.minecraft.resources.Identifier.fromNamespaceAndPath(key.namespace(), key.value());
+    }
+
+    public static Key vanillaToKey(net.minecraft.resources.Identifier identifier) {
+        return key(identifier.getNamespace(), identifier.getPath());
+    }
 
     /**
      * To prevent constant warnings from invalid regex.

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network.server;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacketMatch;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
@@ -47,17 +49,14 @@ import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObj
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.Test;
 
 public class CubecraftScoreboardTest {
@@ -70,24 +69,18 @@ public class CubecraftScoreboardTest {
             var setScoreTranslator = new JavaSetScoreTranslator();
 
             // unused
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("SB_NoName", Component.text("SB_NoName"), Component.empty(), Component.empty(), true, true, NameTagVisibility.NEVER, CollisionRule.NEVER, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("SB_NoName", Component.text("SB_NoName"), Component.empty(), Component.empty(), true, true, Visibility.NEVER, CollisionRule.NEVER, null, new String[0]));
             assertNoNextPacket(context);
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "sidebar",
-                    ObjectiveAction.ADD,
-                    Component.text("sidebar"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("sidebar", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("sidebar"), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "sidebar")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "sidebar")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -105,77 +98,77 @@ public class CubecraftScoreboardTest {
             // For which you could just use a single team.
 
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, false, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.NEVER, TeamColor.DARK_GRAY));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "A_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, false, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.ALWAYS, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2i|1", Component.text("2i|1"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.DARK_GRAY));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "A_Player" }));
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, false, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.NEVER, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", TeamAction.ADD_PLAYER, new String[] { "B_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, false, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1y|11", Component.text("1y|11"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("1y|11", new String[] { "B_Player" }));
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "C_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "D_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1y|11", TeamAction.ADD_PLAYER, new String[] { "E_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "F_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "G_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "C_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "D_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("1y|11", new String[] { "E_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "F_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "G_Player" }));
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, false, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.ALWAYS, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.NEVER, TeamColor.BLUE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", TeamAction.ADD_PLAYER, new String[] { "H_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "I_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, false, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.ALWAYS, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("2e|3", Component.text("2e|3"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.BLUE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2e|3", new String[] { "H_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "I_Player" }));
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, false, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.NEVER, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("22|9", TeamAction.ADD_PLAYER, new String[] { "J_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "K_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, false, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("22|9", Component.text("22|9"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("22|9", new String[] { "J_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "K_Player" }));
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, false, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.ALWAYS, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.NEVER, TeamColor.AQUA));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("26|7", TeamAction.ADD_PLAYER, new String[] { "L_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2e|3", TeamAction.ADD_PLAYER, new String[] { "M_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "N_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, false, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.ALWAYS, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("26|7", Component.text("26|7"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.AQUA));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("26|7", new String[] { "L_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2e|3", new String[] { "M_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "N_Player" }));
 
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, true, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, false, NameTagVisibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, false, NameTagVisibility.NEVER, CollisionRule.NEVER, TeamColor.LIGHT_PURPLE));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("1u|13", TeamAction.ADD_PLAYER, new String[] { "O_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "P_Player" }));
-            context.translate(setTeamTranslator, new ClientboundSetPlayerTeamPacket("2i|1", TeamAction.ADD_PLAYER, new String[] { "Q_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.createTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, true, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, false, Visibility.ALWAYS, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.ALWAYS, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.updateTeam("1u|13", Component.text("1u|13"), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.LIGHT_PURPLE));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("1u|13", new String[] { "O_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "P_Player" }));
+            context.translate(setTeamTranslator, VanillaScoreboardPackets.addPlayers("2i|1", new String[] { "Q_Player" }));
 
             assertNoNextPacket(context);
 
@@ -187,14 +180,9 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "sidebar",
-                    ObjectiveAction.UPDATE,
-                    Component.empty()
+                VanillaScoreboardPackets.objective("sidebar", ClientboundSetObjectivePacket.METHOD_CHANGE, Component.empty()
                         .append(Component.text(
-                            "CubeCraft", NamedTextColor.WHITE, TextDecoration.BOLD)),
-                    ScoreType.INTEGER,
-                    null));
+                            "CubeCraft", NamedTextColor.WHITE, TextDecoration.BOLD)), RenderType.INTEGER, null));
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
                 packet.setObjectiveId("0");
@@ -212,35 +200,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-0",
-                    Component.text("SB_l-0"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-0", Component.text("SB_l-0"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-0", TeamAction.ADD_PLAYER, new String[] {"§0§0"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-0", new String[] {"§0§0"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-0",
-                    Component.text("SB_l-0"),
-                    Component.empty().append(Component.text("", NamedTextColor.BLACK)),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-0", Component.text("SB_l-0"), Component.empty().append(Component.text("", NamedTextColor.BLACK)), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§0", "sidebar", 10));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§0", "sidebar", 10));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -250,38 +219,19 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-1",
-                    Component.text("SB_l-1"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-1", Component.text("SB_l-1"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-1", TeamAction.ADD_PLAYER, new String[] {"§0§1"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-1", new String[] {"§0§1"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-1",
-                    Component.text("SB_l-1"),
-                    Component.empty()
+                VanillaScoreboardPackets.updateTeam("SB_l-1", Component.text("SB_l-1"), Component.empty()
                         .append(Component.textOfChildren(
                             Component.text("User: ", TextColor.color(0x3aa9ff)),
-                            Component.text("Tim203", NamedTextColor.WHITE))),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                            Component.text("Tim203", NamedTextColor.WHITE))), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§1", "sidebar", 9));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§1", "sidebar", 9));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -291,38 +241,19 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-2",
-                    Component.text("SB_l-2"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-2", Component.text("SB_l-2"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-2", TeamAction.ADD_PLAYER, new String[] {"§0§2"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-2", new String[] {"§0§2"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-2",
-                    Component.text("SB_l-2"),
-                    Component.empty()
+                VanillaScoreboardPackets.updateTeam("SB_l-2", Component.text("SB_l-2"), Component.empty()
                         .append(Component.textOfChildren(
                             Component.text("Rank: ", TextColor.color(0x3aa9ff)),
-                            Component.text("\uE1AB ", NamedTextColor.WHITE))),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                            Component.text("\uE1AB ", NamedTextColor.WHITE))), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§2", "sidebar", 8));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§2", "sidebar", 8));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -332,35 +263,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-3",
-                    Component.text("SB_l-3"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-3", Component.text("SB_l-3"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-3", TeamAction.ADD_PLAYER, new String[] {"§0§3"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-3", new String[] {"§0§3"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-3",
-                    Component.text("SB_l-3"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-3", Component.text("SB_l-3"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§3", "sidebar", 7));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§3", "sidebar", 7));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -370,35 +282,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-4",
-                    Component.text("SB_l-4"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-4", Component.text("SB_l-4"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-4", TeamAction.ADD_PLAYER, new String[] {"§0§4"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-4", new String[] {"§0§4"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-4",
-                    Component.text("SB_l-4"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-4", Component.text("SB_l-4"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§4", "sidebar", 6));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§4", "sidebar", 6));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -408,35 +301,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-5",
-                    Component.text("SB_l-5"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-5", Component.text("SB_l-5"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-5", TeamAction.ADD_PLAYER, new String[] {"§0§5"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-5", new String[] {"§0§5"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-5",
-                    Component.text("SB_l-5"),
-                    Component.empty().append(Component.text("", NamedTextColor.DARK_BLUE)),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-5", Component.text("SB_l-5"), Component.empty().append(Component.text("", NamedTextColor.DARK_BLUE)), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§5", "sidebar", 5));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§5", "sidebar", 5));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -446,38 +320,19 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-6",
-                    Component.text("SB_l-6"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-6", Component.text("SB_l-6"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-6", TeamAction.ADD_PLAYER, new String[] {"§0§6"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-6", new String[] {"§0§6"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-6",
-                    Component.text("SB_l-6"),
-                    Component.empty()
+                VanillaScoreboardPackets.updateTeam("SB_l-6", Component.text("SB_l-6"), Component.empty()
                         .append(Component.textOfChildren(
                             Component.text("Lobby: ", TextColor.color(0x3aa9ff)),
-                            Component.text("EU #10", NamedTextColor.WHITE))),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                            Component.text("EU #10", NamedTextColor.WHITE))), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§6", "sidebar", 4));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§6", "sidebar", 4));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -487,38 +342,19 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-7",
-                    Component.text("SB_l-7"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-7", Component.text("SB_l-7"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-7", TeamAction.ADD_PLAYER, new String[] {"§0§7"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-7", new String[] {"§0§7"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-7",
-                    Component.text("SB_l-7"),
-                    Component.empty()
+                VanillaScoreboardPackets.updateTeam("SB_l-7", Component.text("SB_l-7"), Component.empty()
                         .append(Component.textOfChildren(
                             Component.text("Players: ", TextColor.color(0x3aa9ff)),
-                            Component.text("783", NamedTextColor.WHITE))),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                            Component.text("783", NamedTextColor.WHITE))), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§7", "sidebar", 3));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§7", "sidebar", 3));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -528,35 +364,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-8",
-                    Component.text("SB_l-8"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-8", Component.text("SB_l-8"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-8", TeamAction.ADD_PLAYER, new String[] {"§0§8"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-8", new String[] {"§0§8"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-8",
-                    Component.text("SB_l-8"),
-                    Component.empty().append(Component.text("", NamedTextColor.DARK_GREEN)),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-8", Component.text("SB_l-8"), Component.empty().append(Component.text("", NamedTextColor.DARK_GREEN)), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§8", "sidebar", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§8", "sidebar", 2));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -566,35 +383,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-9",
-                    Component.text("SB_l-9"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-9", Component.text("SB_l-9"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-9", TeamAction.ADD_PLAYER, new String[] {"§0§9"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-9", new String[] {"§0§9"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-9",
-                    Component.text("SB_l-9"),
-                    Component.empty().append(Component.text("24/09/24 (g2208)", TextColor.color(0x777777))),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-9", Component.text("SB_l-9"), Component.empty().append(Component.text("24/09/24 (g2208)", TextColor.color(0x777777))), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§9", "sidebar", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§9", "sidebar", 1));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -604,35 +402,16 @@ public class CubecraftScoreboardTest {
 
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-10",
-                    Component.text("SB_l-10"),
-                    Component.empty(),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null,
-                    new String[0]));
+                VanillaScoreboardPackets.createTeam("SB_l-10", Component.text("SB_l-10"), Component.empty(), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null, new String[0]));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("SB_l-10", TeamAction.ADD_PLAYER, new String[] {"§0§a"}));
+                VanillaScoreboardPackets.addPlayers("SB_l-10", new String[] {"§0§a"}));
             context.translate(
                 setTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "SB_l-10",
-                    Component.text("SB_l-10"),
-                    Component.empty().append(Component.text("play.cubecraft.net", NamedTextColor.GOLD)),
-                    Component.empty(),
-                    true,
-                    true,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.ALWAYS,
-                    null));
+                VanillaScoreboardPackets.updateTeam("SB_l-10", Component.text("SB_l-10"), Component.empty().append(Component.text("play.cubecraft.net", NamedTextColor.GOLD)), Component.empty(), true, true, Visibility.ALWAYS, CollisionRule.ALWAYS, null));
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("§0§a", "sidebar", 0));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("§0§a", "sidebar", 0));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);

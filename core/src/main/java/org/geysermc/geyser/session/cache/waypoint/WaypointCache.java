@@ -34,8 +34,9 @@ import org.geysermc.geyser.api.waypoint.CustomWaypointStyleRegisterException;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.TrackedWaypoint;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundTrackedWaypointPacket;
+import net.minecraft.world.waypoints.TrackedWaypoint;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints;
+import net.minecraft.network.protocol.game.ClientboundTrackedWaypointPacket;
 
 import java.util.Collections;
 import java.util.Map;
@@ -85,10 +86,10 @@ public final class WaypointCache {
     }
 
     public void handlePacket(ClientboundTrackedWaypointPacket packet) {
-        switch (packet.getOperation()) {
-            case TRACK -> track(packet.getWaypoint());
-            case UNTRACK -> untrack(packet.getWaypoint());
-            case UPDATE -> update(packet.getWaypoint());
+        switch (((Enum<?>) packet.operation()).name()) {
+            case "TRACK" -> track(packet.waypoint());
+            case "UNTRACK" -> untrack(packet.waypoint());
+            case "UPDATE" -> update(packet.waypoint());
         }
     }
 
@@ -129,18 +130,18 @@ public final class WaypointCache {
     private void track(TrackedWaypoint waypoint) {
         untrack(waypoint);
 
-        Optional<UUID> uuid = Optional.ofNullable(waypoint.uuid());
+        Optional<UUID> uuid = waypoint.id().left();
         Optional<Entity> entity = uuid.flatMap(id -> Optional.ofNullable(session.getEntityCache().getEntityByUuid(id)));
 
         GeyserWaypoint tracked = GeyserWaypoint.create(session, entity, waypoint, waypointStyles);
         if (tracked != null) {
-            tracked.track(waypoint.data());
+            tracked.track(VanillaWaypoints.location(waypoint));
             waypoints.put(waypointId(waypoint), tracked);
         }
     }
 
     private void update(TrackedWaypoint waypoint) {
-        getWaypoint(waypoint).ifPresent(tracked -> tracked.update(waypoint.data()));
+        getWaypoint(waypoint).ifPresent(tracked -> tracked.update(VanillaWaypoints.location(waypoint)));
     }
 
     private void untrack(TrackedWaypoint waypoint) {
@@ -153,9 +154,7 @@ public final class WaypointCache {
     }
 
     private static String waypointId(TrackedWaypoint waypoint) {
-        return Optional.ofNullable(waypoint.uuid())
-            .map(UUID::toString)
-            .orElse(waypoint.id());
+        return waypoint.id().map(UUID::toString, id -> id);
     }
 
     public void clear() {

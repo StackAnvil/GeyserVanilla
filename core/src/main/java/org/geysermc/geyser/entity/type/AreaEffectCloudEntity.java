@@ -25,16 +25,17 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.level.particle.ParticleMapping;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ColorParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.Particle;
+import net.minecraft.core.particles.ColorParticleOption;
+import org.geysermc.geyser.vanilla.protocol.VanillaParticles;
+import net.minecraft.core.particles.ParticleOptions;
 
 public class AreaEffectCloudEntity extends Entity {
 
@@ -57,20 +58,20 @@ public class AreaEffectCloudEntity extends Entity {
         setFlag(EntityFlag.FIRE_IMMUNE, true);
     }
 
-    public void setRadius(FloatEntityMetadata entityMetadata) {
+    public void setRadius(DataValue<Float> entityMetadata) {
         // Anything less than 0.5 will cause the cloud to despawn
-        float value = MathUtils.clamp(entityMetadata.getPrimitiveValue(), 0.5f, 32.0f);
+        float value = MathUtils.clamp(entityMetadata.value(), 0.5f, 32.0f);
         metadata.put(EntityDataTypes.AREA_EFFECT_CLOUD_RADIUS, value);
         metadata.put(EntityDataTypes.WIDTH, 2.0f * value);
     }
 
-    public void setParticle(EntityMetadata<Particle, ?> entityMetadata) {
-        Particle particle = entityMetadata.getValue();
+    public void setParticle(DataValue<ParticleOptions> entityMetadata) {
+        ParticleOptions particle = entityMetadata.value();
         Registries.PARTICLES.flatMap(particle.getType(), ParticleMapping::particleType)
             .ifPresent(type -> metadata.put(EntityDataTypes.AREA_EFFECT_CLOUD_PARTICLE, type));
 
-        if (particle.getData() instanceof ColorParticleData effectParticleData) {
-            metadata.put(EntityDataTypes.EFFECT_COLOR, effectParticleData.getColor());
+        if (particle instanceof ColorParticleOption effectParticleData) {
+            metadata.put(EntityDataTypes.EFFECT_COLOR, VanillaParticles.color(effectParticleData));
         }
     }
 }

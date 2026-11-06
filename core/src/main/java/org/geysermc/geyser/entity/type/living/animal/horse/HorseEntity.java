@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.animal.horse;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
+import net.minecraft.world.entity.EquipmentSlot;
 
 public class HorseEntity extends AbstractHorseEntity {
 
@@ -36,8 +37,8 @@ public class HorseEntity extends AbstractHorseEntity {
         super(context);
     }
 
-    public void setHorseVariant(IntEntityMetadata entityMetadata) {
-        int value = entityMetadata.getPrimitiveValue();
+    public void setHorseVariant(DataValue<Integer> entityMetadata) {
+        int value = entityMetadata.value();
         metadata.put(EntityDataTypes.VARIANT, value & 255);
         metadata.put(EntityDataTypes.MARK_VARIANT, (value >> 8) % 5);
     }

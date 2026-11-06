@@ -25,14 +25,15 @@
 
 package org.geysermc.geyser.level.chunk;
 
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Acts as a lightweight chunk class that doesn't store biomes, heightmaps or block entities.
  */
-public record GeyserChunk(DataPalette[] sections) {
+public record GeyserChunk(PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] sections) {
 
-    public static GeyserChunk from(DataPalette[] sections) {
+    public static GeyserChunk from(PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] sections) {
         return new GeyserChunk(sections);
     }
 }

@@ -33,7 +33,7 @@ import net.kyori.adventure.key.InvalidKeyException;
 import net.kyori.adventure.key.Key;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.nbt.NbtList;
-import org.geysermc.adventure.text.serializer.nbt.HeterogeneousNbtList;
+import org.geysermc.geyser.util.MinecraftNbt;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryKey;
@@ -42,8 +42,7 @@ import org.geysermc.geyser.registry.java.reader.JavaRegistryReader;
 import org.geysermc.geyser.registry.java.reader.JavaRegistryReaders;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
+import org.geysermc.geyser.registry.java.JavaRegistryReference;
 
 import java.util.List;
 import java.util.Objects;
@@ -70,11 +69,11 @@ public final class GeyserHolderSet<T> {
     @Getter
     private final JavaRegistryKey<T> registry;
     private final @Nullable Tag<T> tag;
-    private final @Nullable List<Holder<T>> holders;
+    private final @Nullable List<JavaRegistryReference<T>> holders;
     @Getter
     private final boolean empty;
 
-    private GeyserHolderSet(JavaRegistryKey<T> registry, @Nullable Tag<T> tag, @Nullable List<Holder<T>> inline) {
+    private GeyserHolderSet(JavaRegistryKey<T> registry, @Nullable Tag<T> tag, @Nullable List<JavaRegistryReference<T>> inline) {
         this.registry = registry;
         this.tag = tag;
         this.holders = inline;
@@ -125,7 +124,7 @@ public final class GeyserHolderSet<T> {
      * @return the constructed {@link GeyserHolderSet}
      */
     public static <T> GeyserHolderSet<T> of(JavaRegistryKey<T> registry, int id) {
-        return new GeyserHolderSet<>(registry, null, List.of(Holder.ofId(id)));
+        return new GeyserHolderSet<>(registry, null, List.of(JavaRegistryReference.byId(id)));
     }
 
     /**
@@ -137,7 +136,7 @@ public final class GeyserHolderSet<T> {
      * @return the constructed {@link GeyserHolderSet}
      */
     public static <T> GeyserHolderSet<T> of(JavaRegistryKey<T> registry, T element) {
-        return new GeyserHolderSet<>(registry, null, List.of(Holder.ofCustom(element)));
+        return new GeyserHolderSet<>(registry, null, List.of(JavaRegistryReference.inline(element)));
     }
 
     /**
@@ -149,7 +148,7 @@ public final class GeyserHolderSet<T> {
      * @return the constructed {@link GeyserHolderSet}
      */
     public static <T> GeyserHolderSet<T> of(JavaRegistryKey<T> registry, IntList ids) {
-        return new GeyserHolderSet<>(registry, null, ids.intStream().mapToObj(Holder::<T>ofId).toList());
+        return new GeyserHolderSet<>(registry, null, ids.intStream().mapToObj(JavaRegistryReference::<T>byId).toList());
     }
 
     /**
@@ -160,25 +159,8 @@ public final class GeyserHolderSet<T> {
      * @param <T> the type of the set
      * @return the constructed {@link GeyserHolderSet}
      */
-    public static <T> GeyserHolderSet<T> of(JavaRegistryKey<T> registry, List<Holder<T>> holders) {
+    public static <T> GeyserHolderSet<T> of(JavaRegistryKey<T> registry, List<JavaRegistryReference<T>> holders) {
         return new GeyserHolderSet<>(registry, null, List.copyOf(holders));
-    }
-
-    /**
-     * Constructs a {@link GeyserHolderSet} from a MCPL {@link HolderSet}.
-     *
-     * @param registry the registry the set is bound to
-     * @param holderSet the MCPL {@link HolderSet}
-     * @param <T> the type of the set
-     * @return the constructed {@link GeyserHolderSet}
-     */
-    public static <T> GeyserHolderSet<T> fromMCPL(JavaRegistryKey<T> registry, HolderSet holderSet) {
-        // MCPL HolderSets don't have to support inline elements... for now (last checked: Java 26.3)
-        Key tag = holderSet.getLocation();
-        if (tag == null) {
-            return GeyserHolderSet.of(registry, Objects.requireNonNull(holderSet.getHolders()));
-        }
-        return GeyserHolderSet.ofTag(registry, tag);
     }
 
     /**
@@ -203,13 +185,13 @@ public final class GeyserHolderSet<T> {
     }
 
     /**
-     * Resolves this set to a list of {@link Holder}s, which may either be an {@link Holder.IdHolder} or a {@link Holder.CustomHolder}
+     * Resolves this set to a list of {@link JavaRegistryReference}s, which may either be an {@link JavaRegistryReference.ById} or a {@link JavaRegistryReference.Inline}
      * (depending on the registry, both can be present in the list at once).
      *
      * @param registries the {@link JavaRegistryProvider}
-     * @return the resolved set as a list of {@link Holder}s
+     * @return the resolved set as a list of {@link JavaRegistryReference}s
      */
-    public List<Holder<T>> resolveHolders(JavaRegistryProvider registries) {
+    public List<JavaRegistryReference<T>> resolveHolders(JavaRegistryProvider registries) {
         if (empty) {
             return List.of();
         } else if (holders != null) {
@@ -217,7 +199,7 @@ public final class GeyserHolderSet<T> {
         }
         assert tag != null;
         // TODO maybe cache this, but how realise that tags are updated?
-        return registries.rawTag(tag).intStream().mapToObj(Holder::<T>ofId).toList();
+        return registries.rawTag(tag).intStream().mapToObj(JavaRegistryReference::<T>byId).toList();
     }
 
     /**
@@ -231,22 +213,22 @@ public final class GeyserHolderSet<T> {
      */
     @Deprecated
     public int[] resolveRawHolders(JavaRegistryProvider registries) {
-        return resolveHolders(registries).stream().mapToInt(Holder::id).toArray();
+        return resolveHolders(registries).stream().mapToInt(JavaRegistryReference::networkId).toArray();
     }
 
     /**
-     * Resolves this set to a list of {@link T}s. This calls {@link GeyserHolderSet#resolveHolders(JavaRegistryProvider)}, and maps the {@link Holder.IdHolder}s
+     * Resolves this set to a list of {@link T}s. This calls {@link GeyserHolderSet#resolveHolders(JavaRegistryProvider)}, and maps the {@link JavaRegistryReference.ById}s
      * to a {@link T} using {@link JavaRegistryKey#get(JavaRegistryProvider, int)}.
      *
      * @param registries the {@link JavaRegistryProvider}
-     * @return the resolved set as a list of {@link Holder}s
+     * @return the resolved set as a list of {@link JavaRegistryReference}s
      */
     public List<T> resolve(JavaRegistryProvider registries) {
         if (empty) {
             return List.of();
         }
         // TODO same as above
-        return resolveHolders(registries).stream().map(holder -> holder.getOrCompute(registry.resolver(registries))).toList();
+        return resolveHolders(registries).stream().map(holder -> holder.resolve(registry.resolver(registries))).toList();
     }
 
     /**
@@ -282,8 +264,8 @@ public final class GeyserHolderSet<T> {
                     yield GeyserHolderSet.empty(registry);
                 } else {
                     // List can hold both reference strings and inline elements, and we have to parse them all
-                    List<Object> unwrapped = HeterogeneousNbtList.tryUnwrap(list);
-                    List<Holder<T>> holders = new ObjectArrayList<>();
+                    List<Object> unwrapped = MinecraftNbt.unwrapList(list);
+                    List<JavaRegistryReference<T>> holders = new ObjectArrayList<>();
 
                     for (Object tag : unwrapped) {
                         if (tag instanceof String reference) {
@@ -294,7 +276,7 @@ public final class GeyserHolderSet<T> {
                         }
                         // Try to read the inline tag, if we fail just return an empty set
                         if (canReadInline) {
-                            holders.add(Holder.ofCustom(reader.get().read(JavaRegistryReader.createContext(registries, tag))));
+                            holders.add(JavaRegistryReference.inline(reader.get().read(JavaRegistryReader.createContext(registries, tag))));
                         } else {
                             GeyserImpl.getInstance().getLogger().warning("Failed parsing HolderSet for registry " + registry + ", don't know how to parse inline element!");
                             yield GeyserHolderSet.empty(registry);

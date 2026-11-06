@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.merchant;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.vector.Vector3f;
@@ -36,8 +38,7 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.level.block.property.Properties;
 import org.geysermc.geyser.level.block.type.BedBlock;
 import org.geysermc.geyser.level.block.type.BlockState;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.VillagerData;
+import net.minecraft.world.entity.npc.villager.VillagerData;
 
 import java.util.Optional;
 
@@ -90,21 +91,21 @@ public class VillagerEntity extends AbstractMerchantEntity {
         super(context);
     }
 
-    public void setVillagerData(EntityMetadata<VillagerData, ?> entityMetadata) {
-        VillagerData villagerData = entityMetadata.getValue();
+    public void setVillagerData(DataValue<VillagerData> entityMetadata) {
+        VillagerData villagerData = entityMetadata.value();
         // Profession
-        int profession = getBedrockProfession(villagerData.getProfession());
+        int profession = getBedrockProfession(net.minecraft.core.registries.BuiltInRegistries.VILLAGER_PROFESSION.getId(villagerData.profession().value()));
         canTradeWith = profession != 14 && profession != 0; // Not a notwit and not professionless
         metadata.put(EntityDataTypes.VARIANT, profession);
         //metadata.put(EntityDataTypes.SKIN_ID, villagerData.getType()); Looks like this is modified but for any reason?
         // Region
-        metadata.put(EntityDataTypes.MARK_VARIANT, getBedrockRegion(villagerData.getType()));
+        metadata.put(EntityDataTypes.MARK_VARIANT, getBedrockRegion(net.minecraft.core.registries.BuiltInRegistries.VILLAGER_TYPE.getId(villagerData.type().value())));
         // Trade tier - different indexing in Bedrock
-        metadata.put(EntityDataTypes.TRADE_TIER, villagerData.getLevel() - 1);
+        metadata.put(EntityDataTypes.TRADE_TIER, villagerData.level() - 1);
     }
 
     @Override
-    public @Nullable Vector3i setBedPosition(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
+    public @Nullable Vector3i setBedPosition(DataValue<Optional<net.minecraft.core.BlockPos>> entityMetadata) {
         return bedPosition = super.setBedPosition(entityMetadata);
     }
 

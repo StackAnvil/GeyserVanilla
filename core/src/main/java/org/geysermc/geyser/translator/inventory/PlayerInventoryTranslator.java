@@ -60,11 +60,11 @@ import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.translator.item.ItemTranslator;
 import org.geysermc.geyser.util.GliderUtils;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetCreativeModeSlotPacket;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -113,7 +113,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
                 contents[1] = GliderUtils.toBedrockChest(session, item, contents[1]);
             }
             if (i == 5 && item.is(Items.PLAYER_HEAD) && item.hasNonBaseComponents()) {
-                FakeHeadProvider.setHead(session, session.getPlayerEntity(), item.getComponent(DataComponentTypes.PROFILE));
+                FakeHeadProvider.setHead(session, session.getPlayerEntity(), item.getComponent(DataComponents.PROFILE));
             }
         }
         armorContentPacket.setContents(Arrays.asList(contents));
@@ -138,7 +138,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
             slotPacket.setContainerId(ContainerId.UI);
             slotPacket.setSlot(i + 27);
 
-            if (session.getGameMode() == GameMode.CREATIVE) {
+            if (session.getGameMode() == GameType.CREATIVE) {
                 slotPacket.setItem(UNUSUABLE_CRAFTING_SPACE_BLOCK.apply(session.getUpstream().getProtocolVersion()));
             } else {
                 slotPacket.setItem(inventory.getItem(i).getItemData(session));
@@ -156,7 +156,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
         if (slot == 5) {
             // Check for custom skull
             if (javaItem.is(Items.PLAYER_HEAD) && javaItem.hasNonBaseComponents()) {
-                FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponentTypes.PROFILE));
+                FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponents.PROFILE));
             } else {
                 FakeHeadProvider.restoreOriginalSkin(session, session.getPlayerEntity());
             }
@@ -257,7 +257,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
 
     @Override
     public ItemStackResponse translateRequest(GeyserSession session, PlayerInventory inventory, ItemStackRequest request) {
-        if (session.getGameMode() != GameMode.CREATIVE) {
+        if (session.getGameMode() != GameType.CREATIVE) {
             return super.translateRequest(session, inventory, request);
         }
 
@@ -289,7 +289,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
                         // only set the head if the destination is the head slot
                         GeyserItemStack javaItem = inventory.getItem(sourceSlot);
                         if (javaItem.is(Items.PLAYER_HEAD) && javaItem.hasNonBaseComponents()) {
-                            FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponentTypes.PROFILE));
+                            FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponents.PROFILE));
                         }
                     } else if (sourceSlot == 5) {
                         // we are probably removing the head, so restore the original skin
@@ -532,11 +532,11 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
                     }
 
                     ItemStack dropStack;
-                    if (dropAction.getCount() == javaCreativeItem.getAmount()) {
+                    if (dropAction.getCount() == javaCreativeItem.getCount()) {
                         dropStack = javaCreativeItem;
                     } else {
                         // Specify custom count
-                        dropStack = new ItemStack(javaCreativeItem.getId(), dropAction.getCount(), javaCreativeItem.getDataComponentsPatch());
+                        dropStack = javaCreativeItem.copyWithCount(dropAction.getCount());
                     }
                     ServerboundSetCreativeModeSlotPacket creativeDropPacket = new ServerboundSetCreativeModeSlotPacket((short)-1, dropStack);
                     session.sendDownstreamGamePacket(creativeDropPacket);
@@ -561,7 +561,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
 
     private static void sendCreativeAction(GeyserSession session, Inventory inventory, int slot) {
         GeyserItemStack item = inventory.getItem(slot);
-        ItemStack itemStack = item.isEmpty() ? new ItemStack(-1, 0, null) : item.getItemStack();
+        ItemStack itemStack = item.isEmpty() ? ItemStack.EMPTY : item.getItemStack();
 
         ServerboundSetCreativeModeSlotPacket creativePacket = new ServerboundSetCreativeModeSlotPacket((short)slot, itemStack);
         session.sendDownstreamGamePacket(creativePacket);
@@ -572,7 +572,7 @@ public class PlayerInventoryTranslator extends InventoryTranslator<PlayerInvento
     }
 
     @Override
-    public PlayerInventory createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public PlayerInventory createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         throw new UnsupportedOperationException();
     }
 

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
@@ -32,8 +34,7 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class AllayEntity extends MobEntity {
     private boolean canDuplicate;
@@ -42,23 +43,23 @@ public class AllayEntity extends MobEntity {
         super(context);
     }
 
-    public void setDancing(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.DANCING, entityMetadata.getPrimitiveValue());
+    public void setDancing(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.DANCING, entityMetadata.value());
     }
 
-    public void setCanDuplicate(BooleanEntityMetadata entityMetadata) {
-        this.canDuplicate = entityMetadata.getPrimitiveValue();
+    public void setCanDuplicate(DataValue<Boolean> entityMetadata) {
+        this.canDuplicate = entityMetadata.value();
     }
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (this.canDuplicate && getFlag(EntityFlag.DANCING) && isDuplicationItem(itemInHand)) {
             // Maybe better as another tag?
             return InteractiveTag.GIVE_ITEM_TO_ALLAY;
         } else if (getMainHandItem().isEmpty() && !itemInHand.isEmpty()) {
             return InteractiveTag.GIVE_ITEM_TO_ALLAY;
-        } else if (!getMainHandItem().isEmpty() && hand == Hand.MAIN_HAND && itemInHand.isEmpty()) {
+        } else if (!getMainHandItem().isEmpty() && hand == InteractionHand.MAIN_HAND && itemInHand.isEmpty()) {
             // Seems like there isn't a good tag for this yet
             return InteractiveTag.GIVE_ITEM_TO_ALLAY;
         } else {
@@ -68,14 +69,14 @@ public class AllayEntity extends MobEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (this.canDuplicate && getFlag(EntityFlag.DANCING) && isDuplicationItem(itemInHand)) {
             //TOCHECK sound
             return InteractionResult.SUCCESS;
         } else if (getMainHandItem().isEmpty() && !itemInHand.isEmpty()) {
             //TODO play sound?
             return InteractionResult.SUCCESS;
-        } else if (!getMainHandItem().isEmpty() && hand == Hand.MAIN_HAND && itemInHand.isEmpty()) {
+        } else if (!getMainHandItem().isEmpty() && hand == InteractionHand.MAIN_HAND && itemInHand.isEmpty()) {
             //TOCHECK also play sound here?
             return InteractionResult.SUCCESS;
         } else {

@@ -30,8 +30,8 @@ import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.api.waypoint.CustomWaypointStyle;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.ChunkWaypointData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.WaypointData;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints.Location;
 
 import java.awt.Color;
 import java.util.Optional;
@@ -44,10 +44,10 @@ public class ChunkWaypoint extends GeyserWaypoint {
     }
 
     @Override
-    public void setData(WaypointData data) {
-        if (data instanceof ChunkWaypointData(int chunkX, int chunkZ)) {
+    public void setData(Location data) {
+        if (data instanceof VanillaWaypoints.Chunk(var chunk)) {
             // Set position in centre of chunk
-            setPosition(Vector3f.from(chunkX * 16.0F + 8.0F, session.getPlayerEntity().position().getY(), chunkZ * 16.0F + 8.0F));
+            setPosition(Vector3f.from(chunk.x() * 16.0F + 8.0F, session.getPlayerEntity().position().getY(), chunk.z() * 16.0F + 8.0F));
         } else {
             session.getGeyser().getLogger().warning("Received incorrect waypoint data " + data.getClass() + " for chunk waypoint");
         }

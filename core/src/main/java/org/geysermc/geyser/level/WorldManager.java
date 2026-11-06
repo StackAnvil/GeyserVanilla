@@ -31,8 +31,8 @@ import org.cloudburstmc.math.vector.Vector3i;
 import org.geysermc.erosion.util.BlockPositionIterator;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.setting.Difficulty;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.Difficulty;
 
 import java.util.Locale;
 import java.util.Map;
@@ -113,7 +113,7 @@ public abstract class WorldManager {
      * @param session the player requesting the default game mode
      * @return the default game mode of the server, or Survival if unknown.
      */
-    public abstract GameMode getDefaultGameMode(GeyserSession session);
+    public abstract GameType getDefaultGameMode(GeyserSession session);
 
     /**
      * Change the default game mode of the session's server
@@ -121,7 +121,7 @@ public abstract class WorldManager {
      * @param session the player making the change
      * @param gameMode the new default game mode
      */
-    public void setDefaultGameMode(GeyserSession session, GameMode gameMode) {
+    public void setDefaultGameMode(GeyserSession session, GameType gameMode) {
         session.sendCommandPacket("defaultgamemode " + gameMode.name().toLowerCase(Locale.ROOT));
     }
 

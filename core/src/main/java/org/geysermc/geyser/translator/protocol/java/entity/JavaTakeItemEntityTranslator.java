@@ -33,7 +33,7 @@ import org.geysermc.geyser.entity.type.ExpOrbEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundTakeItemEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundTakeItemEntityPacket;
 
 /**
  * This packet is called whenever a player picks up an item.
@@ -46,10 +46,10 @@ public class JavaTakeItemEntityTranslator extends PacketTranslator<ClientboundTa
     @Override
     public void translate(GeyserSession session, ClientboundTakeItemEntityPacket packet) {
         // Collected entity is the other entity
-        Entity collectedEntity = session.getEntityCache().getEntityByJavaId(packet.getCollectedEntityId());
+        Entity collectedEntity = session.getEntityCache().getEntityByJavaId(packet.getItemId());
         if (collectedEntity == null) return;
         // Collector is the entity 'picking up' the item
-        Entity collectorEntity = session.getEntityCache().getEntityByJavaId(packet.getCollectorEntityId());
+        Entity collectorEntity = session.getEntityCache().getEntityByJavaId(packet.getPlayerId());
         if (collectorEntity == null) return;
         if (collectedEntity instanceof ExpOrbEntity) {
             // Player just picked up an experience orb

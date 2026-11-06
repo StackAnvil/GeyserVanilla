@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataType;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.Entity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class WitherEntity extends MonsterEntity {
 
@@ -43,20 +44,20 @@ public class WitherEntity extends MonsterEntity {
         metadata.put(EntityDataTypes.WITHER_AERIAL_ATTACK, (short) 1);
     }
 
-    public void setTarget1(IntEntityMetadata entityMetadata) {
+    public void setTarget1(DataValue<Integer> entityMetadata) {
         setTargetId(EntityDataTypes.WITHER_TARGET_A, entityMetadata);
     }
 
-    public void setTarget2(IntEntityMetadata entityMetadata) {
+    public void setTarget2(DataValue<Integer> entityMetadata) {
         setTargetId(EntityDataTypes.WITHER_TARGET_B, entityMetadata);
     }
 
-    public void setTarget3(IntEntityMetadata entityMetadata) {
+    public void setTarget3(DataValue<Integer> entityMetadata) {
         setTargetId(EntityDataTypes.WITHER_TARGET_C, entityMetadata);
     }
 
-    private void setTargetId(EntityDataType<Long> entityData, IntEntityMetadata entityMetadata) {
-        int entityId = entityMetadata.getPrimitiveValue();
+    private void setTargetId(EntityDataType<Long> entityData, DataValue<Integer> entityMetadata) {
+        int entityId = entityMetadata.value();
         Entity entity = session.getEntityCache().getEntityByJavaId(entityId);
         if (entity != null) {
             metadata.put(entityData, entity.geyserId());
@@ -65,8 +66,8 @@ public class WitherEntity extends MonsterEntity {
         }
     }
 
-    public void setInvulnerableTicks(IntEntityMetadata entityMetadata) {
-        int value = entityMetadata.getPrimitiveValue();
+    public void setInvulnerableTicks(DataValue<Integer> entityMetadata) {
+        int value = entityMetadata.value();
         metadata.put(EntityDataTypes.WITHER_INVULNERABLE_TICKS, value);
 
         // Show the shield for the first few seconds of spawning (like Java)

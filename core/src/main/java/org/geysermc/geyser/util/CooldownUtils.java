@@ -29,7 +29,7 @@ import lombok.Getter;
 import org.cloudburstmc.protocol.bedrock.packet.SetTitlePacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import net.minecraft.world.level.GameType;
 
 /**
  * Manages the sending of a cooldown indicator to the Bedrock player as there is no cooldown indicator in Bedrock.
@@ -51,7 +51,7 @@ public class CooldownUtils {
     }
 
     public static void tickCooldown(GeyserSession session) {
-        if (session.getGameMode().equals(GameMode.SPECTATOR)) return; // No attack indicator in spectator
+        if (session.getGameMode().equals(GameType.SPECTATOR)) return; // No attack indicator in spectator
 
         CooldownType sessionPreference = session.getPreferencesCache().getCooldownPreference();
         if (sessionPreference == CooldownType.DISABLED) return;

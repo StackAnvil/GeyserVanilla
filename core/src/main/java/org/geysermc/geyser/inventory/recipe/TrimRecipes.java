@@ -45,14 +45,13 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.text.MessageTranslator;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ArmorTrim;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.RecipeDisplayEntry;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.SmithingRecipeDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemStackSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SmithingTrimDemoSlotDisplay;
+import net.minecraft.core.Holder;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.crafting.display.RecipeDisplayEntry;
+import net.minecraft.world.item.crafting.display.SmithingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.SmithingTrimDemoSlotDisplay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,7 +80,7 @@ public final class TrimRecipes {
         bedrockTrimMaterials.clear();
         bedrockTrimPatterns.clear();
 
-        Map<Holder<ArmorTrim.TrimMaterial>, Item> trimMaterialProviders = getTrimMaterialProviders(session);
+        Map<Holder<net.minecraft.world.item.equipment.trim.TrimMaterial>, Item> trimMaterialProviders = getTrimMaterialProviders(session);
 
         session.javaRegistries().registry(JavaRegistries.TRIM_MATERIAL).forEachEntry(material -> bedrockTrimMaterials.add(translateJavaTrimMaterial(session, material, trimMaterialProviders)));
         session.javaRegistries().registry(JavaRegistries.TRIM_PATTERN).forEachEntry(pattern -> bedrockTrimPatterns.add(translateJavaTrimPattern(session, pattern)));
@@ -89,11 +88,11 @@ public final class TrimRecipes {
 
     public GeyserSmithingRecipe<?> addSmithingRecipe(RecipeDisplayEntry entry, SmithingRecipeDisplay recipe, int netId) {
         if (recipe.result() instanceof SmithingTrimDemoSlotDisplay) {
-            GeyserSmithingRecipe.Trim trimRecipe = GeyserSmithingRecipe.Trim.of(entry.id(), netId, recipe);
+            GeyserSmithingRecipe.Trim trimRecipe = GeyserSmithingRecipe.Trim.of(entry.id().index(), netId, recipe);
             smithingTrimRecipes.add(trimRecipe);
             return trimRecipe;
         } else {
-            GeyserSmithingRecipe.Transform transformRecipe = GeyserSmithingRecipe.Transform.of(entry.id(), netId, recipe);
+            GeyserSmithingRecipe.Transform transformRecipe = GeyserSmithingRecipe.Transform.of(entry.id().index(), netId, recipe);
             smithingTransformRecipes.add(transformRecipe);
             return transformRecipe;
         }
@@ -138,7 +137,7 @@ public final class TrimRecipes {
                 template.asIngredient(),
                 input.asIngredient(),
                 material.asIngredient(),
-                new ItemStackSlotDisplay(discoveredOutput)
+                new ItemStackSlotDisplay(net.minecraft.world.item.ItemStackTemplate.fromNonEmptyStack(discoveredOutput))
             );
             smithingTransformRecipes.add(transformRecipe);
             return Optional.of(transformRecipe);
@@ -150,18 +149,19 @@ public final class TrimRecipes {
         smithingTrimRecipes.forEach(trim -> trim.addToPacket(session, craftingDataPacket));
     }
 
-    private static TrimMaterial translateJavaTrimMaterial(GeyserSession session, RegistryEntryData<ArmorTrim.TrimMaterial> java, Map<Holder<ArmorTrim.TrimMaterial>, Item> trimMaterialProviders) {
+    private static TrimMaterial translateJavaTrimMaterial(GeyserSession session, RegistryEntryData<net.minecraft.world.item.equipment.trim.TrimMaterial> java, Map<Holder<net.minecraft.world.item.equipment.trim.TrimMaterial>, Item> trimMaterialProviders) {
         String key = java.key().asMinimalString();
 
         // Color is used when hovering over the item
         // Find the nearest legacy color from the style Java gives us to work with
-        String legacy = MessageTranslator.convertMessage(Component.space().style(java.data().description().style()));
+        String legacy = MessageTranslator.convertMessage(Component.space().style(MessageTranslator.fromVanilla(java.data().description(), session.vanillaRegistries()).style()));
         // Just pick out the resulting color code, without RESET in front.
         String color = legacy.isBlank() ? ChatColor.WHITE : legacy.substring(2).trim();
 
         ItemMapping trimItem = null;
-        for (Holder<ArmorTrim.TrimMaterial> provider : trimMaterialProviders.keySet()) {
-            if ((provider.isCustom() && java.data().paletteId().equals(provider.custom().paletteId())) || (provider.isId() && provider.id() == java.id())) {
+        for (Holder<net.minecraft.world.item.equipment.trim.TrimMaterial> provider : trimMaterialProviders.keySet()) {
+            if (provider.unwrapKey().map(materialKey -> MinecraftKey.vanillaToKey(materialKey.identifier()).equals(java.key()))
+                .orElseGet(() -> java.data().paletteId().equals(provider.value().paletteId()))) {
                 trimItem = session.getItemMappings().getMapping(trimMaterialProviders.get(provider));
                 break;
             }
@@ -176,7 +176,7 @@ public final class TrimRecipes {
         return new TrimMaterial(key, color, trimItem.getBedrockIdentifier());
     }
 
-    private static TrimPattern translateJavaTrimPattern(GeyserSession session, RegistryEntryData<ArmorTrim.TrimPattern> java) {
+    private static TrimPattern translateJavaTrimPattern(GeyserSession session, RegistryEntryData<net.minecraft.world.item.equipment.trim.TrimPattern> java) {
         String key = java.key().asMinimalString();
 
         // Not ideal, Java edition also gives us a translatable description... Bedrock wants the template item
@@ -190,21 +190,21 @@ public final class TrimRecipes {
         return new TrimPattern(itemMapping.getBedrockIdentifier(), key);
     }
 
-    public static ArmorTrim.TrimMaterial readTrimMaterial(JavaRegistryReader.Context context) {
-        return new ArmorTrim.TrimMaterial(MinecraftKey.key(context.dataAsMap().getString("palette_id")),
-            context.parseDescription());
+    public static net.minecraft.world.item.equipment.trim.TrimMaterial readTrimMaterial(JavaRegistryReader.Context context) {
+        return new net.minecraft.world.item.equipment.trim.TrimMaterial(net.minecraft.resources.Identifier.parse(context.dataAsMap().getString("palette_id")),
+            MessageTranslator.toVanilla(context.parseDescription(), org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries()));
     }
 
-    public static ArmorTrim.TrimPattern readTrimPattern(JavaRegistryReader.Context context) {
-        return new ArmorTrim.TrimPattern(MinecraftKey.key(context.dataAsMap().getString("asset_id")),
-            context.parseDescription(),
+    public static net.minecraft.world.item.equipment.trim.TrimPattern readTrimPattern(JavaRegistryReader.Context context) {
+        return new net.minecraft.world.item.equipment.trim.TrimPattern(net.minecraft.resources.Identifier.parse(context.dataAsMap().getString("asset_id")),
+            MessageTranslator.toVanilla(context.parseDescription(), org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries()),
             context.dataAsMap().getBoolean("decal", false));
     }
 
-    private static Map<Holder<ArmorTrim.TrimMaterial>, Item> getTrimMaterialProviders(GeyserSession session) {
-        Map<Holder<ArmorTrim.TrimMaterial>, Item> trimMaterialProviders = new HashMap<>();
+    private static Map<Holder<net.minecraft.world.item.equipment.trim.TrimMaterial>, Item> getTrimMaterialProviders(GeyserSession session) {
+        Map<Holder<net.minecraft.world.item.equipment.trim.TrimMaterial>, Item> trimMaterialProviders = new HashMap<>();
         for (Item item : BuiltInJavaRegistries.ITEM) {
-            Holder<ArmorTrim.TrimMaterial> provider = item.getComponent(session.getComponentCache(), DataComponentTypes.PROVIDES_TRIM_MATERIAL);
+            Holder<net.minecraft.world.item.equipment.trim.TrimMaterial> provider = item.getComponent(session.getComponentCache(), DataComponents.PROVIDES_TRIM_MATERIAL);
             if (provider != null) {
                 trimMaterialProviders.put(provider, item);
             }

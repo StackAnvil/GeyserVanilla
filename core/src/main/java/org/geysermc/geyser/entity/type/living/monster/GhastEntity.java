@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.FlyingEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class GhastEntity extends FlyingEntity {
 
@@ -36,9 +37,9 @@ public class GhastEntity extends FlyingEntity {
         super(context);
     }
 
-    public void setGhastAttacking(BooleanEntityMetadata entityMetadata) {
+    public void setGhastAttacking(DataValue<Boolean> entityMetadata) {
         // If the ghast is attacking
-        metadata.put(EntityDataTypes.CHARGE_AMOUNT, (byte) (entityMetadata.getPrimitiveValue() ? 1 : 0));
+        metadata.put(EntityDataTypes.CHARGE_AMOUNT, (byte) (entityMetadata.value() ? 1 : 0));
     }
 
     @Override

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.entity.properties.type.BooleanProperty;
@@ -35,12 +37,10 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.CopperGolemState;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.WeatheringCopperState;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.animal.golem.CopperGolemState;
+import net.minecraft.world.level.block.WeatheringCopper.WeatherState;
+import net.minecraft.world.InteractionHand;
 
 public class CopperGolemEntity extends GolemEntity {
     public static final BooleanProperty HAS_FLOWER_PROPERTY = new BooleanProperty(
@@ -80,7 +80,7 @@ public class CopperGolemEntity extends GolemEntity {
     }
 
     @Override
-    protected @NonNull InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected @NonNull InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.isEmpty() && !getMainHandItem().isEmpty()) {
             return InteractiveTag.DROP_ITEM;
         } else if (itemInHand.is(Items.SHEARS) && canBeSheared()) {
@@ -97,7 +97,7 @@ public class CopperGolemEntity extends GolemEntity {
     }
 
     @Override
-    protected @NonNull InteractionResult mobInteract(@NonNull Hand usedHand, @NonNull GeyserItemStack itemInHand) {
+    protected @NonNull InteractionResult mobInteract(@NonNull InteractionHand usedHand, @NonNull GeyserItemStack itemInHand) {
         if ((itemInHand.isEmpty() && !getMainHandItem().isEmpty()) || (itemInHand.is(Items.SHEARS) && canBeSheared())) {
             return InteractionResult.SUCCESS;
         }
@@ -106,7 +106,7 @@ public class CopperGolemEntity extends GolemEntity {
     }
 
     private boolean canBeSheared() {
-        return isAlive() && getItemInSlot(EquipmentSlot.HELMET).is(session, ItemTag.SHEARABLE_FROM_COPPER_GOLEM);
+        return isAlive() && getItemInSlot(EquipmentSlot.HEAD).is(session, ItemTag.SHEARABLE_FROM_COPPER_GOLEM);
     }
 
     @Override
@@ -118,8 +118,8 @@ public class CopperGolemEntity extends GolemEntity {
         updateBedrockEntityProperties();
     }
 
-    public void setWeatheringState(EntityMetadata<WeatheringCopperState, ? extends MetadataType<WeatheringCopperState>> metadata) {
-        WeatheringCopperState state = metadata.getValue();
+    public void setWeatheringState(DataValue<WeatherState> metadata) {
+        WeatherState state = metadata.value();
         OXIDATION_LEVEL_STATE_ENUM_PROPERTY.apply(propertyManager, switch (state) {
             case UNAFFECTED -> OxidationLevelState.UNOXIDIZED;
             case EXPOSED -> OxidationLevelState.EXPOSED;
@@ -129,8 +129,8 @@ public class CopperGolemEntity extends GolemEntity {
         updateBedrockEntityProperties();
     }
 
-    public void setGolemState(EntityMetadata<CopperGolemState, ? extends MetadataType<CopperGolemState>> metadata) {
-        CopperGolemState state = metadata.getValue();
+    public void setGolemState(DataValue<CopperGolemState> metadata) {
+        CopperGolemState state = metadata.value();
         CHEST_INTERACTION_PROPERTY.apply(propertyManager, switch (state) {
             case IDLE -> ChestInteractionState.NONE;
             case GETTING_ITEM -> ChestInteractionState.TAKE;

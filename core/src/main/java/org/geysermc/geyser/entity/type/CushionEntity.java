@@ -25,12 +25,13 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class CushionEntity extends Entity {
 
@@ -40,14 +41,14 @@ public class CushionEntity extends Entity {
         metadata.put(EntityDataTypes.VARIANT, 15);
     }
 
-    public void setDyeColor(IntEntityMetadata dyeColor) {
-        int color = dyeColor.getPrimitiveValue();
+    public void setDyeColor(DataValue<net.minecraft.world.item.DyeColor> dyeColor) {
+        int color = dyeColor.value().getId();
         // Every color is offset 15 in bedrock edition
         metadata.put(EntityDataTypes.VARIANT, Math.abs(color - 15));
     }
 
     @Override
-    protected InteractiveTag testInteraction(Hand hand) {
+    protected InteractiveTag testInteraction(InteractionHand hand) {
         if (session.isSneaking() || !passengers.isEmpty()) {
             return InteractiveTag.NONE;
         }
@@ -55,7 +56,7 @@ public class CushionEntity extends Entity {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         if (session.isSneaking() || !passengers.isEmpty()) {
             return InteractionResult.PASS;
         }

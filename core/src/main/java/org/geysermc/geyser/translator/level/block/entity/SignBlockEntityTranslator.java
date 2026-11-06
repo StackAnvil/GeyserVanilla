@@ -32,11 +32,11 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.text.MessageTranslator;
 import org.geysermc.geyser.util.SignUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.List;
 
-@BlockEntity(type = BlockEntityType.SIGN)
+@BlockEntity(type = "minecraft:sign")
 public class SignBlockEntityTranslator extends BlockEntityTranslator {
     /**
      * Maps a color stored in a sign's Color tag to its ARGB value.

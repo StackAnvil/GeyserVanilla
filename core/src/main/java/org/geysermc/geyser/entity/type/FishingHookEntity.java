@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -39,7 +41,6 @@ import org.geysermc.geyser.level.physics.CollisionManager;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.collision.BlockCollision;
 import org.geysermc.geyser.util.BlockUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -131,8 +132,8 @@ public class FishingHookEntity extends ProjectileEntity {
         respawnIfRetrievedByClient();
     }
 
-    public void setHookedEntity(IntEntityMetadata entityMetadata) {
-        int hookedEntityId = entityMetadata.getPrimitiveValue() - 1;
+    public void setHookedEntity(DataValue<Integer> entityMetadata) {
+        int hookedEntityId = entityMetadata.value() - 1;
         Entity entity = session.getEntityCache().getEntityByJavaId(hookedEntityId);
         if (entity != null) {
             bedrockTargetId = entity.geyserId();

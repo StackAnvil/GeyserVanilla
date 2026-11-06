@@ -32,8 +32,8 @@ import org.geysermc.geyser.registry.java.JavaRegistryKey;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundUpdateTagsPacket;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
+import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
+import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
 
 import java.util.Optional;
 
@@ -84,7 +84,4 @@ public final class JavaRegistryTagCache implements JavaRegistryProvider {
         registryCache.parseAndBind(this);
     }
 
-    public static void bootstrap() {
-        RegistryCache.bootstrap();
-    }
 }

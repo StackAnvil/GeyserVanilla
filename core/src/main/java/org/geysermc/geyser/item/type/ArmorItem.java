@@ -35,9 +35,9 @@ import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ArmorTrim;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.Optional;
 
@@ -48,28 +48,15 @@ public class ArmorItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
         JavaRegistryProvider registries = session.javaRegistries();
 
-        ArmorTrim trim = components.get(DataComponentTypes.TRIM);
+        ArmorTrim trim = components.get(DataComponents.TRIM);
         if (trim != null) {
-            Optional<Key> material;
-            if (trim.material().isId()) {
-                material = JavaRegistries.TRIM_MATERIAL.getKey(registries, trim.material().id());
-            } else {
-                GeyserImpl.getInstance().getLogger().debug("Unable to translate non-id trim material: " + trim);
-                return;
-            }
-
-            Optional<Key> pattern;
-            if (trim.pattern().isId()) {
-                pattern = JavaRegistries.TRIM_PATTERN.getKey(registries, trim.pattern().id());
-            } else {
-                GeyserImpl.getInstance().getLogger().debug("Unable to translate non-id trim pattern: " + trim);
-                return;
-            }
+            Optional<Key> material = trim.material().unwrapKey().map(key -> org.geysermc.geyser.util.MinecraftKey.key(key.identifier().toString()));
+            Optional<Key> pattern = trim.pattern().unwrapKey().map(key -> org.geysermc.geyser.util.MinecraftKey.key(key.identifier().toString()));
 
             if (material.isPresent() && pattern.isPresent()) {
                 NbtMapBuilder trimBuilder = NbtMap.builder();

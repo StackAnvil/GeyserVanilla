@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.skin;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -43,11 +45,8 @@ import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.FileUtils;
 import org.geysermc.geyser.util.PlayerListUtils;
 import org.geysermc.geyser.util.WebUtils;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.auth.texture.Texture;
-import org.geysermc.mcprotocollib.auth.texture.TextureModel;
-import org.geysermc.mcprotocollib.auth.texture.TextureType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 import java.awt.*;
 import java.nio.charset.StandardCharsets;
@@ -153,56 +152,51 @@ public class SkinManager {
             .build();
     }
 
-    public static CompletableFuture<GameProfile> resolveProfile(ResolvableProfile profile) {
-        GameProfile partial = profile.getProfile();
-        if (!profile.isDynamic()) {
-            // This is easy: the server has provided the entire profile for us (or however much it knew),
-            // and is asking us to use this
-            return CompletableFuture.completedFuture(partial);
-        } else if (!partial.getProperties().isEmpty() || (partial.getId() == null && partial.getName() == null)) {
-            // If properties have been provided to us, or no ID and no name have been provided, create a static profile from
-            // what we do know
-            // This replicates vanilla Java client behaviour
-            String name = partial.getName() == null ? "" : partial.getName();
-            UUID uuid = partial.getName() == null ? EMPTY_UUID : createOfflinePlayerUUID(partial.getName());
-            GameProfile completed = new GameProfile(uuid, name);
-            completed.setProperties(partial.getProperties());
-            return CompletableFuture.completedFuture(completed);
+    private static final net.minecraft.server.players.ProfileResolver PROFILE_RESOLVER = new net.minecraft.server.players.ProfileResolver() {
+        @Override
+        public java.util.Optional<GameProfile> fetchByName(String name) {
+            UUID id = SkinProvider.requestUUIDFromUsername(name).join();
+            return id == null ? java.util.Optional.empty() : fetch(id, name);
         }
 
+        @Override
+        public java.util.Optional<GameProfile> fetchById(UUID id) {
+            String name = SkinProvider.requestUsernameFromUUID(id).join();
+            return name == null ? java.util.Optional.empty() : fetch(id, name);
+        }
+
+        private java.util.Optional<GameProfile> fetch(UUID id, String name) {
+            String textures = SkinProvider.requestTexturesFromUUID(id).join();
+            if (textures == null) {
+                return java.util.Optional.of(new GameProfile(id, name));
+            }
+            var properties = new com.mojang.authlib.properties.PropertyMap(com.google.common.collect.ImmutableMultimap.of(
+                "textures", new com.mojang.authlib.properties.Property("textures", textures)));
+            return java.util.Optional.of(new GameProfile(id, name, properties));
+        }
+    };
+
+    public static CompletableFuture<GameProfile> resolveProfile(ResolvableProfile profile) {
+        if (profile instanceof ResolvableProfile.Static) {
+            return profile.resolveProfile(PROFILE_RESOLVER);
+        }
         GameProfile cached = RESOLVED_PROFILES_CACHE.getIfPresent(profile);
         if (cached != null) {
             return CompletableFuture.completedFuture(cached);
         }
-
-        return requestedProfiles.computeIfAbsent(profile, resolvableProfile -> {
-            CompletableFuture<GameProfile> future = (partial.getName() != null
-                    ? SkinProvider.requestUUIDFromUsername(partial.getName()).thenApply(uuid -> new GameProfile(uuid, partial.getName()))
-                    : SkinProvider.requestUsernameFromUUID(partial.getId()).thenApply(name -> new GameProfile(partial.getId(), name))
-                ).thenCompose(nameAndUUID -> {
-                        if (nameAndUUID.getId() == null || nameAndUUID.getName() == null) {
-                            return CompletableFuture.completedFuture(partial);
-                        }
-
-                        return SkinProvider.requestTexturesFromUUID(nameAndUUID.getId())
-                            .thenApply(encoded -> {
-                                if (encoded == null) return partial;
-                                nameAndUUID.setProperties(List.of(new GameProfile.Property("textures", encoded)));
-                                return nameAndUUID;
-                            });
-                    })
-                    .thenApply(resolved -> {
-                        RESOLVED_PROFILES_CACHE.put(resolvableProfile, resolved);
-                        return resolved;
-                    });
-            return future.whenComplete((r, t) -> requestedProfiles.remove(resolvableProfile));
-        });
+        CompletableFuture<GameProfile> future = requestedProfiles.computeIfAbsent(profile, key ->
+            key.resolveProfile(PROFILE_RESOLVER).thenApply(resolved -> {
+                RESOLVED_PROFILES_CACHE.put(key, resolved);
+                return resolved;
+            }));
+        future.whenComplete((result, error) -> requestedProfiles.remove(profile, future));
+        return future;
     }
 
-    public static @Nullable Texture getTextureDataFromProfile(GameProfile profile, TextureType type) {
-        Map<TextureType, Texture> textures;
+    public static @Nullable MinecraftProfileTexture getTextureDataFromProfile(GameProfile profile, MinecraftProfileTexture.Type type) {
+        Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures;
         try {
-            textures = profile.getTextures(false);
+            textures = org.geysermc.geyser.vanilla.protocol.VanillaProfiles.textures(profile);
         } catch (IllegalStateException e) {
             GeyserImpl.getInstance().getLogger().debug("Could not decode textures from game profile (%s)! Got: %s", profile, e);
             return null;
@@ -284,19 +278,19 @@ public class SkinManager {
          * @return The built GameProfileData
          */
         public static @Nullable GameProfileData from(AvatarEntity entity) {
-            Map<TextureType, Texture> textures = entity.getTextures();
+            Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures = entity.getTextures();
             if (textures == null) {
                 // Likely offline mode or failed to load
                 // We'll fall back to default skins
                 return null;
             }
 
-            Texture skin = textures.get(TextureType.SKIN);
+            MinecraftProfileTexture skin = textures.get(MinecraftProfileTexture.Type.SKIN);
             if (skin == null) {
                 return null;
             }
 
-            String skinUrl = WebUtils.toHttps(skin.getURL());
+            String skinUrl = WebUtils.toHttps(skin.getUrl());
             if (Objects.equals(DEFAULT_FLOODGATE_STEVE, skinUrl)) {
                 // https://github.com/GeyserMC/Floodgate/commit/00b8b1b6364116ff4bc9b00e2015ce35bae8abb1 ensures that
                 // Bedrock players on online-mode servers will always have a textures property. However, this skin is
@@ -306,9 +300,9 @@ public class SkinManager {
                 return null;
             }
 
-            Texture cape = textures.get(TextureType.CAPE);
-            String capeUrl = cape == null ? null : WebUtils.toHttps(cape.getURL());
-            return new GameProfileData(skinUrl, capeUrl, skin.getModel() == TextureModel.SLIM);
+            MinecraftProfileTexture cape = textures.get(MinecraftProfileTexture.Type.CAPE);
+            String capeUrl = cape == null ? null : WebUtils.toHttps(cape.getUrl());
+            return new GameProfileData(skinUrl, capeUrl, "slim".equals(skin.getMetadata("model")));
         }
 
         private static final String DEFAULT_FLOODGATE_STEVE = "https://textures.minecraft.net/texture/31f477eb1a7beee631c2ca64d06f8f68fa93a3386d04452ab27f43acdf1b60cb";

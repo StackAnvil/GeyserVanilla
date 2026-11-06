@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type.living;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class AgeableEntity extends CreatureEntity {
 
@@ -42,8 +43,8 @@ public class AgeableEntity extends CreatureEntity {
         setScale(getAdultSize());
     }
 
-    public void setBaby(BooleanEntityMetadata entityMetadata) {
-        boolean isBaby = entityMetadata.getPrimitiveValue();
+    public void setBaby(DataValue<Boolean> entityMetadata) {
+        boolean isBaby = entityMetadata.value();
         setScale(isBaby ? getBabySize() : getAdultSize());
         setFlag(EntityFlag.BABY, isBaby);
 

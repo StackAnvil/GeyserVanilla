@@ -29,33 +29,34 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.geysermc.mcprotocollib.network.ClientSession;
-import org.geysermc.mcprotocollib.network.packet.Packet;
-import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
+import org.geysermc.geyser.vanilla.protocol.VanillaClientSession;
+import org.geysermc.geyser.translator.text.MessageTranslator;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.ConnectionProtocol;
 
 @Getter
 @RequiredArgsConstructor
 public class DownstreamSession {
-    private final ClientSession session;
+    private final VanillaClientSession session;
 
-    public void sendPacket(@NonNull Packet packet) {
+    public void sendPacket(@NonNull Packet<?> packet) {
         this.session.send(packet);
     }
 
     public void disconnect(Component reason) {
-        this.session.disconnect(reason);
+        this.session.disconnect(MessageTranslator.toVanilla(reason, session.registryContext().registries()));
     }
 
     public void disconnect(Component reason, Throwable throwable) {
-        this.session.disconnect(reason, throwable);
+        this.session.disconnect(MessageTranslator.toVanilla(reason, session.registryContext().registries()));
     }
 
     public boolean isClosed() {
-        return !this.session.isConnected();
+        return this.session.isClosed();
     }
 
-    public boolean isState(ProtocolState state) {
+    public boolean isState(ConnectionProtocol state) {
         // Inbound and outbound state should always be the same?
-        return session.getPacketProtocol().getInboundState() == state;
+        return session.state() == state;
     }
 }

@@ -35,7 +35,7 @@ import org.geysermc.erosion.bukkit.SchedulerUtils;
 import org.geysermc.geyser.level.WorldManager;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import net.minecraft.world.level.GameType;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -82,8 +82,8 @@ public class GeyserSpigotWorldManager extends WorldManager {
     }
 
     @Override
-    public GameMode getDefaultGameMode(GeyserSession session) {
-        return GameMode.byId(Bukkit.getDefaultGameMode().ordinal());
+    public GameType getDefaultGameMode(GeyserSession session) {
+        return GameType.byId(Bukkit.getDefaultGameMode().ordinal());
     }
 
     @Override

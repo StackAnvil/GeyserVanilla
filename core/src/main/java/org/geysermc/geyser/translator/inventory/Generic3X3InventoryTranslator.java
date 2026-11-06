@@ -32,7 +32,7 @@ import org.geysermc.geyser.inventory.Generic3X3Container;
 import org.geysermc.geyser.inventory.updater.ContainerInventoryUpdater;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 /**
  * Droppers and dispensers
@@ -44,7 +44,7 @@ public class Generic3X3InventoryTranslator extends AbstractBlockInventoryTransla
     }
 
     @Override
-    public Generic3X3Container createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public Generic3X3Container createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new Generic3X3Container(session, name, windowId, this.size, containerType);
     }
 

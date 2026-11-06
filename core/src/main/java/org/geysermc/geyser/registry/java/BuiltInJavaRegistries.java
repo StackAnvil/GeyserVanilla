@@ -122,6 +122,7 @@ public final class BuiltInJavaRegistries {
     }
 
     public static void bootstrap() {
+        org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries();
         ROOT.freeze();
         // Necessary for "legacy" code in CustomBlockRegistryPopulator and CustomItemRegistryPopulator, should not be used anywhere else
         // (and that code should be cleaned up)
@@ -133,7 +134,6 @@ public final class BuiltInJavaRegistries {
         VanillaEntities.bootstrap();
 
         JavaRegistryReaders.bootstrap();
-        JavaRegistryTagCache.bootstrap();
     }
 
     public static void freeze() {

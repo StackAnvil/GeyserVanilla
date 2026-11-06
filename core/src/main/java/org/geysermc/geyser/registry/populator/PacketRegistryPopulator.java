@@ -31,7 +31,7 @@ import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.AnnotationUtils;
-import org.geysermc.mcprotocollib.network.packet.Packet;
+import net.minecraft.network.protocol.Packet;
 
 public class PacketRegistryPopulator {
 

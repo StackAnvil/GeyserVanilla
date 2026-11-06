@@ -27,7 +27,7 @@ package org.geysermc.geyser.translator.level.event;
 
 import org.cloudburstmc.protocol.bedrock.packet.PlaySoundPacket;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -39,7 +39,7 @@ public record PlaySoundEventTranslator(String name, float volume, boolean pitchS
         Random rand = ThreadLocalRandom.current();
         PlaySoundPacket playSoundPacket = new PlaySoundPacket();
         playSoundPacket.setSound(name);
-        playSoundPacket.setPosition(!relative ? session.getPlayerEntity().bedrockPosition() : packet.getPosition().toFloat().add(0.5f, 0.5f, 0.5f));
+        playSoundPacket.setPosition(!relative ? session.getPlayerEntity().bedrockPosition() : org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos()).toFloat().add(0.5f, 0.5f, 0.5f));
         playSoundPacket.setVolume(volume);
         playSoundPacket.setPitch((pitchSub ? (rand.nextFloat() - rand.nextFloat()) : rand.nextFloat()) * pitchMul + pitchAdd); //replicates java client randomness
         session.sendUpstreamPacket(playSoundPacket);

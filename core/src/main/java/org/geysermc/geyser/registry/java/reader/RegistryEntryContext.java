@@ -27,27 +27,29 @@ package org.geysermc.geyser.registry.java.reader;
 
 import net.kyori.adventure.key.Key;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.RegistryEntry;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
+import net.minecraft.core.RegistrySynchronization.PackedRegistryEntry;
+import org.geysermc.geyser.util.MinecraftKey;
+import org.geysermc.geyser.util.MinecraftNbt;
 
 /**
- * Expands {@link JavaRegistryReader.Context} with a {@link Key}. Used when parsing registry data from a {@link ClientboundRegistryDataPacket}.
+ * Expands {@link JavaRegistryReader.Context} with a {@link Key}. Used when parsing registry data from a Java registry-data packet.
  *
  * @param javaRegistries the {@link JavaRegistryProvider}
- * @param entry the {@link RegistryEntry}
+ * @param entry the {@link PackedRegistryEntry}
  */
-public record RegistryEntryContext(JavaRegistryProvider javaRegistries, RegistryEntry entry) implements JavaRegistryReader.Context {
+public record RegistryEntryContext(JavaRegistryProvider javaRegistries, PackedRegistryEntry entry) implements JavaRegistryReader.Context {
 
     /**
      * @return the {@link Key} of this registry entry
      */
     public Key id() {
-        return entry.getId();
+        return MinecraftKey.vanillaToKey(entry.id());
     }
 
     // Not annotated as nullable because data should never be null here
     @Override
     public Object data() {
-        return entry.getData();
+        return MinecraftNbt.toCloudburst(entry.data().orElseThrow(() ->
+            new IllegalStateException("Server omitted unnegotiated registry data: " + entry.id())));
     }
 }

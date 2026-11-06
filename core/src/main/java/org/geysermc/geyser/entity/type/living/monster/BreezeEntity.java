@@ -27,7 +27,7 @@ package org.geysermc.geyser.entity.type.living.monster;
 
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
+import net.minecraft.world.entity.Pose;
 
 public class BreezeEntity extends MonsterEntity {
     public BreezeEntity(EntitySpawnContext context) {

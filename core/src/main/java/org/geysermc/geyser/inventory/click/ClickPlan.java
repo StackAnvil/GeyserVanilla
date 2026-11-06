@@ -32,21 +32,20 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.inventory.Inventory;
 import org.geysermc.geyser.inventory.SlotType;
-import org.geysermc.geyser.item.hashing.DataComponentHashers;
+import org.geysermc.geyser.vanilla.protocol.VanillaItemHashing;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.inventory.BundleInventoryTranslator;
 import org.geysermc.geyser.translator.inventory.CraftingInventoryTranslator;
 import org.geysermc.geyser.translator.inventory.InventoryTranslator;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.thirdparty.Fraction;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerActionType;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.MoveToHotbarAction;
-import org.geysermc.mcprotocollib.protocol.data.game.item.HashedStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClickPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSelectBundleItemPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetCreativeModeSlotPacket;
+import net.minecraft.world.inventory.ContainerInput;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.network.HashedStack;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.protocol.game.ServerboundContainerClickPacket;
+import net.minecraft.network.protocol.game.ServerboundSelectBundleItemPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
 import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;
@@ -151,7 +150,7 @@ public final class ClickPlan {
                     // (It will eventually once state IDs desync, but this causes more problems than not)
                     clickedItemStack = InventoryUtils.REFRESH_ITEM;
                 } else {
-                    if (action.click.actionType == ContainerActionType.DROP_ITEM || action.slot == Click.OUTSIDE_SLOT) {
+                    if (action.click.actionType == ContainerInput.THROW || action.slot == Click.OUTSIDE_SLOT) {
                         clickedItemStack = null;
                     } else {
                         clickedItemStack = getItem(action.slot).getItemStack();
@@ -163,15 +162,7 @@ public final class ClickPlan {
                 simulateAction(action);
             }
 
-            ServerboundContainerClickPacket clickPacket = new ServerboundContainerClickPacket(
-                inventory.getJavaId(),
-                stateId,
-                action.slot,
-                action.click.actionType,
-                action.click.action,
-                DataComponentHashers.hashStack(session.javaRegistries(), clickedItemStack),
-                changedHashedItems
-            );
+            ServerboundContainerClickPacket clickPacket = new ServerboundContainerClickPacket(inventory.getJavaId(), stateId, (short) action.slot, (byte) action.click.action, action.click.actionType, changedHashedItems, VanillaItemHashing.hashStack(session.vanillaRegistries(), clickedItemStack));
 
             session.sendDownstreamGamePacket(clickPacket);
         }
@@ -197,7 +188,7 @@ public final class ClickPlan {
         }
         for (Int2ObjectMap.Entry<ItemStack> changedSlot : changedItems.int2ObjectEntrySet()) {
             ItemStack value = changedSlot.getValue();
-            ItemStack toSend = InventoryUtils.isEmpty(value) ? new ItemStack(-1, 0, null) : value;
+            ItemStack toSend = InventoryUtils.isEmpty(value) ? ItemStack.EMPTY : value;
             session.sendDownstreamGamePacket(
                 new ServerboundSetCreativeModeSlotPacket((short) changedSlot.getIntKey(), toSend)
             );
@@ -267,7 +258,7 @@ public final class ClickPlan {
     private void onSlotItemChange(int slot, GeyserItemStack itemStack) {
         if (changedItems != null) {
             changedItems.put(slot, itemStack.getItemStack());
-            changedHashedItems.put(slot, DataComponentHashers.hashStack(session.javaRegistries(), itemStack.getItemStack()));
+            changedHashedItems.put(slot, VanillaItemHashing.hashStack(session.vanillaRegistries(), itemStack.getItemStack()));
         }
     }
 
@@ -457,7 +448,7 @@ public final class ClickPlan {
     }
 
     /**
-     * Swap between two inventory slots without a cursor. This should only be used with {@link ContainerActionType#MOVE_TO_HOTBAR_SLOT}
+     * Swap between two inventory slots without a cursor. This should only be used with {@link ContainerInput#SWAP}
      */
     private void swap(int sourceSlot, int destSlot, GeyserItemStack sourceItem) {
         GeyserItemStack destinationItem = getItem(destSlot);
@@ -482,7 +473,7 @@ public final class ClickPlan {
         //   one left/right click action.
         // Java typically doesn't increment the state ID if you send a vanilla-accurate container click packet,
         // but it will increment the state ID with a vanilla client in at least the crafting table
-        if (inventory.getContainerType() == ContainerType.CRAFTING && CraftingInventoryTranslator.isCraftingGrid(action.slot)) {
+        if (inventory.getContainerType() == MenuType.CRAFTING && CraftingInventoryTranslator.isCraftingGrid(action.slot)) {
             // 1.18.1 sends a second set slot update for any action in the crafting grid
             // And an additional packet if something is removed (Mojmap: CraftingContainer#removeItem)
             int stateIdIncrements;
@@ -497,7 +488,7 @@ public final class ClickPlan {
                 }
             } else if (action.click == Click.RIGHT) {
                 stateIdIncrements = 1;
-            } else if (action.click.actionType == ContainerActionType.MOVE_TO_HOTBAR_SLOT) {
+            } else if (action.click.actionType == ContainerInput.SWAP) {
                 stateIdIncrements = 1;
             } else {
                 if (session.getGeyser().config().debugMode()) {
@@ -591,9 +582,9 @@ public final class ClickPlan {
         for (ClickAction action : plan) {
             if (translator.getSlotType(action.slot) != SlotType.OUTPUT && action.slot != Click.OUTSIDE_SLOT) {
                 affectedSlots.add(action.slot);
-                if (action.click.actionType == ContainerActionType.MOVE_TO_HOTBAR_SLOT) {
+                if (action.click.actionType == ContainerInput.SWAP) {
                     //TODO won't work if offhand is added
-                    affectedSlots.add(inventory.getOffsetForHotbar(((MoveToHotbarAction) action.click.action).ordinal()));
+                    affectedSlots.add(inventory.getOffsetForHotbar(action.click.action));
                 }
             }
         }

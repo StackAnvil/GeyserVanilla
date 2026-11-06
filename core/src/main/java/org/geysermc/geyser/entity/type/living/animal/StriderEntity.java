@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.vector.Vector2f;
@@ -45,10 +47,8 @@ import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.InteractionHand;
 
 public class StriderEntity extends AnimalEntity implements Tickable, ClientVehicle {
 
@@ -62,8 +62,8 @@ public class StriderEntity extends AnimalEntity implements Tickable, ClientVehic
         setFlag(EntityFlag.BREATHING, true);
     }
 
-    public void setCold(BooleanEntityMetadata entityMetadata) {
-        isCold = entityMetadata.getPrimitiveValue();
+    public void setCold(DataValue<Boolean> entityMetadata) {
+        isCold = entityMetadata.value();
     }
 
     @Override
@@ -106,7 +106,7 @@ public class StriderEntity extends AnimalEntity implements Tickable, ClientVehic
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!canEat(itemInHand) && getFlag(EntityFlag.SADDLED) && passengers.isEmpty() && !session.isSneaking()) {
             // Mount Strider
             return InteractiveTag.RIDE_STRIDER;
@@ -123,7 +123,7 @@ public class StriderEntity extends AnimalEntity implements Tickable, ClientVehic
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!canEat(itemInHand) && getFlag(EntityFlag.SADDLED) && passengers.isEmpty() && !session.isSneaking()) {
             // Mount Strider
             return InteractionResult.SUCCESS;
@@ -137,8 +137,8 @@ public class StriderEntity extends AnimalEntity implements Tickable, ClientVehic
         }
     }
 
-    public void setBoost(IntEntityMetadata entityMetadata) {
-        vehicleComponent.startBoost(entityMetadata.getPrimitiveValue());
+    public void setBoost(DataValue<Integer> entityMetadata) {
+        vehicleComponent.startBoost(entityMetadata.value());
     }
 
     @Override

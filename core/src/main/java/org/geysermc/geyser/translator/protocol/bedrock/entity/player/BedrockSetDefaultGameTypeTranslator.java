@@ -32,7 +32,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import net.minecraft.world.level.GameType;
 
 @Translator(packet = SetDefaultGameTypePacket.class)
 public class BedrockSetDefaultGameTypeTranslator extends PacketTranslator<SetDefaultGameTypePacket> {
@@ -43,7 +43,7 @@ public class BedrockSetDefaultGameTypeTranslator extends PacketTranslator<SetDef
     @Override
     public void translate(GeyserSession session, SetDefaultGameTypePacket packet) {
         if (session.getOpPermissionLevel() >= 2 && session.hasPermission(Permissions.SERVER_SETTINGS)) {
-            session.getGeyser().getWorldManager().setDefaultGameMode(session, GameMode.byId(packet.getGamemode()));
+            session.getGeyser().getWorldManager().setDefaultGameMode(session, GameType.byId(packet.getGamemode()));
         }
         // Stop the client from updating their own Gamemode without telling the server
         // Can occur when client Gamemode is set to "default", and default game mode is changed.

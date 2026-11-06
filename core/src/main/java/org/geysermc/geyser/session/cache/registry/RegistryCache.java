@@ -27,10 +27,7 @@ package org.geysermc.geyser.session.cache.registry;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
-import net.kyori.adventure.key.Key;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.cloudburstmc.nbt.NbtMap;
-import org.cloudburstmc.nbt.NbtType;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistry;
@@ -42,13 +39,11 @@ import org.geysermc.geyser.registry.java.reader.JavaRegistryReaders;
 import org.geysermc.geyser.registry.java.reader.KeyDependentJavaRegistryReader;
 import org.geysermc.geyser.registry.java.reader.RegistryEntryContext;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
-import org.geysermc.mcprotocollib.protocol.data.game.RegistryEntry;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
+import net.minecraft.core.RegistrySynchronization.PackedRegistryEntry;
+import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * Stores any information sent via Java registries. May not contain all data in a given registry - we'll strip what's
@@ -57,29 +52,8 @@ import java.util.Map;
  * <p>Crafted as of 1.20.5 for easy "add new registry" functionality in the future.</p>
  */
 final class RegistryCache {
-    private static final Map<JavaRegistryKey<?>, Map<Key, NbtMap>> DEFAULTS;
-
-    static {
-        // Load from MCProtocolLib's classloader
-        NbtMap tag = MinecraftProtocol.loadNetworkCodec();
-        Map<JavaRegistryKey<?>, Map<Key, NbtMap>> defaults = new HashMap<>();
-        // Don't create a keySet - no need to create the cached object in HashMap if we don't use it again
-        JavaRegistryReaders.networkRegistries().forEach(key -> {
-            List<NbtMap> rawValues = tag.getCompound(key.registryKey().asString()).getList("value", NbtType.COMPOUND);
-            Map<Key, NbtMap> values = new HashMap<>();
-            for (NbtMap value : rawValues) {
-                Key name = MinecraftKey.key(value.getString("name"));
-                values.put(name, value.getCompound("element"));
-            }
-            // Can make these maps immutable and as efficient as possible after initialization
-            defaults.put(key, Map.copyOf(values));
-        });
-
-        DEFAULTS = Map.copyOf(defaults);
-    }
-
     private final Reference2ObjectMap<JavaRegistryKey<?>, MutableJavaRegistry<?>> registries;
-    private final Reference2ObjectMap<JavaRegistryKey<?>, List<RegistryEntry>> configurationRegistryData;
+    private final Reference2ObjectMap<JavaRegistryKey<?>, List<PackedRegistryEntry>> configurationRegistryData;
 
     RegistryCache() {
         this.registries = new Reference2ObjectOpenHashMap<>(JavaRegistryReaders.networkRegistries().size());
@@ -108,16 +82,16 @@ final class RegistryCache {
      * @param packet the packet with registry data to load
      */
     public void load(ClientboundRegistryDataPacket packet) {
-        JavaRegistryKey<?> registryKey = JavaRegistries.fromKey(packet.getRegistry());
+        JavaRegistryKey<?> registryKey = JavaRegistries.fromKey(MinecraftKey.vanillaToKey(packet.registry().identifier()));
         if (registryKey != null && JavaRegistryReaders.shouldParseRegistry(registryKey)) {
             MutableJavaRegistry<?> registry = registries.get(registryKey);
             // Register all entries, they will be parsed bound at the end of the configuration phase by parseAndBind
             // We could theoretically already freeze the registry at this stage, but I am not sure if vanilla Java allows receiving
             // multiple registry data packets for the same registry
-            packet.getEntries().forEach(entry -> registry.register(entry.getId()));
-            this.configurationRegistryData.put(registryKey, packet.getEntries());
+            packet.entries().forEach(entry -> registry.register(MinecraftKey.vanillaToKey(entry.id())));
+            this.configurationRegistryData.computeIfAbsent(registryKey, ignored -> new ArrayList<>()).addAll(packet.entries());
         } else {
-            GeyserImpl.getInstance().getLogger().debug("Ignoring registry of type " + packet.getRegistry());
+            GeyserImpl.getInstance().getLogger().debug("Ignoring registry of type " + packet.registry());
         }
     }
 
@@ -138,26 +112,14 @@ final class RegistryCache {
     }
 
     private <T> void loadRegistry(JavaRegistryProvider registryProvider, JavaRegistryKey<T> registryKey,
-                                  List<RegistryEntry> entries) {
+                                  List<PackedRegistryEntry> entries) {
         // Generics ftw
         MutableJavaRegistry<T> registry = (MutableJavaRegistry<T>) registries.get(registryKey);
         // Must have a reader at this point
         KeyDependentJavaRegistryReader<T> reader = JavaRegistryReaders.getReader(registryKey).orElseThrow();
-        Map<Key, NbtMap> localRegistryData = DEFAULTS.get(registryKey);
 
         // Bind the registry, parsing all the registries
-        registry.bind(id -> {
-            RegistryEntry entry = entries.get(id);
-            // If the data is null, that's the server telling us we need to use our default values.
-            if (entry.getData() == null) {
-                entry = new RegistryEntry(entry.getId(), localRegistryData.get(entry.getId()));
-            }
-
-            return reader.read(new RegistryEntryContext(registryProvider, entry));
-        });
+        registry.bind(id -> reader.read(new RegistryEntryContext(registryProvider, entries.get(id))));
     }
 
-    public static void bootstrap() {
-        // noop to load default network codec
-    }
 }

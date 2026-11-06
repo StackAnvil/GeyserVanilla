@@ -28,13 +28,16 @@ package org.geysermc.geyser.translator.protocol.java.dialogues;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundShowDialogGamePacket;
+import net.minecraft.network.protocol.common.ClientboundShowDialogPacket;
 
-@Translator(packet = ClientboundShowDialogGamePacket.class)
-public class JavaShowDialogGameTranslator extends PacketTranslator<ClientboundShowDialogGamePacket> {
+@Translator(packet = ClientboundShowDialogPacket.class)
+public class JavaShowDialogTranslator extends PacketTranslator<ClientboundShowDialogPacket> {
 
     @Override
-    public void translate(GeyserSession session, ClientboundShowDialogGamePacket packet) {
-        session.getDialogManager().openDialog(packet.getDialog());
+    public void translate(GeyserSession session, ClientboundShowDialogPacket packet) {
+        if (session.getDownstream().isState(net.minecraft.network.ConnectionProtocol.CONFIGURATION)) {
+            session.prepareForConfigurationForm();
+        }
+        session.getDialogManager().openDialog(packet.dialog());
     }
 }

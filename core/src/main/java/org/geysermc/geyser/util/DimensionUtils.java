@@ -39,7 +39,6 @@ import org.geysermc.geyser.level.EffectType;
 import org.geysermc.geyser.level.BedrockDimension;
 import org.geysermc.geyser.level.JavaDimension;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
 
 import java.util.Set;
 
@@ -68,12 +67,12 @@ public class DimensionUtils {
 
         session.setDimensionType(javaDimension);
 
-        Set<Effect> entityEffects = session.getEffectCache().getEntityEffects();
-        for (Effect effect : entityEffects) {
+        Set<EffectType> entityEffects = session.getEffectCache().getEntityEffects();
+        for (EffectType effect : entityEffects) {
             MobEffectPacket mobEffectPacket = new MobEffectPacket();
             mobEffectPacket.setEvent(MobEffectPacket.Event.REMOVE);
             mobEffectPacket.setRuntimeEntityId(player.geyserId());
-            mobEffectPacket.setEffectId(EffectType.fromJavaEffect(effect).getBedrockId());
+            mobEffectPacket.setEffectId(effect.getBedrockId());
             session.sendUpstreamPacket(mobEffectPacket);
         }
         // Effects are re-sent from server

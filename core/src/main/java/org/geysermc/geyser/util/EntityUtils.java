@@ -31,7 +31,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.nbt.NbtType;
-import org.cloudburstmc.protocol.bedrock.data.GameType;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.GeyserImpl;
@@ -70,11 +69,11 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.session.cache.tags.GeyserHolderSet;
 import org.geysermc.geyser.text.MinecraftLocale;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.item.equipment.Equippable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -92,18 +91,15 @@ public final class EntityUtils {
     /**
      * A constant array of the two hands that a player can interact with an entity.
      */
-    public static final Hand[] HANDS = Hand.values();
+    public static final InteractionHand[] HANDS = InteractionHand.values();
 
     /**
      * @return a new String array of all known effect identifiers
      */
     public static String[] getAllEffectIdentifiers() {
-        String[] identifiers = new String[Effect.VALUES.length];
-        for (int i = 0; i < Effect.VALUES.length; i++) {
-            identifiers[i] = "minecraft:" + Effect.VALUES[i].name().toLowerCase(Locale.ROOT);
-        }
-
-        return identifiers;
+        var effects = net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT;
+        return effects.stream().map(effect -> java.util.Objects.requireNonNull(effects.getKey(effect)).toString())
+            .toArray(String[]::new);
     }
 
     private static float getMountedHeightOffset(Entity mount) {
@@ -113,58 +109,57 @@ public final class EntityUtils {
 
         float height = mount.getBoundingBoxHeight();
         float mountedHeightOffset = height * 0.75f;
-        switch (mount.getEntityType()) {
-            case CAMEL -> {
+        switch (EntityType.getKey(mount.getEntityType()).getPath()) {
+            case "camel" -> {
                 boolean isBaby = mount.getFlag(EntityFlag.BABY);
                 mountedHeightOffset = height - (isBaby ? 0.35f : 0.6f);
             }
-            case CAVE_SPIDER, CHICKEN, SPIDER -> mountedHeightOffset = height * 0.5f;
-            case DONKEY, MULE -> mountedHeightOffset -= 0.25f;
-            case TRADER_LLAMA, LLAMA -> mountedHeightOffset = height * 0.6f;
-            case MINECART, HOPPER_MINECART, TNT_MINECART, CHEST_MINECART, FURNACE_MINECART, SPAWNER_MINECART,
-                    COMMAND_BLOCK_MINECART -> mountedHeightOffset = 0;
-            case BAMBOO_RAFT, BAMBOO_CHEST_RAFT -> mountedHeightOffset = 0.25f;
-            case HOGLIN, ZOGLIN -> {
+            case "cave_spider", "chicken", "spider" -> mountedHeightOffset = height * 0.5f;
+            case "donkey", "mule" -> mountedHeightOffset -= 0.25f;
+            case "trader_llama", "llama" -> mountedHeightOffset = height * 0.6f;
+            case "minecart", "hopper_minecart", "tnt_minecart", "chest_minecart", "furnace_minecart", "spawner_minecart", "command_block_minecart" -> mountedHeightOffset = 0;
+            case "bamboo_raft", "bamboo_chest_raft" -> mountedHeightOffset = 0.25f;
+            case "hoglin", "zoglin" -> {
                 boolean isBaby = mount.getFlag(EntityFlag.BABY);
                 mountedHeightOffset = height - (isBaby ? 0.2f : 0.15f);
             }
-            case PIGLIN -> mountedHeightOffset = height * 0.92f;
-            case PHANTOM -> mountedHeightOffset = height * 0.35f;
-            case PLAYER, MANNEQUIN -> mountedHeightOffset = height;
-            case RAVAGER -> mountedHeightOffset = 2.1f;
-            case SKELETON_HORSE -> mountedHeightOffset -= 0.1875f;
-            case SNIFFER -> mountedHeightOffset = 1.8f;
-            case STRIDER -> mountedHeightOffset = height - 0.19f;
+            case "piglin" -> mountedHeightOffset = height * 0.92f;
+            case "phantom" -> mountedHeightOffset = height * 0.35f;
+            case "player", "mannequin" -> mountedHeightOffset = height;
+            case "ravager" -> mountedHeightOffset = 2.1f;
+            case "skeleton_horse" -> mountedHeightOffset -= 0.1875f;
+            case "sniffer" -> mountedHeightOffset = 1.8f;
+            case "strider" -> mountedHeightOffset = height - 0.19f;
         }
         return mountedHeightOffset;
     }
 
     private static float getHeightOffset(Entity passenger) {
         boolean isBaby;
-        switch (passenger.getEntityType()) {
-            case ALLAY, VEX:
+        switch (EntityType.getKey(passenger.getEntityType()).getPath()) {
+            case "allay", "vex":
                 return 0.4f;
-            case SKELETON, STRAY, WITHER_SKELETON:
+            case "skeleton", "stray", "wither_skeleton":
                 return -0.6f;
-            case ARMOR_STAND:
+            case "armor_stand":
                 if (((ArmorStandEntity) passenger).isMarker()) {
                     return 0.0f;
                 } else {
                     return 0.1f;
                 }
-            case ENDERMITE, SILVERFISH:
+            case "endermite", "silverfish":
                 return 0.1f;
-            case PIGLIN, PIGLIN_BRUTE, ZOMBIFIED_PIGLIN:
+            case "piglin", "piglin_brute", "zombified_piglin":
                 isBaby = passenger.getFlag(EntityFlag.BABY);
                 return isBaby ? -0.05f : -0.45f;
-            case DROWNED, HUSK, ZOMBIE_VILLAGER, ZOMBIE:
+            case "drowned", "husk", "zombie_villager", "zombie":
                 isBaby = passenger.getFlag(EntityFlag.BABY);
                 return isBaby ? 0.0f : -0.45f;
-            case EVOKER, ILLUSIONER, PILLAGER, RAVAGER, VINDICATOR, WITCH:
+            case "evoker", "illusioner", "pillager", "ravager", "vindicator", "witch":
                 return -0.45f;
-            case PLAYER:
+            case "player":
                 return -0.35f;
-            case SHULKER:
+            case "shulker":
                 Entity vehicle = passenger.getVehicle();
                 if (vehicle instanceof BoatEntity || vehicle.getJavaDefinition() == VanillaEntities.MINECART) {
                     return 0.1875f - getMountedHeightOffset(vehicle);
@@ -189,8 +184,8 @@ public final class EntityUtils {
             float xOffset = 0;
             float yOffset = mountedHeightOffset + heightOffset;
             float zOffset = 0;
-            switch (mount.getEntityType()) {
-                case CAMEL -> {
+            switch (EntityType.getKey(mount.getEntityType()).getPath()) {
+                case "camel" -> {
                     zOffset = 0.5f;
                     if (passengers > 1) {
                         if (!rider) {
@@ -208,9 +203,9 @@ public final class EntityUtils {
                         }
                     }
                 }
-                case CHICKEN -> zOffset = -0.1f;
-                case TRADER_LLAMA, LLAMA -> zOffset = -0.3f;
-                case TEXT_DISPLAY -> {
+                case "chicken" -> zOffset = -0.1f;
+                case "trader_llama", "llama" -> zOffset = -0.3f;
+                case "text_display" -> {
                     if (passenger instanceof TextDisplayEntity textDisplay) {
                         Vector3f displayTranslation = textDisplay.getTranslation();
                         if (displayTranslation == null) {
@@ -222,7 +217,7 @@ public final class EntityUtils {
                         zOffset = displayTranslation.getZ();
                     }
                 }
-                case PLAYER -> {
+                case "player" -> {
                     if (passenger instanceof TextDisplayEntity textDisplay) {
                         Vector3f displayTranslation = textDisplay.getTranslation();
                         int lines = textDisplay.getLineCount();
@@ -234,7 +229,7 @@ public final class EntityUtils {
                         }
                     }
                 }
-                case HAPPY_GHAST -> {
+                case "happy_ghast" -> {
                     int seatingIndex = Math.min(index, 4);
                     xOffset = HappyGhastEntity.X_OFFSETS[seatingIndex];
                     yOffset = 3.4f;
@@ -264,14 +259,12 @@ public final class EntityUtils {
             if (passenger.getJavaDefinition() == VanillaEntities.PLAYER) {
                 yOffset += VanillaEntities.PLAYER.offset();
             }
-            switch (mount.getEntityType()) {
-                case MINECART, HOPPER_MINECART, TNT_MINECART, CHEST_MINECART, FURNACE_MINECART, SPAWNER_MINECART,
-                        COMMAND_BLOCK_MINECART -> yOffset -= mount.getJavaDefinition().height() * 0.5f;
+            switch (EntityType.getKey(mount.getEntityType()).getPath()) {
+                case "minecart", "hopper_minecart", "tnt_minecart", "chest_minecart", "furnace_minecart", "spawner_minecart", "command_block_minecart" -> yOffset -= mount.getJavaDefinition().height() * 0.5f;
             }
-            switch (passenger.getEntityType()) {
-                case MINECART, HOPPER_MINECART, TNT_MINECART, CHEST_MINECART, FURNACE_MINECART, SPAWNER_MINECART,
-                     COMMAND_BLOCK_MINECART, SHULKER -> yOffset += passenger.getJavaDefinition().height() * 0.5f;
-                case FALLING_BLOCK -> yOffset += 0.995f;
+            switch (EntityType.getKey(passenger.getEntityType()).getPath()) {
+                case "minecart", "hopper_minecart", "tnt_minecart", "chest_minecart", "furnace_minecart", "spawner_minecart", "command_block_minecart", "shulker" -> yOffset += passenger.getJavaDefinition().height() * 0.5f;
+                case "falling_block" -> yOffset += 0.995f;
             }
             if (mount instanceof BoatEntity) {
                 yOffset -= mount.getJavaDefinition().height() * 0.5f;
@@ -322,16 +315,16 @@ public final class EntityUtils {
     }
 
     /**
-     * Convert Java GameMode to Bedrock GameType
+     * Convert Java GameType to Bedrock org.cloudburstmc.protocol.bedrock.data.GameType
      * Needed to account for ordinal differences (spectator is 3 in Java, 6 in Bedrock)
      */
     @SuppressWarnings("deprecation") // Must use survival_viewer due to limitations on Bedrock's spectator gamemode
-    public static GameType toBedrockGamemode(GameMode gamemode) {
+    public static org.cloudburstmc.protocol.bedrock.data.GameType toBedrockGamemode(GameType gamemode) {
         return switch (gamemode) {
-            case CREATIVE -> GameType.CREATIVE;
-            case ADVENTURE -> GameType.ADVENTURE;
-            case SPECTATOR -> GameType.SURVIVAL_VIEWER;
-            default -> GameType.SURVIVAL;
+            case CREATIVE -> org.cloudburstmc.protocol.bedrock.data.GameType.CREATIVE;
+            case ADVENTURE -> org.cloudburstmc.protocol.bedrock.data.GameType.ADVENTURE;
+            case SPECTATOR -> org.cloudburstmc.protocol.bedrock.data.GameType.SURVIVAL_VIEWER;
+            default -> org.cloudburstmc.protocol.bedrock.data.GameType.SURVIVAL;
         };
     }
 
@@ -352,7 +345,7 @@ public final class EntityUtils {
         // default fallback value as used in Minecraft Java
         if (type == null || type.isUnregistered()) {
             return "entity.unregistered_sadface";
-        } else if (type.is(EntityType.PLAYER)) {
+        } else if (type.is(EntityTypes.PLAYER)) {
             return "Player"; // the player's name is always shown instead
         }
         // this works at least with all 1.20.5 entities, except the killer bunny since that's not an entity type.
@@ -361,12 +354,9 @@ public final class EntityUtils {
     }
 
     public static boolean equipmentUsableByEntity(JavaRegistryProvider registries, Equippable equippable, EntityTypeDefinition<?> entity) {
-        if (equippable.allowedEntities() == null) {
-            return true;
-        }
-
-        GeyserHolderSet<EntityTypeDefinition<?>> holderSet = GeyserHolderSet.fromMCPL(JavaRegistries.ENTITY_TYPE, equippable.allowedEntities());
-        return holderSet.contains(registries, entity);
+        return equippable.allowedEntities()
+            .map(set -> set.stream().anyMatch(holder -> entity.is(holder.value())))
+            .orElse(true);
     }
 
     // From ViaVersion! thank u!!

@@ -34,9 +34,9 @@ import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.level.block.entity.DecoratedPotBlockEntityTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotDecorations;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.level.block.entity.PotDecorations;
 
 import java.util.List;
 
@@ -47,21 +47,21 @@ public class DecoratedPotItem extends BlockItem {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        // Some small duplication with the block entity translator, but hard to remove since that one works with NBT instead of MCPL
-        PotDecorations decorations = components.get(DataComponentTypes.POT_DECORATIONS);
+        // Some small duplication with the block entity translator, but hard to remove since that one works with NBT instead of item components
+        PotDecorations decorations = components.get(DataComponents.POT_DECORATIONS);
         if (decorations != null) {
             JavaRegistryProvider registries = session.javaRegistries();
             ResolvableComponentGetter componentGetter = session.getComponentCache();
 
             // Java has them in a map of item stacks, bedrock in a list of item IDs (order back -> left -> right -> front)
             List<String> sherds = List.of(
-                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.back()),
-                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.left()),
-                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.right()),
-                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.front())
+                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.back().map(net.minecraft.world.item.ItemStackTemplate::create).orElse(null)),
+                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.left().map(net.minecraft.world.item.ItemStackTemplate::create).orElse(null)),
+                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.right().map(net.minecraft.world.item.ItemStackTemplate::create).orElse(null)),
+                DecoratedPotBlockEntityTranslator.convertDecorationItemStackToBedrockItem(registries, componentGetter, decorations.front().map(net.minecraft.world.item.ItemStackTemplate::create).orElse(null))
             );
             builder.putList("sherds", NbtType.STRING, sherds);
         }

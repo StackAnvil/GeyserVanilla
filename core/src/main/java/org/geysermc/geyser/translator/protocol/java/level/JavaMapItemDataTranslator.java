@@ -26,14 +26,15 @@
 package org.geysermc.geyser.translator.protocol.java.level;
 
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import org.geysermc.mcprotocollib.protocol.data.game.level.map.MapData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.map.MapIcon;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundMapItemDataPacket;
+import net.minecraft.world.level.saveddata.maps.MapItemSavedData.MapPatch;
+
+import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.MapDecoration;
 import org.cloudburstmc.protocol.bedrock.data.MapTrackedObject;
 import org.geysermc.geyser.level.BedrockMapIcon;
-import org.geysermc.geyser.level.MapColor;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.util.ARGB;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -48,43 +49,47 @@ public class JavaMapItemDataTranslator extends PacketTranslator<ClientboundMapIt
     public void translate(GeyserSession session, ClientboundMapItemDataPacket packet) {
         org.cloudburstmc.protocol.bedrock.packet.ClientboundMapItemDataPacket mapItemDataPacket = new org.cloudburstmc.protocol.bedrock.packet.ClientboundMapItemDataPacket();
 
-        mapItemDataPacket.setUniqueMapId(packet.getMapId());
+        mapItemDataPacket.setUniqueMapId(packet.mapId().id());
         mapItemDataPacket.setDimensionId(DimensionUtils.javaToBedrock(session));
-        mapItemDataPacket.setLocked(packet.isLocked());
+        mapItemDataPacket.setLocked(packet.locked());
         mapItemDataPacket.setOrigin(Vector3i.ZERO); // Required since 1.19.20
-        mapItemDataPacket.setScale(packet.getScale());
+        mapItemDataPacket.setScale(packet.scale());
         // Required as of 1.19.50
-        mapItemDataPacket.setTrackedEntityIds(new LongArrayList(new long[]{packet.getMapId()}));
+        mapItemDataPacket.setTrackedEntityIds(new LongArrayList(new long[]{packet.mapId().id()}));
 
-        MapData data = packet.getData();
+        MapPatch data = packet.colorPatch().orElse(null);
         if (data != null) {
-            mapItemDataPacket.setXOffset(data.getX());
-            mapItemDataPacket.setYOffset(data.getY());
-            mapItemDataPacket.setWidth(data.getColumns());
-            mapItemDataPacket.setHeight(data.getRows());
+            mapItemDataPacket.setXOffset(data.startX());
+            mapItemDataPacket.setYOffset(data.startY());
+            mapItemDataPacket.setWidth(data.width());
+            mapItemDataPacket.setHeight(data.height());
 
             // Every int entry is an ARGB color
-            int[] colors = new int[data.getData().length];
+            int[] colors = new int[data.mapColors().length];
 
             int idx = 0;
-            for (byte colorId : data.getData()) {
-                colors[idx++] = MapColor.fromId(colorId & 0xFF).getABGR();
+            for (byte colorId : data.mapColors()) {
+                colors[idx++] = ARGB.toABGR(MapColor.getColorFromPackedId(colorId & 0xFF));
             }
 
             mapItemDataPacket.setColors(colors);
         }
 
         // Bedrock needs an entity id to display an icon
-        if (packet.getIcons().length != 0) {
-            mapItemDataPacket.setTrackedObjects(new ArrayList<>(packet.getIcons().length));
-            mapItemDataPacket.setDecorations(new ArrayList<>(packet.getIcons().length));
+        if (packet.decorations().isPresent()) {
+            mapItemDataPacket.setTrackedObjects(new ArrayList<>(packet.decorations().get().size()));
+            mapItemDataPacket.setDecorations(new ArrayList<>(packet.decorations().get().size()));
 
             int id = 0;
-            for (MapIcon icon : packet.getIcons()) {
-                BedrockMapIcon bedrockMapIcon = BedrockMapIcon.fromType(icon.getIconType());
+            for (var icon : packet.decorations().get()) {
+                BedrockMapIcon bedrockMapIcon = BedrockMapIcon.fromType(icon.type());
+
+                if (bedrockMapIcon == null) {
+                    continue;
+                }
 
                 mapItemDataPacket.getTrackedObjects().add(new MapTrackedObject(id));
-                mapItemDataPacket.getDecorations().add(new MapDecoration(bedrockMapIcon.getIconID(), icon.getIconRotation(), icon.getCenterX(), icon.getCenterZ(), "", bedrockMapIcon.toARGB()));
+                mapItemDataPacket.getDecorations().add(new MapDecoration(bedrockMapIcon.getIconID(), icon.rot(), icon.x(), icon.y(), "", bedrockMapIcon.toARGB()));
                 id++;
             }
         }

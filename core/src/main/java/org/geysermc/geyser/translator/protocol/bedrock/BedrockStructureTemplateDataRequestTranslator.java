@@ -33,8 +33,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.StructureBlockUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.UpdateStructureBlockAction;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.UpdateStructureBlockMode;
+import net.minecraft.world.level.block.entity.StructureBlockEntity.UpdateType;
+import net.minecraft.world.level.block.state.properties.StructureMode;
 
 /**
  * Packet used in Bedrock to load structure size into the structure block GUI. It is sent every time the GUI is opened.
@@ -78,8 +78,8 @@ public class BedrockStructureTemplateDataRequestTranslator extends PacketTransla
             StructureBlockUtils.sendJavaStructurePacket(session,
                     packet.getPosition(),
                     Vector3i.ZERO, // We expect the Java server to tell us the size
-                    UpdateStructureBlockMode.LOAD,
-                    UpdateStructureBlockAction.LOAD_STRUCTURE,
+                    StructureMode.LOAD,
+                    UpdateType.LOAD_AREA,
                     settings,
                     true,
                     packet.getName()

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network.playerlist;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
@@ -44,14 +46,12 @@ import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaResetScorePac
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundResetScorePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
+import net.minecraft.network.protocol.game.ClientboundResetScorePacket;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.Test;
 
 /*
@@ -66,19 +66,13 @@ public class BasicPlayerlistScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.PLAYER_LIST, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.LIST, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -100,19 +94,13 @@ public class BasicPlayerlistScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective", NamedTextColor.AQUA, TextDecoration.BOLD),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective", NamedTextColor.AQUA, TextDecoration.BOLD), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.PLAYER_LIST, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.LIST, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -135,31 +123,19 @@ public class BasicPlayerlistScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.ADD,
-                    Component.text("objective1"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective1"), RenderType.INTEGER, null)
             );
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective2",
-                    ObjectiveAction.ADD,
-                    Component.text("objective2"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective2", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective2"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective1", 1));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective2", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective1", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective2", 2));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.PLAYER_LIST, "objective2")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.LIST, "objective2")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -181,7 +157,7 @@ public class BasicPlayerlistScoreboardTests {
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.PLAYER_LIST, "objective1")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.LIST, "objective1")
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -217,23 +193,17 @@ public class BasicPlayerlistScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.ADD,
-                    Component.text("objective1"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective1"), RenderType.INTEGER, null)
             );
 
             spawnPlayerSilently(context, "player1", 2);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("player1", "objective1", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("player1", "objective1", 1));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.PLAYER_LIST, "objective1")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.LIST, "objective1")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -266,7 +236,7 @@ public class BasicPlayerlistScoreboardTests {
             // There used to be a bug where the score was marked as removed (as can be seen in the lines above),
             // but was not actually properly removed and thus resend as deleted on each update.
             // This bit tests that specifically
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective1", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective1", 2));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -289,22 +259,16 @@ public class BasicPlayerlistScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.ADD,
-                    Component.text("objective1"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective1"), RenderType.INTEGER, null)
             );
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective1", 1));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("player1", "objective1", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective1", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("player1", "objective1", 2));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.PLAYER_LIST, "objective1")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.LIST, "objective1")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();

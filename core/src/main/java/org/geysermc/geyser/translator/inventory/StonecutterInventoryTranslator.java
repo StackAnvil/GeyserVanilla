@@ -42,9 +42,9 @@ import org.geysermc.geyser.inventory.recipe.GeyserStonecutterData;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerButtonClickPacket;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 
 public class StonecutterInventoryTranslator extends AbstractBlockInventoryTranslator<StonecutterContainer> {
     public StonecutterInventoryTranslator() {
@@ -78,7 +78,7 @@ public class StonecutterInventoryTranslator extends AbstractBlockInventoryTransl
             container.setStonecutterButton(button);
         }
 
-        if (container.getItem(1).getJavaId() != javaOutput.getId()) {
+        if (container.getItem(1).getJavaId() != org.geysermc.geyser.vanilla.protocol.VanillaItems.id(javaOutput)) {
             // We don't know there is an output here, so we tell ourselves that there is
             container.setItem(1, GeyserItemStack.from(session, javaOutput), session);
         }
@@ -168,7 +168,7 @@ public class StonecutterInventoryTranslator extends AbstractBlockInventoryTransl
     }
 
     @Override
-    public StonecutterContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public StonecutterContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new StonecutterContainer(session, name, windowId, this.size, containerType);
     }
 

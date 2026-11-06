@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -32,7 +34,6 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class HoglinEntity extends AnimalEntity {
     private boolean isImmuneToZombification;
@@ -43,9 +44,9 @@ public class HoglinEntity extends AnimalEntity {
         setFlag(EntityFlag.SHAKING, isShaking());
     }
 
-    public void setImmuneToZombification(BooleanEntityMetadata entityMetadata) {
+    public void setImmuneToZombification(DataValue<Boolean> entityMetadata) {
         // Apply shaking effect if not in the nether and zombification is possible
-        this.isImmuneToZombification = entityMetadata.getPrimitiveValue();
+        this.isImmuneToZombification = entityMetadata.value();
         setFlag(EntityFlag.SHAKING, isShaking());
     }
 

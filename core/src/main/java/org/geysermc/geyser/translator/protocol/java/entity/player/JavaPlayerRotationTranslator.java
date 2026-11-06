@@ -28,13 +28,13 @@ package org.geysermc.geyser.translator.protocol.java.entity.player;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerRotationPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerRotationPacket;
 
 @Translator(packet = ClientboundPlayerRotationPacket.class)
 public class JavaPlayerRotationTranslator extends PacketTranslator<ClientboundPlayerRotationPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundPlayerRotationPacket packet) {
-        session.getPlayerEntity().updateOwnRotation(packet.getYRot(), packet.getXRot(), packet.getYRot());
+        session.getPlayerEntity().updateOwnRotation(packet.yRot(), packet.xRot(), packet.yRot());
     }
 }

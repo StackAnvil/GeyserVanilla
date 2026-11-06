@@ -44,7 +44,7 @@ import org.geysermc.geyser.level.physics.BoundingBox;
 import org.geysermc.geyser.level.physics.CollisionManager;
 import org.geysermc.geyser.translator.collision.BlockCollision;
 import org.geysermc.geyser.util.BlockUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
 
 public class BoatVehicleComponent extends VehicleComponent<BoatEntity> {
     private Status status, oldStatus;
@@ -138,7 +138,7 @@ public class BoatVehicleComponent extends VehicleComponent<BoatEntity> {
 
     @Override
     protected void sendServerboundMoveVehiclePacket(Vector3d javaPos) {
-        ServerboundMoveVehiclePacket moveVehiclePacket = new ServerboundMoveVehiclePacket(javaPos, vehicle.getYaw() - 90, vehicle.getPitch(), vehicle.isOnGround());
+        ServerboundMoveVehiclePacket moveVehiclePacket = new ServerboundMoveVehiclePacket(net.minecraft.core.PositionAndRotation.of(org.geysermc.geyser.util.MathUtils.toVec3(javaPos), vehicle.getYaw() - 90, vehicle.getPitch()), vehicle.isOnGround());
         vehicle.getSession().sendDownstreamGamePacket(moveVehiclePacket);
     }
 

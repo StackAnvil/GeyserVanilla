@@ -40,8 +40,6 @@ import org.geysermc.geyser.GeyserBootstrap;
 import org.geysermc.geyser.network.java.GeyserInjector;
 import org.geysermc.geyser.network.java.LocalServerChannelWrapper;
 import org.geysermc.geyser.network.java.LocalSession;
-import org.geysermc.mcprotocollib.protocol.MinecraftConstants;
-import org.geysermc.mcprotocollib.protocol.MinecraftProtocol;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -180,11 +178,11 @@ public class GeyserSpigotInjector extends GeyserInjector {
      * For the future, if someone wants to properly fix this - as of December 28, 2021, it happens on 1.16.5/1.17.1/1.18.1 EXCEPT Spigot 1.16.5
      */
     private void workAroundWeirdBug(GeyserBootstrap bootstrap) {
-        MinecraftProtocol protocol = new MinecraftProtocol();
-        LocalSession session = new LocalSession(this.serverSocketAddress, InetAddress.getLoopbackAddress().getHostAddress(), protocol, Runnable::run);
-        session.setFlag(MinecraftConstants.CLIENT_HOST, bootstrap.config().java().address());
-        session.setFlag(MinecraftConstants.CLIENT_PORT, bootstrap.config().java().port());
-        session.connect();
+        LocalSession.connectStatus(this.serverSocketAddress, InetAddress.getLoopbackAddress().getHostAddress(),
+            bootstrap.config().java().address(), bootstrap.config().java().port()).exceptionally(failure -> {
+                bootstrap.getGeyserLogger().debug("Initial local status request failed", failure);
+                return null;
+            });
     }
 
     @Override

@@ -34,10 +34,11 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PositionElement;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundTeleportEntityPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundMoveVehiclePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundMovePlayerPosRotPacket;
+import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 
 import java.util.Objects;
 
@@ -46,10 +47,10 @@ public class JavaTeleportEntityTranslator extends PacketTranslator<ClientboundTe
 
     @Override
     public void translate(GeyserSession session, ClientboundTeleportEntityPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.id());
 
         boolean isPreviouslyRemovedVehicle = false;
-        if (entity == null && Objects.equals(session.getPlayerEntity().getRemovedPlayerVehicleId(), packet.getId())) {
+        if (entity == null && Objects.equals(session.getPlayerEntity().getRemovedPlayerVehicleId(), packet.id())) {
             entity = session.getPlayerEntity();
             isPreviouslyRemovedVehicle = true;
         }
@@ -57,35 +58,24 @@ public class JavaTeleportEntityTranslator extends PacketTranslator<ClientboundTe
             return;
         }
 
-        Vector3d position = packet.getPosition();
-        position = position.add(
-            packet.getRelatives().contains(PositionElement.X) ? entity.position().getX() : 0,
-            packet.getRelatives().contains(PositionElement.Y) ? entity.position().getY() : 0,
-            packet.getRelatives().contains(PositionElement.Z) ? entity.position().getZ() : 0
-        );
+        PositionMoveRotation absolute = PositionMoveRotation.calculateAbsolute(
+            new PositionMoveRotation(MathUtils.toVec3(entity.position()), MathUtils.toVec3(entity.getMotion()), entity.getYaw(), entity.getPitch()),
+            packet.change(), packet.relatives());
+        Vector3d position = MathUtils.toVector3d(absolute.position());
+        float newPitch = MathUtils.clamp(absolute.xRot(), -90, 90);
+        float newYaw = absolute.yRot();
 
-        boolean hasRelative = packet.getRelatives().contains(PositionElement.X) || packet.getRelatives().contains(PositionElement.Y) || packet.getRelatives().contains(PositionElement.Z);
+        boolean hasRelative = packet.relatives().contains(Relative.X) || packet.relatives().contains(Relative.Y) || packet.relatives().contains(Relative.Z);
         boolean interpolate = (entity instanceof LivingEntity || hasRelative) && entity.position().distance(position.toFloat()) < 4096.0;
 
-        float newPitch = MathUtils.clamp(packet.getXRot() + (packet.getRelatives().contains(PositionElement.X_ROT) ? entity.getPitch() : 0), -90, 90);
-        float newYaw = packet.getYRot() + (packet.getRelatives().contains(PositionElement.Y_ROT) ? entity.getYaw() : 0);
-
-        float lastPitch = entity.getPitch(), lastYaw = entity.getYaw();
         if (!interpolate) {
-            entity.teleport(position.toFloat(), newYaw, newPitch, packet.isOnGround());
+            entity.teleport(position.toFloat(), newYaw, newPitch, packet.onGround());
         } else {
             final Vector3d currentPosition = entity.position().toDouble();
-            entity.moveRelative(position.getX() - currentPosition.getX(), position.getY() - currentPosition.getY(), position.getZ() - currentPosition.getZ(), newYaw, newPitch, newYaw, packet.isOnGround());
+            entity.moveRelative(position.getX() - currentPosition.getX(), position.getY() - currentPosition.getY(), position.getZ() - currentPosition.getZ(), newYaw, newPitch, newYaw, packet.onGround());
         }
 
-        Vector3f deltaMovement = packet.getDeltaMovement().toFloat().add(
-            packet.getRelatives().contains(PositionElement.DELTA_X) ? entity.getMotion().getX() : 0,
-            packet.getRelatives().contains(PositionElement.DELTA_Y) ? entity.getMotion().getY() : 0,
-            packet.getRelatives().contains(PositionElement.DELTA_Z) ? entity.getMotion().getZ() : 0
-        );
-        if (packet.getRelatives().contains(PositionElement.ROTATE_DELTA)) {
-            deltaMovement = MathUtils.xYRot(deltaMovement, (float) Math.toRadians(lastPitch - newPitch), (float) Math.toRadians(lastYaw - newYaw));
-        }
+        Vector3f deltaMovement = MathUtils.toVector3f(absolute.deltaMovement());
 
         entity.setMotion(deltaMovement);
         if (deltaMovement.distanceSquared(Vector3f.ZERO) > 1.0E-8F) {
@@ -96,12 +86,12 @@ public class JavaTeleportEntityTranslator extends PacketTranslator<ClientboundTe
         }
 
         if (!interpolate && !entity.getPassengers().isEmpty() && entity.getPassengers().getFirst() == session.getPlayerEntity() && !isPreviouslyRemovedVehicle) {
-            ServerboundMoveVehiclePacket vehiclePacket = new ServerboundMoveVehiclePacket(position, newYaw, newPitch, entity.isOnGround());
+            ServerboundMoveVehiclePacket vehiclePacket = new ServerboundMoveVehiclePacket(net.minecraft.core.PositionAndRotation.of(org.geysermc.geyser.util.MathUtils.toVec3(position), newYaw, newPitch), entity.isOnGround());
             session.sendDownstreamGamePacket(vehiclePacket);
         }
 
         if (isPreviouslyRemovedVehicle) {
-            ServerboundMovePlayerPosRotPacket positionPacket = new ServerboundMovePlayerPosRotPacket(false, false, position.getX(), position.getY(), position.getZ(), newYaw, newPitch);
+            ServerboundMovePlayerPacket.PosRot positionPacket = new ServerboundMovePlayerPacket.PosRot(position.getX(), position.getY(), position.getZ(), newYaw, newPitch, false, false);
             session.sendDownstreamGamePacket(positionPacket);
         }
     }

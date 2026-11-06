@@ -40,16 +40,16 @@ import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.registry.java.reader.JavaRegistryReader;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.Optional;
 
-@BlockEntity(type = BlockEntityType.DECORATED_POT)
+@BlockEntity(type = "minecraft:decorated_pot")
 public class DecoratedPotBlockEntityTranslator extends BlockEntityTranslator {
-    private static final String POTTERY_PATTERN_COMPONENT = DataComponentTypes.PROVIDES_POTTERY_PATTERN.getKey().toString();
+    private static final String POTTERY_PATTERN_COMPONENT = net.minecraft.core.registries.BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(DataComponents.PROVIDES_POTTERY_PATTERN).toString();
     // Use this pattern for all non-vanilla patterns
     public static final Key DEFAULT_PATTERN = MinecraftKey.key("minecraft:shelter_pottery_sherd");
     // Use this item for empty faces
@@ -95,9 +95,9 @@ public class DecoratedPotBlockEntityTranslator extends BlockEntityTranslator {
         // If no pattern was specified in the component patch, check the item's default components
         Optional<Item> item = BuiltInJavaRegistries.ITEM.get(MinecraftKey.key(stack.getString("id")));
         if (item.isPresent()) {
-            Integer patternId = item.get().getComponent(session.getComponentCache(), DataComponentTypes.PROVIDES_POTTERY_PATTERN);
+            var patternId = item.get().getComponent(session.getComponentCache(), DataComponents.PROVIDES_POTTERY_PATTERN);
             if (patternId != null) {
-                return JavaRegistries.DECORATED_POT_PATTERN.get(registries, patternId)
+                return patternId.unwrapKey().flatMap(key -> JavaRegistries.DECORATED_POT_PATTERN.get(registries, MinecraftKey.key(key.identifier().toString())))
                     .map(Key::asString)
                     .orElse(DEFAULT_BEDROCK_ITEM);
             }
@@ -114,11 +114,14 @@ public class DecoratedPotBlockEntityTranslator extends BlockEntityTranslator {
             return DEFAULT_BEDROCK_ITEM;
         }
 
-        Item item = BuiltInJavaRegistries.ITEM.getOrThrow(stack.getId());
-        DataComponents fullComponents = item.gatherComponents(componentGetter, stack.getDataComponentsPatch());
+        Item item = BuiltInJavaRegistries.ITEM.getOrThrow(org.geysermc.geyser.vanilla.protocol.VanillaItems.id(stack));
+        GeyserDataComponents fullComponents = item.gatherComponents(componentGetter, org.geysermc.geyser.vanilla.protocol.GeyserDataComponents.from(stack.getComponentsPatch()));
 
-        int potteryPattern = fullComponents.getOrDefault(DataComponentTypes.PROVIDES_POTTERY_PATTERN, -1);
-        return JavaRegistries.DECORATED_POT_PATTERN.get(registries, potteryPattern)
+        var potteryPattern = fullComponents.get(DataComponents.PROVIDES_POTTERY_PATTERN);
+        if (potteryPattern == null) {
+            return DEFAULT_BEDROCK_ITEM;
+        }
+        return potteryPattern.unwrapKey().flatMap(key -> JavaRegistries.DECORATED_POT_PATTERN.get(registries, MinecraftKey.key(key.identifier().toString())))
             .map(Key::asString)
             .orElse(DEFAULT_BEDROCK_ITEM);
     }

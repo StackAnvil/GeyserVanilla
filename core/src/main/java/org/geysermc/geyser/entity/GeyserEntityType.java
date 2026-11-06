@@ -33,20 +33,19 @@ import org.geysermc.geyser.api.entity.definition.JavaEntityType;
 import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import net.minecraft.world.entity.EntityType;
 
-import java.util.EnumMap;
-import java.util.Locale;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-public record GeyserEntityType(Identifier identifier, EntityType mcpl) implements JavaEntityType {
+public record GeyserEntityType(Identifier identifier, EntityType<?> nativeType) implements JavaEntityType {
     private static final Identifier UNREGISTERED = Identifier.of(Constants.GEYSER_CUSTOM_NAMESPACE, "unregistered_sadface");
 
-    private static final Map<EntityType, GeyserEntityType> VANILLA = new EnumMap<>(EntityType.class);
+    private static final Map<EntityType<?>, GeyserEntityType> VANILLA = new IdentityHashMap<>();
 
-    private GeyserEntityType(EntityType builtin) {
-        this(Identifier.of(builtin.name().toLowerCase(Locale.ROOT)), builtin);
+    private GeyserEntityType(EntityType<?> builtin) {
+        this(Identifier.of(EntityType.getKey(builtin).toString()), builtin);
     }
 
     public boolean isUnregistered() {
@@ -74,27 +73,27 @@ public record GeyserEntityType(Identifier identifier, EntityType mcpl) implement
     }
 
     public Optional<EntityTypeDefinition<?>> definition() {
-        return BuiltInJavaRegistries.ENTITY_TYPE.get(mcpl.ordinal());
+        return BuiltInJavaRegistries.ENTITY_TYPE.get(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getId(nativeType));
     }
 
     private EntityTypeDefinition<?> definitionOrThrow() {
-        return BuiltInJavaRegistries.ENTITY_TYPE.getOrThrow(mcpl.ordinal());
+        return BuiltInJavaRegistries.ENTITY_TYPE.getOrThrow(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getId(nativeType));
     }
 
-    public boolean is(EntityType type) {
-        return this.mcpl == type;
+    public boolean is(EntityType<?> type) {
+        return this.nativeType == type;
     }
 
-    public static GeyserEntityType ofVanilla(EntityType builtin) {
+    public static GeyserEntityType ofVanilla(EntityType<?> builtin) {
         return VANILLA.computeIfAbsent(builtin, GeyserEntityType::new);
     }
 
     public static GeyserEntityType ofVanilla(Identifier javaIdentifier) {
-        return ofVanilla(EntityType.valueOf(javaIdentifier.path().toUpperCase(Locale.ROOT)));
+        return ofVanilla(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getValue(net.minecraft.resources.Identifier.fromNamespaceAndPath(javaIdentifier.namespace(), javaIdentifier.path())));
     }
 
     public static GeyserEntityType of(int javaId) {
-        return ofVanilla(EntityType.from(javaId));
+        return ofVanilla(net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.byId(javaId));
     }
 
     @Nullable
@@ -106,10 +105,10 @@ public record GeyserEntityType(Identifier identifier, EntityType mcpl) implement
                 return null;
             }
         }
-        throw new IllegalArgumentException("Unsupported mcpl: " + javaKey.getClass().getName());
+        throw new IllegalArgumentException("Unsupported Java entity key: " + javaKey.getClass().getName());
     }
 
-    public static GeyserEntityType of(EntityType type) {
+    public static GeyserEntityType of(EntityType<?> type) {
         return ofVanilla(type);
     }
 }

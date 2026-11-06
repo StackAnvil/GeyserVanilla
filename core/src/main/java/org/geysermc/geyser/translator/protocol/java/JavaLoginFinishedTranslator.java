@@ -33,10 +33,10 @@ import org.geysermc.geyser.skin.SkinManager;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.PluginMessageUtils;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
-import org.geysermc.mcprotocollib.protocol.packet.login.clientbound.ClientboundLoginFinishedPacket;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.network.ConnectionProtocol;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.login.ClientboundLoginFinishedPacket;
 
 /**
  * Triggers protocol change LOGIN -> CONFIGURATION
@@ -50,9 +50,9 @@ public class JavaLoginFinishedTranslator extends PacketTranslator<ClientboundLog
         AuthType remoteAuthType = session.remoteServer().authType();
 
         // Required, or else Floodgate players break with Spigot chunk caching
-        GameProfile profile = packet.getProfile();
-        playerEntity.setUsername(profile.getName());
-        playerEntity.uuid(profile.getId());
+        GameProfile profile = packet.gameProfile();
+        playerEntity.setUsername(profile.name());
+        playerEntity.uuid(profile.id());
 
         session.getGeyser().getSessionManager().addSession(playerEntity.uuid(), session);
 
@@ -78,7 +78,7 @@ public class JavaLoginFinishedTranslator extends PacketTranslator<ClientboundLog
         session.hasAcceptedCodeOfConduct(false);
 
         // configuration phase stuff that the vanilla client replies with after receiving the GameProfilePacket
-        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(Key.key("brand"), PluginMessageUtils.getGeyserBrandData()), ProtocolState.CONFIGURATION);
+        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(new org.geysermc.geyser.vanilla.protocol.VanillaPayload(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(Key.key("brand")), PluginMessageUtils.getGeyserBrandData())), ConnectionProtocol.CONFIGURATION);
         session.sendJavaClientSettings();
     }
 }

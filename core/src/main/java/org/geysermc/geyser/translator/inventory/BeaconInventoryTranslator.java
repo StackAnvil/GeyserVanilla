@@ -46,9 +46,9 @@ import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.level.block.entity.BlockEntityTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetBeaconPacket;
+import org.geysermc.geyser.level.EffectType;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.network.protocol.game.ServerboundSetBeaconPacket;
 
 import java.util.OptionalInt;
 
@@ -61,12 +61,12 @@ public class BeaconInventoryTranslator extends AbstractBlockInventoryTranslator<
 
     static {
         EFFECT_LEVELS.defaultReturnValue(Integer.MAX_VALUE);
-        EFFECT_LEVELS.put(Effect.SPEED.ordinal(), 1);
-        EFFECT_LEVELS.put(Effect.HASTE.ordinal(), 1);
-        EFFECT_LEVELS.put(Effect.RESISTANCE.ordinal(), 2);
-        EFFECT_LEVELS.put(Effect.JUMP_BOOST.ordinal(), 2);
-        EFFECT_LEVELS.put(Effect.STRENGTH.ordinal(), 3);
-        EFFECT_LEVELS.put(Effect.REGENERATION.ordinal(), 4);
+        EFFECT_LEVELS.put(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getId(EffectType.SPEED.getJavaEffect()), 1);
+        EFFECT_LEVELS.put(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getId(EffectType.HASTE.getJavaEffect()), 1);
+        EFFECT_LEVELS.put(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getId(EffectType.RESISTANCE.getJavaEffect()), 2);
+        EFFECT_LEVELS.put(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getId(EffectType.JUMP_BOOST.getJavaEffect()), 2);
+        EFFECT_LEVELS.put(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getId(EffectType.STRENGTH.getJavaEffect()), 3);
+        EFFECT_LEVELS.put(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getId(EffectType.REGENERATION.getJavaEffect()), 4);
     }
 
     public BeaconInventoryTranslator() {
@@ -132,7 +132,12 @@ public class BeaconInventoryTranslator extends AbstractBlockInventoryTranslator<
             return rejectRequest(request, false);
         }
 
-        ServerboundSetBeaconPacket packet = new ServerboundSetBeaconPacket(primary, secondary);
+        var effects = session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.MOB_EFFECT);
+        java.util.Optional<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> primaryEffect = primary.isPresent()
+            ? java.util.Optional.of(effects.get(primary.getAsInt()).orElseThrow()) : java.util.Optional.empty();
+        java.util.Optional<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> secondaryEffect = secondary.isPresent()
+            ? java.util.Optional.of(effects.get(secondary.getAsInt()).orElseThrow()) : java.util.Optional.empty();
+        ServerboundSetBeaconPacket packet = new ServerboundSetBeaconPacket(primaryEffect, secondaryEffect);
         session.sendDownstreamGamePacket(packet);
         return acceptRequest(request, makeContainerEntries(session, container, IntSets.emptySet()));
     }
@@ -188,7 +193,7 @@ public class BeaconInventoryTranslator extends AbstractBlockInventoryTranslator<
     }
 
     @Override
-    public BeaconContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public BeaconContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new BeaconContainer(session, name, windowId, this.size, containerType);
     }
 

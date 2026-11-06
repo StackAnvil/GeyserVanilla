@@ -35,8 +35,7 @@ import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.dialog.Dialog;
 import org.geysermc.geyser.session.dialog.input.ParsedInputs;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomClickActionPacket;
+import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,26 +109,28 @@ public interface DialogAction {
         }
     }
 
-    record ShowDialog(Optional<Dialog> dialog, Holder<NbtMap> holder) implements DialogAction {
+    record ShowDialog(java.util.function.Function<JavaRegistryProvider, Dialog> resolve) implements DialogAction {
 
         public static final Key TYPE = MinecraftKey.key("show_dialog");
 
         public ShowDialog(Dialog dialog) {
-            this(Optional.of(dialog), null);
+            this(ignored -> dialog);
         }
 
         private static ShowDialog read(JavaRegistryProvider registries, Object dialog) {
             if (dialog instanceof NbtMap map) {
-                return new ShowDialog(Optional.empty(), Holder.ofCustom(map));
+                return new ShowDialog(provider -> Dialog.readDialogFromNbt(provider, map));
             } else if (dialog instanceof String string) {
-                return new ShowDialog(Optional.empty(), JavaRegistries.DIALOG.wrapOrThrow(registries, MinecraftKey.key(string)));
+                Key key = MinecraftKey.key(string);
+                JavaRegistries.DIALOG.getIdOrThrow(registries, key);
+                return new ShowDialog(provider -> Dialog.getDialogFromKey(provider, key));
             }
             throw new IllegalArgumentException("Expected dialog in show_dialog action to be a NBT map or a resource location");
         }
 
         @Override
         public void run(GeyserSession session, ParsedInputs inputs) {
-            dialog.ifPresentOrElse(normal -> session.getDialogManager().openDialog(normal), () -> session.getDialogManager().openDialog(holder));
+            session.getDialogManager().openDialog(resolve.apply(session.javaRegistries()));
         }
     }
 
@@ -140,7 +141,7 @@ public interface DialogAction {
 
         @Override
         public void run(GeyserSession session, ParsedInputs inputs) {
-            session.sendDownstreamPacket(new ServerboundCustomClickActionPacket(id, tag));
+            session.sendDownstreamPacket(new ServerboundCustomClickActionPacket(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(id), Optional.ofNullable(tag).map(org.geysermc.geyser.util.MinecraftNbt::fromCloudburst)));
         }
     }
 
@@ -215,7 +216,7 @@ public interface DialogAction {
         public void run(GeyserSession session, ParsedInputs inputs) {
             NbtMapBuilder map = inputs.asNbtMap().toBuilder();
             map.putAll(additions); // Can be optional on Java. We just read an empty map when it doesn't exist.
-            session.sendDownstreamPacket(new ServerboundCustomClickActionPacket(id, map.build()));
+            session.sendDownstreamPacket(new ServerboundCustomClickActionPacket(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(id), Optional.of(org.geysermc.geyser.util.MinecraftNbt.fromCloudburst(map.build()))));
         }
     }
 }

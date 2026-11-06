@@ -39,133 +39,112 @@ import org.geysermc.geyser.item.components.resolvable.ResolvableToolProperties;
 import org.geysermc.geyser.item.exception.InvalidItemComponentsException;
 import org.geysermc.geyser.registry.populator.CustomItemRegistryPopulator;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.AttackRange;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Consumable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.CookingFuel;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.FoodProperties;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.KineticWeapon;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PiercingWeapon;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ResolvableFloat;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ResolvableInt;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.SwingAnimation;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ToolData;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.UseCooldown;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.UseEffects;
-import org.geysermc.mcprotocollib.protocol.data.game.level.sound.BuiltinSound;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.component.AttackRange;
+import net.minecraft.world.item.component.Consumable;
+import net.minecraft.world.item.component.CookingFuel;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.component.KineticWeapon;
+import net.minecraft.world.item.component.PiercingWeapon;
+import net.minecraft.world.level.storage.loot.providers.number.floats.ResolvableFloat;
+import net.minecraft.world.level.storage.loot.providers.number.ints.ResolvableInt;
+import net.minecraft.world.item.component.SwingAnimation;
+import net.minecraft.world.item.component.Tool;
+import net.minecraft.world.item.component.UseCooldown;
+import net.minecraft.world.item.component.UseEffects;
+import net.minecraft.sounds.SoundEvents;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-// Why is this coded so weirdly, you ask?
-// Why, it's because of two reasons!
-// First of all, Java generics are a bit limited :(
-// Second, the API module has its own set of component classes, because MCPL can't be used in there.
-// However, those component classes have the same names as the MCPL ones, which causes some issues when they both have to be used in the same file.
-// One can't be imported, and as such its full qualifier (e.g. org.geysermc.mcprotocollib.protocol.data.game.item.component.Consumable) would have to be used.
-// That would be a mess to code in, and as such this code here was carefully designed to only require one set of component classes by name (the MCPL ones).
-//
-// It is VERY IMPORTANT to note that for every component in the API, a converter to MCPL must be put here (there are some exceptions as noted in the Javadoc, better solutions are welcome).
-/**
- * This class is used to convert components from the API module to MCPL ones.
- *
- * <p>Most components convert over nicely, and it is very much preferred to have every API component have a converter in here. However, this is not always possible. At the moment, there is one exception:
- * <ul>
- *     <li>Non-vanilla data components (from {@link GeyserItemDataComponents}) don't have converters registered, for obvious reasons.
- *     They're used directly in the custom item registry populator. Eventually, some may have converters introduced as Mojang introduces such components in Java.</li>
- * </ul>
- * For both of these cases proper accommodations have been made in the {@link CustomItemRegistryPopulator}.
- */
+/** Converts the custom item API's component values to vanilla component values. */
 public class ComponentConverters {
-    // Keys of resolvable numbers should never be used by the Java client, and as such, never by us
-    private static final Key RESOLVABLE_NUMBER_DUMMY_KEY = MinecraftKey.key("geyser", "dummy");
-    private static final ResolvableInt DUMMY_RESOLVABLE_INT = new ResolvableInt(false, 0, RESOLVABLE_NUMBER_DUMMY_KEY);
-    private static final ResolvableFloat DUMMY_RESOLVABLE_FLOAT = new ResolvableFloat(false, 0, RESOLVABLE_NUMBER_DUMMY_KEY);
     private static final Map<ItemDataComponent<?>, ResolvableComponentConverter<?>> converters = new HashMap<>();
 
     static {
         registerConverter(JavaItemDataComponents.CONSUMABLE, (itemMap, value) -> {
-            Consumable.ItemUseAnimation convertedAnimation = switch (value.animation()) {
-                case NONE -> Consumable.ItemUseAnimation.NONE;
-                case EAT -> Consumable.ItemUseAnimation.EAT;
-                case DRINK -> Consumable.ItemUseAnimation.DRINK;
-                case BLOCK -> Consumable.ItemUseAnimation.BLOCK;
-                case BOW -> Consumable.ItemUseAnimation.BOW;
-                case SPEAR -> Consumable.ItemUseAnimation.SPEAR;
-                case CROSSBOW -> Consumable.ItemUseAnimation.CROSSBOW;
-                case SPYGLASS -> Consumable.ItemUseAnimation.SPYGLASS;
-                case BRUSH -> Consumable.ItemUseAnimation.BRUSH;
+            net.minecraft.world.item.ItemUseAnimation convertedAnimation = switch (value.animation()) {
+                case NONE -> net.minecraft.world.item.ItemUseAnimation.NONE;
+                case EAT -> net.minecraft.world.item.ItemUseAnimation.EAT;
+                case DRINK -> net.minecraft.world.item.ItemUseAnimation.DRINK;
+                case BLOCK -> net.minecraft.world.item.ItemUseAnimation.BLOCK;
+                case BOW -> net.minecraft.world.item.ItemUseAnimation.BOW;
+                case SPEAR -> net.minecraft.world.item.ItemUseAnimation.SPEAR;
+                case CROSSBOW -> net.minecraft.world.item.ItemUseAnimation.CROSSBOW;
+                case SPYGLASS -> net.minecraft.world.item.ItemUseAnimation.SPYGLASS;
+                case BRUSH -> net.minecraft.world.item.ItemUseAnimation.BRUSH;
             };
-            itemMap.put(DataComponentTypes.CONSUMABLE, new Consumable(value.consumeSeconds(), convertedAnimation, BuiltinSound.ENTITY_GENERIC_EAT,
+            itemMap.put(DataComponents.CONSUMABLE, new Consumable(value.consumeSeconds(), convertedAnimation, SoundEvents.GENERIC_EAT,
                 true, List.of()));
         });
 
         registerConverter(JavaItemDataComponents.EQUIPPABLE, (itemMap, value) -> {
             EquipmentSlot convertedSlot = switch (value.slot()) {
-                case HEAD -> EquipmentSlot.HELMET;
-                case CHEST -> EquipmentSlot.CHESTPLATE;
-                case LEGS -> EquipmentSlot.LEGGINGS;
-                case FEET -> EquipmentSlot.BOOTS;
+                case HEAD -> EquipmentSlot.HEAD;
+                case CHEST -> EquipmentSlot.CHEST;
+                case LEGS -> EquipmentSlot.LEGS;
+                case FEET -> EquipmentSlot.FEET;
                 case BODY -> EquipmentSlot.BODY;
                 case SADDLE -> EquipmentSlot.SADDLE;
             };
-            itemMap.put(DataComponentTypes.EQUIPPABLE, new Equippable(convertedSlot, BuiltinSound.ITEM_ARMOR_EQUIP_GENERIC,
-                null, null, null, false, false, false, false, false, null));
+            itemMap.put(DataComponents.EQUIPPABLE, Equippable.builder(convertedSlot).setDispensable(false).setSwappable(false).setDamageOnHurt(false)
+                .setEquipOnInteract(false).setCanBeSheared(false).build());
         });
 
-        registerConverter(JavaItemDataComponents.FOOD, (itemMap, value) -> itemMap.put(DataComponentTypes.FOOD,
+        registerConverter(JavaItemDataComponents.FOOD, (itemMap, value) -> itemMap.put(DataComponents.FOOD,
             new FoodProperties(value.nutrition(), value.saturation(), value.canAlwaysEat())));
 
-        registerConverter(JavaItemDataComponents.MAX_DAMAGE, DataComponentTypes.MAX_DAMAGE);
-        registerConverter(JavaItemDataComponents.MAX_STACK_SIZE, DataComponentTypes.MAX_STACK_SIZE);
+        registerConverter(JavaItemDataComponents.MAX_DAMAGE, DataComponents.MAX_DAMAGE);
+        registerConverter(JavaItemDataComponents.MAX_STACK_SIZE, DataComponents.MAX_STACK_SIZE);
 
-        registerConverter(JavaItemDataComponents.USE_COOLDOWN, (itemMap, value) -> itemMap.put(DataComponentTypes.USE_COOLDOWN,
-            new UseCooldown(value.seconds(), MinecraftKey.identifierToKey(value.cooldownGroup()))));
+        registerConverter(JavaItemDataComponents.USE_COOLDOWN, (itemMap, value) -> itemMap.put(DataComponents.USE_COOLDOWN,
+            new UseCooldown(value.seconds(), java.util.Optional.ofNullable(value.cooldownGroup())
+                .map(MinecraftKey::identifierToKey).map(MinecraftKey::keyToVanilla))));
 
-        registerConverter(JavaItemDataComponents.ENCHANTABLE, DataComponentTypes.ENCHANTABLE);
+        registerConverter(JavaItemDataComponents.ENCHANTABLE, (itemMap, value) -> itemMap.put(DataComponents.ENCHANTABLE, new net.minecraft.world.item.enchantment.Enchantable(value)));
 
         registerConverter(JavaItemDataComponents.TOOL, (itemMap, value, consumer) -> {
-            itemMap.put(DataComponentTypes.TOOL,
-                new ToolData(List.of(), 1.0F, 1, value.canDestroyBlocksInCreative()));
+            itemMap.put(DataComponents.TOOL,
+                new Tool(List.of(), 1.0F, 1, value.canDestroyBlocksInCreative()));
             consumer.accept(new ResolvableToolProperties(value));
         });
 
         registerConverter(JavaItemDataComponents.REPAIRABLE, (itemMap, value, consumer) -> {
-            // Can't convert to MCPL HolderSet here, and custom item registry populator will just use the identifiers of the Holders
+            // Resolve registry holders after configuration, and custom item registry populator will just use the identifiers of the Holders
             // and pass them to bedrock, if possible. This won't be perfect of course, since identifiers don't have to match bedrock ones
             consumer.accept(new ResolvableRepairable(value));
         });
 
-        registerConverter(JavaItemDataComponents.ENCHANTMENT_GLINT_OVERRIDE, DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
+        registerConverter(JavaItemDataComponents.ENCHANTMENT_GLINT_OVERRIDE, DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
 
-        registerConverter(JavaItemDataComponents.ATTACK_RANGE, (itemMap, value) -> itemMap.put(DataComponentTypes.ATTACK_RANGE,
+        registerConverter(JavaItemDataComponents.ATTACK_RANGE, (itemMap, value) -> itemMap.put(DataComponents.ATTACK_RANGE,
             new AttackRange(value.minReach(), value.maxReach(), value.minCreativeReach(), value.maxCreativeReach(),
                 value.hitboxMargin(), 1.0F)));
 
-        registerConverter(JavaItemDataComponents.KINETIC_WEAPON, (itemMap, value) -> itemMap.put(DataComponentTypes.KINETIC_WEAPON,
-            new KineticWeapon(0, value.delayTicks(), convertKineticWeaponCondition(value.dismountConditions()),
-                null, null, 0.0F, 1.0F, null, null)));
+        registerConverter(JavaItemDataComponents.KINETIC_WEAPON, (itemMap, value) -> itemMap.put(DataComponents.KINETIC_WEAPON,
+            new KineticWeapon(0, value.delayTicks(), java.util.Optional.ofNullable(convertKineticWeaponCondition(value.dismountConditions())),
+                java.util.Optional.empty(), java.util.Optional.empty(), 0.0F, 1.0F, java.util.Optional.empty(), java.util.Optional.empty())));
 
-        registerConverter(JavaItemDataComponents.PIERCING_WEAPON, (itemMap, value) -> itemMap.put(DataComponentTypes.PIERCING_WEAPON,
-            new PiercingWeapon(false, false, null, null)));
+        registerConverter(JavaItemDataComponents.PIERCING_WEAPON, (itemMap, value) -> itemMap.put(DataComponents.PIERCING_WEAPON,
+            new PiercingWeapon(false, false, java.util.Optional.empty(), java.util.Optional.empty())));
 
         // Deprecated since 26.3
-        registerConverter(JavaItemDataComponents.SWING_ANIMATION, (itemMap, value) -> itemMap.put(DataComponentTypes.ATTACK_ANIMATION,
-            new SwingAnimation(SwingAnimation.Type.WHACK, value.duration())));
-        registerConverter(JavaItemDataComponents.ATTACK_ANIMATION, (itemMap, value) -> itemMap.put(DataComponentTypes.ATTACK_ANIMATION,
-            new SwingAnimation(SwingAnimation.Type.WHACK, value.duration())));
+        registerConverter(JavaItemDataComponents.SWING_ANIMATION, (itemMap, value) -> itemMap.put(DataComponents.ATTACK_ANIMATION,
+            new SwingAnimation(net.minecraft.world.item.SwingAnimationType.WHACK, value.duration())));
+        registerConverter(JavaItemDataComponents.ATTACK_ANIMATION, (itemMap, value) -> itemMap.put(DataComponents.ATTACK_ANIMATION,
+            new SwingAnimation(net.minecraft.world.item.SwingAnimationType.WHACK, value.duration())));
 
-        registerConverter(JavaItemDataComponents.USE_EFFECTS, (itemMap, value) -> itemMap.put(DataComponentTypes.USE_EFFECTS,
+        registerConverter(JavaItemDataComponents.USE_EFFECTS, (itemMap, value) -> itemMap.put(DataComponents.USE_EFFECTS,
             new UseEffects(false, true, value.speedMultiplier())));
 
-        registerConverter(JavaItemDataComponents.COMPOSTABLE, (itemMap, value) -> itemMap.put(DataComponentTypes.COMPOSTABLE, DUMMY_RESOLVABLE_INT));
-        registerConverter(JavaItemDataComponents.COOKING_FUEL, (itemMap, value) -> itemMap.put(DataComponentTypes.COOKING_FUEL, new CookingFuel(DUMMY_RESOLVABLE_INT, DUMMY_RESOLVABLE_FLOAT)));
+        registerConverter(JavaItemDataComponents.COMPOSTABLE, (itemMap, value) -> itemMap.put(DataComponents.COMPOSTABLE, new net.minecraft.world.item.component.Compostable(new ResolvableInt.Constant(0))));
+        registerConverter(JavaItemDataComponents.COOKING_FUEL, (itemMap, value) -> itemMap.put(DataComponents.COOKING_FUEL, new CookingFuel(new ResolvableInt.Constant(0), new ResolvableFloat.Constant(0))));
     }
 
     private static <T> void registerConverter(ItemDataComponent<T> component, DataComponentType<T> converted) {
@@ -181,8 +160,8 @@ public class ComponentConverters {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static DataComponents convertComponentPatch(ItemDataComponentMap customDefinitionPatch, List<Identifier> customDefinitionRemovals, Consumer<ResolvableComponent<?>> resolvableConsumer) throws InvalidItemComponentsException {
-        DataComponents converted = new DataComponents(new HashMap<>());
+    public static GeyserDataComponents convertComponentPatch(ItemDataComponentMap customDefinitionPatch, List<Identifier> customDefinitionRemovals, Consumer<ResolvableComponent<?>> resolvableConsumer) throws InvalidItemComponentsException {
+        GeyserDataComponents converted = new GeyserDataComponents();
         for (ItemDataComponent<?> component : customDefinitionPatch.keySet()) {
             if (customDefinitionRemovals.contains(component.identifier())) {
                 throw new InvalidItemComponentsException("Component " + component.identifier() + " was present both in the components to add and the components to remove");
@@ -195,7 +174,7 @@ public class ComponentConverters {
         }
 
         for (Identifier removed : customDefinitionRemovals) {
-            DataComponentType<?> component = DataComponentTypes.fromKey(MinecraftKey.identifierToKey(removed));
+            DataComponentType<?> component = net.minecraft.core.registries.BuiltInRegistries.DATA_COMPONENT_TYPE.getValue(MinecraftKey.keyToVanilla(MinecraftKey.identifierToKey(removed)));
             if (component != null) {
                 converted.put(component, null);
             }
@@ -206,13 +185,13 @@ public class ComponentConverters {
     @FunctionalInterface
     public interface ComponentConverter<T> {
 
-        void convertAndPut(DataComponents itemMap, T value);
+        void convertAndPut(GeyserDataComponents itemMap, T value);
     }
 
     @FunctionalInterface
     public interface ResolvableComponentConverter<T> {
 
-        void convert(DataComponents itemMap, T value, Consumer<ResolvableComponent<?>> resolvableConsumer);
+        void convert(GeyserDataComponents itemMap, T value, Consumer<ResolvableComponent<?>> resolvableConsumer);
     }
 
     private static KineticWeapon.Condition convertKineticWeaponCondition(JavaKineticWeapon.@Nullable Condition condition) {

@@ -30,8 +30,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundChangeGameModePacket;
+import net.minecraft.world.level.GameType;
+import net.minecraft.network.protocol.game.ServerboundChangeGameModePacket;
 
 /**
  * In vanilla Bedrock, if you have operator status, this sets the player's gamemode without confirmation from the server.
@@ -55,12 +55,12 @@ public class BedrockSetPlayerGameTypeTranslator extends PacketTranslator<SetPlay
             if (packet.getGamemode() != session.getGameMode().ordinal()) {
                 // Bedrock has more Gamemodes than Java, leading to cases 5 (for "default") and 6 (for "spectator") being sent
                 // https://github.com/CloudburstMC/Protocol/blob/3.0/bedrock-codec/src/main/java/org/cloudburstmc/protocol/bedrock/data/GameType.java
-                GameMode gameMode = switch (packet.getGamemode()) {
-                    case 1 -> GameMode.CREATIVE;
-                    case 2 -> GameMode.ADVENTURE;
+                GameType gameMode = switch (packet.getGamemode()) {
+                    case 1 -> GameType.CREATIVE;
+                    case 2 -> GameType.ADVENTURE;
                     case 5 -> session.getGeyser().getWorldManager().getDefaultGameMode(session);
-                    case 6 -> GameMode.SPECTATOR;
-                    default -> GameMode.SURVIVAL;
+                    case 6 -> GameType.SPECTATOR;
+                    default -> GameType.SURVIVAL;
                 };
                 session.sendDownstreamGamePacket(new ServerboundChangeGameModePacket(gameMode));
             }

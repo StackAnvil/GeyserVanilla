@@ -30,7 +30,7 @@ import org.geysermc.geyser.entity.vehicle.ClientVehicle;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
 
 @Translator(packet = ClientboundMoveVehiclePacket.class)
 public class JavaMoveVehicleTranslator extends PacketTranslator<ClientboundMoveVehiclePacket> {
@@ -41,10 +41,10 @@ public class JavaMoveVehicleTranslator extends PacketTranslator<ClientboundMoveV
         if (entity == null) return;
 
         if (entity instanceof ClientVehicle clientVehicle) {
-            clientVehicle.getVehicleComponent().moveAbsolute(packet.getPosition());
+            clientVehicle.getVehicleComponent().moveAbsolute(org.geysermc.geyser.util.MathUtils.toVector3d(packet.movingTo().position()));
         }
 
-        entity.moveAbsolute(packet.getPosition().toFloat(), packet.getYRot(), packet.getXRot(), false, true);
+        entity.moveAbsolute(org.geysermc.geyser.util.MathUtils.toVector3d(packet.movingTo().position()).toFloat(), packet.movingTo().yRot(), packet.movingTo().xRot(), false, true);
         // TODO send serverbound move vehicle packet
     }
 }

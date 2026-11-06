@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 public class VexEntity extends MonsterEntity {
 
@@ -35,8 +36,8 @@ public class VexEntity extends MonsterEntity {
         super(context);
     }
 
-    public void setVexFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setVexFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         // Set the target to the player to force the attack animation
         // even if the player isn't the target as we dont get the target on Java
         metadata.put(EntityDataTypes.TARGET_EID, (xd & 0x01) == 0x01 ? session.getPlayerEntity().geyserId() : 0);

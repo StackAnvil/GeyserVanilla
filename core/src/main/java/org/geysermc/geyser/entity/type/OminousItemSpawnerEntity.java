@@ -25,22 +25,22 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 public class OminousItemSpawnerEntity extends Entity {
     public OminousItemSpawnerEntity(EntitySpawnContext context) {
         super(context);
     }
 
-    public void setItem(EntityMetadata<ItemStack, ? extends MetadataType<ItemStack>> itemStackEntityMetadata) {
-        NbtMap bedrockItem = BedrockItemBuilder.createItemNbt(ItemTranslator.translateToBedrock(session, itemStackEntityMetadata.getValue())).build();
+    public void setItem(DataValue<ItemStack> itemStackEntityMetadata) {
+        NbtMap bedrockItem = BedrockItemBuilder.createItemNbt(ItemTranslator.translateToBedrock(session, itemStackEntityMetadata.value())).build();
         // Not a typo: This isn't just for fireworks, but also used to send item stack representations
         this.metadata.put(EntityDataTypes.DISPLAY_FIREWORK, bedrockItem);
     }

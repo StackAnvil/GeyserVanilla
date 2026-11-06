@@ -44,8 +44,8 @@ import org.geysermc.geyser.api.network.AuthType;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundCustomPayloadPacket;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 
 import java.nio.charset.StandardCharsets;
 
@@ -59,10 +59,10 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
             return;
         }
 
-        String channel = packet.getChannel().asString();
+        String channel = packet.payload().type().id().toString();
 
         if (channel.equals(Constants.PLUGIN_MESSAGE)) {
-            ByteBuf buf = Unpooled.wrappedBuffer(packet.getData());
+            ByteBuf buf = Unpooled.wrappedBuffer(org.geysermc.geyser.vanilla.protocol.VanillaPayload.data(packet.payload()));
             ErosionPacket<?> erosionPacket = Packets.decode(buf);
             ((GeyserboundPacket) erosionPacket).handle(session.getErosionHandler());
             return;
@@ -71,7 +71,7 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
 
         switch (channel) {
             case PluginMessageChannels.FORM -> session.ensureInEventLoop(() -> {
-                byte[] data = packet.getData();
+                byte[] data = org.geysermc.geyser.vanilla.protocol.VanillaPayload.data(packet.payload());
 
                 // If the data is empty, we just need to close the form
                 if (data.length == 0) {
@@ -104,12 +104,12 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
                         System.arraycopy(raw, 0, finalData, 2, raw.length);
                     }
 
-                    session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(packet.getChannel(), finalData));
+                    session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(new org.geysermc.geyser.vanilla.protocol.VanillaPayload(packet.payload().type().id(), finalData)));
                 });
                 session.sendForm(form);
             });
             case PluginMessageChannels.TRANSFER -> session.ensureInEventLoop(() -> {
-                byte[] data = packet.getData();
+                byte[] data = org.geysermc.geyser.vanilla.protocol.VanillaPayload.data(packet.payload());
 
                 // port (4 bytes), address (remaining data)
                 if (data.length < 5) {
@@ -130,7 +130,7 @@ public class JavaCustomPayloadTranslator extends PacketTranslator<ClientboundCus
             });
             case PluginMessageChannels.PACKET -> session.ensureInEventLoop(() -> {
                 logger.debug("A packet has been sent using the Floodgate api");
-                byte[] data = packet.getData();
+                byte[] data = org.geysermc.geyser.vanilla.protocol.VanillaPayload.data(packet.payload());
 
                 // packet id, packet data
                 if (data.length < 2) {

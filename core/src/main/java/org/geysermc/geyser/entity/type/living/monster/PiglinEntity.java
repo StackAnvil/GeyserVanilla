@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -37,9 +39,8 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.component.DataComponents;
 
 public class PiglinEntity extends BasePiglinEntity {
 
@@ -47,22 +48,22 @@ public class PiglinEntity extends BasePiglinEntity {
         super(context);
     }
 
-    public void setBaby(BooleanEntityMetadata entityMetadata) {
-        boolean isBaby = entityMetadata.getPrimitiveValue();
+    public void setBaby(DataValue<Boolean> entityMetadata) {
+        boolean isBaby = entityMetadata.value();
         setScale(isBaby? .55f : 1f);
         setFlag(EntityFlag.BABY, isBaby);
 
         updateMountOffset();
     }
 
-    public void setChargingCrossbow(BooleanEntityMetadata entityMetadata) {
-        boolean charging = entityMetadata.getPrimitiveValue();
+    public void setChargingCrossbow(DataValue<Boolean> entityMetadata) {
+        boolean charging = entityMetadata.value();
         setFlag(EntityFlag.CHARGING, charging);
         metadata.put(EntityDataTypes.CHARGE_AMOUNT, charging ? (byte) 64 : (byte) 0); // TODO: gradually increase
     }
 
-    public void setDancing(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.DANCING, entityMetadata.getPrimitiveValue());
+    public void setDancing(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.DANCING, entityMetadata.value());
     }
 
     @Override
@@ -95,7 +96,7 @@ public class PiglinEntity extends BasePiglinEntity {
         super.updateMainHand();
 
         if (getMainHandItem().is(Items.CROSSBOW)) {
-            if (getMainHandItem().getComponent(DataComponentTypes.CHARGED_PROJECTILES) != null) {
+            if (getMainHandItem().getComponent(DataComponents.CHARGED_PROJECTILES) != null) {
                 metadata.put(EntityDataTypes.CHARGE_AMOUNT, Byte.MAX_VALUE);
                 setFlag(EntityFlag.CHARGING, false);
                 setFlag(EntityFlag.CHARGED, true);
@@ -121,7 +122,7 @@ public class PiglinEntity extends BasePiglinEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         InteractiveTag tag = super.testMobInteraction(hand, itemInHand);
         if (tag != InteractiveTag.NONE) {
             return tag;
@@ -132,7 +133,7 @@ public class PiglinEntity extends BasePiglinEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         InteractionResult superResult = super.mobInteract(hand, itemInHand);
         if (superResult.consumesAction()) {
             return superResult;

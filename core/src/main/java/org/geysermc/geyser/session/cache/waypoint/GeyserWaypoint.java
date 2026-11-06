@@ -36,8 +36,9 @@ import org.geysermc.geyser.api.waypoint.CustomWaypointStyle;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.TrackedWaypoint;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.WaypointData;
+import net.minecraft.world.waypoints.TrackedWaypoint;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints.Location;
 
 import java.awt.Color;
 import java.util.List;
@@ -83,7 +84,7 @@ public abstract class GeyserWaypoint {
         return bedrockWaypoint.getColor();
     }
 
-    public void track(WaypointData data) {
+    public void track(Location data) {
         setData(data);
         sendTrackPackets(true);
     }
@@ -92,7 +93,7 @@ public abstract class GeyserWaypoint {
         sendTrackPackets(true);
     }
 
-    public void update(WaypointData data) {
+    public void update(Location data) {
         setData(data);
         sendLocationPacket();
     }
@@ -145,31 +146,24 @@ public abstract class GeyserWaypoint {
         session.sendUpstreamPacket(packet);
     }
 
-    public abstract void setData(WaypointData data);
+    public abstract void setData(Location data);
 
     public static @Nullable GeyserWaypoint create(GeyserSession session, Optional<Entity> entity, TrackedWaypoint waypoint, Map<Identifier, CustomWaypointStyle> waypointStyles) {
-        UUID uuid = Optional.ofNullable(waypoint.uuid())
-            .or(() -> Optional.ofNullable(waypoint.id())
-                .map(UUID::fromString))
-            .orElseThrow();
-        Identifier styleIdentifier = MinecraftKey.keyToIdentifier(waypoint.icon().style());
+        UUID uuid = waypoint.id().map(id -> id, id -> UUID.nameUUIDFromBytes(id.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        Identifier styleIdentifier = MinecraftKey.keyToIdentifier(MinecraftKey.key(waypoint.icon().style.identifier().toString()));
         CustomWaypointStyle style = waypointStyles.getOrDefault(styleIdentifier, VanillaWaypoint.VANILLA_DEFAULT);
         Color color = getWaypointColor(waypoint);
-        return switch (waypoint.type()) {
-            case EMPTY -> null;
-            case VEC3I -> new CoordinatesWaypoint(session, uuid, style, styleIdentifier, color, entity);
-            case CHUNK -> new ChunkWaypoint(session, uuid, style, styleIdentifier, color, entity);
-            case AZIMUTH -> new AzimuthWaypoint(session, uuid, style, styleIdentifier, color, entity);
+        return switch (VanillaWaypoints.location(waypoint)) {
+            case VanillaWaypoints.Empty ignored -> null;
+            case VanillaWaypoints.Coordinates ignored -> new CoordinatesWaypoint(session, uuid, style, styleIdentifier, color, entity);
+            case VanillaWaypoints.Chunk ignored -> new ChunkWaypoint(session, uuid, style, styleIdentifier, color, entity);
+            case VanillaWaypoints.Azimuth ignored -> new AzimuthWaypoint(session, uuid, style, styleIdentifier, color, entity);
         };
     }
 
     private static Color getWaypointColor(TrackedWaypoint waypoint) {
         // Use icon's colour, or calculate from UUID/ID if it is not specified
         // This is similar to how Java does it, but they do some brightness modifications too, which is a lot of math (see LocatorBarRenderer)
-        return waypoint.icon().color()
-            .or(() -> Optional.ofNullable(waypoint.uuid()).map(UUID::hashCode))
-            .or(() -> Optional.ofNullable(waypoint.id()).map(String::hashCode))
-            .map(i -> new Color(i & 0xFFFFFF))
-            .orElseThrow();
+        return new Color(waypoint.icon().color.orElseGet(() -> waypoint.id().map(UUID::hashCode, String::hashCode)) & 0xFFFFFF);
     }
 }

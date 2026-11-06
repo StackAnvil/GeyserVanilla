@@ -25,12 +25,12 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 
 public class AbstractArrowEntity extends ProjectileEntity {
 
@@ -40,7 +40,7 @@ public class AbstractArrowEntity extends ProjectileEntity {
         super(context);
 
         // Set the correct texture if using the resource pack
-        setFlag(EntityFlag.BRIBED, javaDefinition.type().is(EntityType.SPECTRAL_ARROW));
+        setFlag(EntityFlag.BRIBED, javaDefinition.type().is(EntityTypes.SPECTRAL_ARROW));
 
         setMotion(motion);
     }
@@ -53,14 +53,14 @@ public class AbstractArrowEntity extends ProjectileEntity {
         super.tick();
     }
 
-    public void setArrowFlags(ByteEntityMetadata entityMetadata) {
-        byte data = entityMetadata.getPrimitiveValue();
+    public void setArrowFlags(DataValue<Byte> entityMetadata) {
+        byte data = entityMetadata.value();
 
         setFlag(EntityFlag.CRITICAL, (data & 0x01) == 0x01);
     }
 
-    public void setInGround(BooleanEntityMetadata entityMetadata) {
-        this.inGround = entityMetadata.getPrimitiveValue();
+    public void setInGround(DataValue<Boolean> entityMetadata) {
+        this.inGround = entityMetadata.value();
     }
 
     // Ignore the rotation sent by the Java server since the

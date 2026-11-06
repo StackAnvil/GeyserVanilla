@@ -34,7 +34,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.WorldCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundResetScorePacket;
+import net.minecraft.network.protocol.game.ClientboundResetScorePacket;
 
 @Translator(packet = ClientboundResetScorePacket.class)
 public class JavaResetScorePacket extends PacketTranslator<ClientboundResetScorePacket> {
@@ -52,20 +52,20 @@ public class JavaResetScorePacket extends PacketTranslator<ClientboundResetScore
         Scoreboard scoreboard = worldCache.getScoreboard();
         int pps = worldCache.increaseAndGetScoreboardPacketsPerSecond();
 
-        if (packet.getObjective() == null) {
+        if (packet.objectiveName() == null) {
             // No objective name means all scores are reset for that player (/scoreboard players reset PLAYERNAME)
-            scoreboard.resetPlayerScores(packet.getOwner());
+            scoreboard.resetPlayerScores(packet.owner());
         } else {
-            Objective objective = scoreboard.getObjective(packet.getObjective());
+            Objective objective = scoreboard.getObjective(packet.objectiveName());
             if (objective == null) {
                 if (SHOW_SCOREBOARD_LOGS) {
                     logger.info(String.format(
                         "Tried to reset score %s for %s without the existence of its requested objective %s",
-                        packet.getOwner(), session.javaUsername(), packet.getObjective()));
+                        packet.owner(), session.javaUsername(), packet.objectiveName()));
                 }
                 return;
             }
-            objective.removeScore(packet.getOwner());
+            objective.removeScore(packet.owner());
         }
 
         // ScoreboardUpdater will handle it for us if the packets per second

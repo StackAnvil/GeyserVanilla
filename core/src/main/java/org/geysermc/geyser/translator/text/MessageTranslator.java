@@ -41,18 +41,13 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.nbt.NbtList;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.protocol.bedrock.packet.TextPacket;
-import org.geysermc.adventure.text.serializer.nbt.HeterogeneousNbtList;
+import org.geysermc.geyser.util.MinecraftNbt;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
-import org.geysermc.geyser.text.ChatDecoration;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.text.MinecraftTranslationRegistry;
-import org.geysermc.mcprotocollib.protocol.data.DefaultComponentSerializer;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.ChatType;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.ChatTypeDecoration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,6 +57,38 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MessageTranslator {
+    public static Component fromVanilla(net.minecraft.network.chat.Component message) {
+        return fromVanilla(message, org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries());
+    }
+
+    public static Component fromVanilla(net.minecraft.network.chat.Component message, net.minecraft.core.RegistryAccess registries) {
+        var json = net.minecraft.network.chat.ComponentSerialization.CODEC.encodeStart(
+            registries.createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE), message).getOrThrow();
+        return net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().deserializeFromTree(json);
+    }
+
+    public static net.minecraft.network.chat.Component toVanilla(Component message, net.minecraft.core.RegistryAccess registries) {
+        var json = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().serializeToTree(message);
+        return net.minecraft.network.chat.ComponentSerialization.CODEC.parse(
+            registries.createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE), json).getOrThrow();
+    }
+
+    public static String convertMessage(net.minecraft.network.chat.Component message, String locale) {
+        return convertMessage(fromVanilla(message), locale);
+    }
+
+    public static String convertMessage(net.minecraft.network.chat.Component message) {
+        return convertMessage(fromVanilla(message));
+    }
+
+    public static String convertMessage(GeyserSession session, net.minecraft.network.chat.Component message) {
+        return convertMessage(fromVanilla(message, session.vanillaRegistries()), session.locale());
+    }
+
+    public static String convertMessageRaw(net.minecraft.network.chat.Component message, String locale) {
+        return convertMessageRaw(fromVanilla(message), locale);
+    }
+
     // These are used for handling the translations of the messages
     // Custom instead of TranslatableComponentRenderer#usingTranslationSource so we don't need to worry about finding a Locale class
     private static final TranslatableComponentRenderer<String> RENDERER = new MinecraftTranslationRegistry();
@@ -235,7 +262,7 @@ public class MessageTranslator {
             return finalLegacy.toString();
         } catch (Exception e) {
             if (GeyserImpl.getInstance().config().debugMode()) {
-                GeyserImpl.getInstance().getLogger().debug(DefaultComponentSerializer.nbt().serialize(message));
+                GeyserImpl.getInstance().getLogger().debug(net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().serialize(message));
             }
             GeyserImpl.getInstance().getLogger().error("Failed to parse message", e);
 
@@ -455,7 +482,7 @@ public class MessageTranslator {
         if (message.startsWith("{") && message.endsWith("}")) {
             // Message is a JSON object
             try {
-                messageComponent = DefaultComponentSerializer.get().deserialize(message);
+                messageComponent = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().deserialize(message);
                 // Translate any components that require it
                 messageComponent = RENDERER.render(messageComponent, locale);
             } catch (Exception ignored) {
@@ -473,7 +500,11 @@ public class MessageTranslator {
         if (nbtTag == null) {
             return Component.empty();
         }
-        return DefaultComponentSerializer.nbt().deserialize(nbtTag);
+        var registries = org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries();
+        var tag = org.geysermc.geyser.util.MinecraftNbt.fromCloudburst(nbtTag);
+        var component = net.minecraft.network.chat.ComponentSerialization.CODEC.parse(
+            registries.createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE), tag).getOrThrow();
+        return fromVanilla(component, registries);
     }
 
     public static List<String> signTextFromNbtTag(GeyserSession session, Object nbtTag) {
@@ -486,7 +517,7 @@ public class MessageTranslator {
             return List.of(ERROR_MESSAGE);
         }
 
-        List<Object> components = HeterogeneousNbtList.tryUnwrap(list);
+        List<Object> components = MinecraftNbt.unwrapList(list);
 
         try {
             List<String> messages = new ArrayList<>(components.size());
@@ -523,7 +554,7 @@ public class MessageTranslator {
 
     /* ===== Utility methods ===== */
 
-    public static void handleChatPacket(GeyserSession session, Component message, Holder<ChatType> chatTypeHolder, Component targetName, Component sender, @Nullable UUID senderUuid) {
+    public static void handleChatPacket(GeyserSession session, net.minecraft.network.chat.Component message, net.minecraft.network.chat.ChatType.Bound chatType, @Nullable UUID senderUuid) {
         TextPacket textPacket = new TextPacket();
         textPacket.setPlatformChatId("");
         textPacket.setSourceName("");
@@ -546,34 +577,7 @@ public class MessageTranslator {
 
         textPacket.setNeedsTranslation(false);
 
-        ChatType chatType = chatTypeHolder.getOrCompute(JavaRegistries.CHAT_TYPE.resolver(session));
-        if (chatType != null && chatType.chat() != null) {
-            var chat = chatType.chat();
-            // As of 1.19 - do this to apply all the styling for signed messages
-            // Though, Bedrock cannot care about the signed stuff.
-            TranslatableComponent.Builder withDecoration = Component.translatable()
-                .key(chat.translationKey())
-                .style(ChatDecoration.getStyle(chat));
-            List<ChatTypeDecoration.Parameter> parameters = chat.parameters();
-            List<Component> args = new ArrayList<>(3);
-            if (parameters.contains(ChatDecoration.Parameter.TARGET)) {
-                args.add(targetName);
-            }
-            if (parameters.contains(ChatDecoration.Parameter.SENDER)) {
-                args.add(sender);
-            }
-            if (parameters.contains(ChatDecoration.Parameter.CONTENT)) {
-                args.add(message);
-            }
-            withDecoration.arguments(args);
-            textPacket.setMessage(MessageTranslator.convertMessage(withDecoration.build(), session.locale()));
-        } else {
-            session.getGeyser().getLogger().debug("Likely illegal chat type detection found.");
-            if (session.getGeyser().config().debugMode()) {
-                Thread.dumpStack();
-            }
-            textPacket.setMessage(MessageTranslator.convertMessage(message, session.locale()));
-        }
+        textPacket.setMessage(MessageTranslator.convertMessage(session, chatType.decorate(message)));
 
         session.sendUpstreamPacket(textPacket);
     }

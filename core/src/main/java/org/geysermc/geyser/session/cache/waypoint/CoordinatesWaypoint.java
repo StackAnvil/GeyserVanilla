@@ -30,8 +30,8 @@ import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.api.waypoint.CustomWaypointStyle;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.Vec3iWaypointData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.waypoint.WaypointData;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints;
+import org.geysermc.geyser.vanilla.protocol.VanillaWaypoints.Location;
 
 import java.awt.Color;
 import java.util.Optional;
@@ -44,9 +44,9 @@ public class CoordinatesWaypoint extends GeyserWaypoint {
     }
 
     @Override
-    public void setData(WaypointData data) {
-        if (data instanceof Vec3iWaypointData(Vector3i vector)) {
-            setPosition(vector.toFloat());
+    public void setData(Location data) {
+        if (data instanceof VanillaWaypoints.Coordinates(var vector)) {
+            setPosition(org.cloudburstmc.math.vector.Vector3f.from(vector.getX(), vector.getY(), vector.getZ()));
         } else {
             session.getGeyser().getLogger().warning("Received incorrect waypoint data " + data.getClass() + " for coordinates waypoint");
         }

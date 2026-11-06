@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
@@ -35,11 +37,10 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.packet.SetEntityDataPacket;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
 import org.junit.jupiter.api.Test;
 
 public class NametagScoreboardTests {
@@ -52,18 +53,7 @@ public class NametagScoreboardTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("", NamedTextColor.RED),
-                    Component.text("", NamedTextColor.GREEN),
-                    Component.text("", NamedTextColor.BLUE),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.WHITE,
-                    new String[] {"player1"}
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("", NamedTextColor.RED), Component.text("", NamedTextColor.GREEN), Component.text("", NamedTextColor.BLUE), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.WHITE, new String[] {"player1"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -76,17 +66,7 @@ public class NametagScoreboardTests {
             // Ensure that the entity is tracking updates on team1
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("", NamedTextColor.RED),
-                    Component.text("hi", NamedTextColor.GREEN),
-                    Component.text("", NamedTextColor.BLUE),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.WHITE
-                )
+                VanillaScoreboardPackets.updateTeam("team1", Component.text("", NamedTextColor.RED), Component.text("hi", NamedTextColor.GREEN), Component.text("", NamedTextColor.BLUE), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.WHITE)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -98,18 +78,7 @@ public class NametagScoreboardTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("", NamedTextColor.BLUE),
-                    Component.text("", NamedTextColor.GREEN),
-                    Component.text("", NamedTextColor.RED),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.BLACK,
-                    new String[] {"player1"}
-                )
+                VanillaScoreboardPackets.createTeam("team2", Component.text("", NamedTextColor.BLUE), Component.text("", NamedTextColor.GREEN), Component.text("", NamedTextColor.RED), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.BLACK, new String[] {"player1"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -123,34 +92,14 @@ public class NametagScoreboardTests {
             // Ensure that the entity is no longer tracking updates from team1
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("", NamedTextColor.RED),
-                    Component.text("hello", NamedTextColor.GREEN),
-                    Component.text("", NamedTextColor.BLUE),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.WHITE
-                )
+                VanillaScoreboardPackets.updateTeam("team1", Component.text("", NamedTextColor.RED), Component.text("hello", NamedTextColor.GREEN), Component.text("", NamedTextColor.BLUE), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.WHITE)
             );
             assertNoNextPacket(context);
 
             // Ensure that the entity is tracking updates from team2
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("", NamedTextColor.BLUE),
-                    Component.text("hi", NamedTextColor.GREEN),
-                    Component.text("", NamedTextColor.RED),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.BLACK
-                )
+                VanillaScoreboardPackets.updateTeam("team2", Component.text("", NamedTextColor.BLUE), Component.text("hi", NamedTextColor.GREEN), Component.text("", NamedTextColor.RED), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.BLACK)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -162,7 +111,7 @@ public class NametagScoreboardTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("team1", TeamAction.ADD_PLAYER, new String[] {"player1"})
+                VanillaScoreboardPackets.addPlayers("team1", new String[] {"player1"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -175,34 +124,14 @@ public class NametagScoreboardTests {
             // Ensure that the entity is no longer tracking updates from team2
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("", NamedTextColor.BLUE),
-                    Component.text("hello", NamedTextColor.GREEN),
-                    Component.text("", NamedTextColor.RED),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.BLACK
-                )
+                VanillaScoreboardPackets.updateTeam("team2", Component.text("", NamedTextColor.BLUE), Component.text("hello", NamedTextColor.GREEN), Component.text("", NamedTextColor.RED), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.BLACK)
             );
             assertNoNextPacket(context);
 
             // Ensure that the entity is tracking updates from team1
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("", NamedTextColor.RED),
-                    Component.text("hi", NamedTextColor.GREEN),
-                    Component.text("hi", NamedTextColor.BLUE),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.WHITE
-                )
+                VanillaScoreboardPackets.updateTeam("team1", Component.text("", NamedTextColor.RED), Component.text("hi", NamedTextColor.GREEN), Component.text("hi", NamedTextColor.BLUE), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.WHITE)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();

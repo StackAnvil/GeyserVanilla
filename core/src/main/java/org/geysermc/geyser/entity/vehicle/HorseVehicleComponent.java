@@ -32,7 +32,7 @@ import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.type.living.animal.horse.AbstractHorseEntity;
 import org.geysermc.geyser.entity.type.living.animal.horse.SkeletonHorseEntity;
 import org.geysermc.geyser.entity.type.player.SessionPlayerEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
+import org.geysermc.geyser.level.EffectType;
 
 public class HorseVehicleComponent extends VehicleComponent<AbstractHorseEntity> {
     @Setter
@@ -89,8 +89,8 @@ public class HorseVehicleComponent extends VehicleComponent<AbstractHorseEntity>
     }
 
     @Override
-    public void setEffect(Effect effect, int effectAmplifier) {
-        if (effect == Effect.JUMP_BOOST) {
+    public void setEffect(EffectType effect, int effectAmplifier) {
+        if (effect == EffectType.JUMP_BOOST) {
             effectJumpBoost = effectAmplifier + 1;
         } else {
             super.setEffect(effect, effectAmplifier);
@@ -98,8 +98,8 @@ public class HorseVehicleComponent extends VehicleComponent<AbstractHorseEntity>
     }
 
     @Override
-    public void removeEffect(Effect effect) {
-        if (effect == Effect.JUMP_BOOST) {
+    public void removeEffect(EffectType effect) {
+        if (effect == EffectType.JUMP_BOOST) {
             effectJumpBoost = 0;
         } else {
             super.removeEffect(effect);

@@ -25,13 +25,14 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class TurtleEntity extends AnimalEntity {
 
@@ -39,12 +40,12 @@ public class TurtleEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setPregnant(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.IS_PREGNANT, entityMetadata.getPrimitiveValue());
+    public void setPregnant(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.IS_PREGNANT, entityMetadata.value());
     }
 
-    public void setLayingEgg(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.LAYING_EGG, entityMetadata.getPrimitiveValue());
+    public void setLayingEgg(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.LAYING_EGG, entityMetadata.value());
     }
 
     @Override

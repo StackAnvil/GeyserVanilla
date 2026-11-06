@@ -29,7 +29,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.inventory.CrafterInventoryTranslator;
 import org.geysermc.geyser.translator.inventory.InventoryTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 import lombok.Getter;
 import lombok.Setter;
 import org.geysermc.geyser.GeyserImpl;
@@ -48,7 +48,7 @@ public class CrafterContainer extends Container {
      */
     private short disabledSlotsMask = 0;
 
-    public CrafterContainer(GeyserSession session, String title, int id, int size, ContainerType containerType) {
+    public CrafterContainer(GeyserSession session, String title, int id, int size, MenuType<?> containerType) {
         super(session, title, id, size, containerType);
     }
 

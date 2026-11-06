@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -34,10 +36,8 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.VillagerData;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.npc.villager.VillagerData;
+import net.minecraft.world.InteractionHand;
 
 public class ZombieVillagerEntity extends ZombieEntity {
 
@@ -45,17 +45,17 @@ public class ZombieVillagerEntity extends ZombieEntity {
         super(context);
     }
 
-    public void setTransforming(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.IS_TRANSFORMING, entityMetadata.getPrimitiveValue());
+    public void setTransforming(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.IS_TRANSFORMING, entityMetadata.value());
         setFlag(EntityFlag.SHAKING, isShaking());
     }
 
-    public void setZombieVillagerData(EntityMetadata<VillagerData, ?> entityMetadata) {
-        VillagerData villagerData = entityMetadata.getValue();
-        metadata.put(EntityDataTypes.VARIANT, VillagerEntity.getBedrockProfession(villagerData.getProfession())); // Actually works properly with the OptionalPack
-        metadata.put(EntityDataTypes.MARK_VARIANT, VillagerEntity.getBedrockRegion(villagerData.getType()));
+    public void setZombieVillagerData(DataValue<VillagerData> entityMetadata) {
+        VillagerData villagerData = entityMetadata.value();
+        metadata.put(EntityDataTypes.VARIANT, VillagerEntity.getBedrockProfession(net.minecraft.core.registries.BuiltInRegistries.VILLAGER_PROFESSION.getId(villagerData.profession().value()))); // Actually works properly with the OptionalPack
+        metadata.put(EntityDataTypes.MARK_VARIANT, VillagerEntity.getBedrockRegion(net.minecraft.core.registries.BuiltInRegistries.VILLAGER_TYPE.getId(villagerData.type().value())));
         // Used with the OptionalPack
-        metadata.put(EntityDataTypes.TRADE_TIER, villagerData.getLevel() - 1);
+        metadata.put(EntityDataTypes.TRADE_TIER, villagerData.level() - 1);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(Items.GOLDEN_APPLE)) {
             return InteractiveTag.CURE;
         } else {
@@ -75,7 +75,7 @@ public class ZombieVillagerEntity extends ZombieEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(Items.GOLDEN_APPLE)) {
             // The client doesn't know if the entity has weakness as that's not usually sent over the network
             return InteractionResult.CONSUME;

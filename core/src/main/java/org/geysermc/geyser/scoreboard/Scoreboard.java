@@ -42,9 +42,8 @@ import org.geysermc.geyser.scoreboard.display.slot.DisplaySlot;
 import org.geysermc.geyser.scoreboard.display.slot.PlayerlistDisplaySlot;
 import org.geysermc.geyser.scoreboard.display.slot.SidebarDisplaySlot;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.TeamColor;
 import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public final class Scoreboard {
 
     private final Map<String, Objective> objectives = new ConcurrentHashMap<>();
     @Getter
-    private final Map<ScoreboardPosition, DisplaySlot> objectiveSlots = Collections.synchronizedMap(new EnumMap<>(ScoreboardPosition.class));
+    private final Map<net.minecraft.world.scores.DisplaySlot, DisplaySlot> objectiveSlots = Collections.synchronizedMap(new EnumMap<>(net.minecraft.world.scores.DisplaySlot.class));
     private final List<DisplaySlot> removedSlots = Collections.synchronizedList(new ArrayList<>());
 
     private final Map<String, Team> teams = new ConcurrentHashMap<>(); // updated on multiple threads
@@ -140,8 +139,8 @@ public final class Scoreboard {
         return objective;
     }
 
-    public void displayObjective(String objectiveId, ScoreboardPosition slot) {
-        if (objectiveId.isEmpty()) {
+    public void displayObjective(String objectiveId, net.minecraft.world.scores.DisplaySlot slot) {
+        if (objectiveId == null || objectiveId.isEmpty()) {
             // matches vanilla behaviour
             var display = objectiveSlots.get(slot);
             if (display != null) {
@@ -166,7 +165,7 @@ public final class Scoreboard {
         display = switch (DisplaySlot.slotCategory(slot)) {
             case SIDEBAR -> new SidebarDisplaySlot(session, objective, slot);
             case BELOW_NAME -> new BelownameDisplaySlot(session, objective);
-            case PLAYER_LIST -> new PlayerlistDisplaySlot(session, objective);
+            case LIST -> new PlayerlistDisplaySlot(session, objective);
             default -> throw new IllegalStateException("Unexpected value: " + slot);
         };
         objectiveSlots.put(slot, display);
@@ -178,7 +177,7 @@ public final class Scoreboard {
         String[] players,
         Component prefix,
         Component suffix,
-        NameTagVisibility visibility,
+        Visibility visibility,
         @Nullable TeamColor color
     ) {
         Team team = teams.get(teamName);
@@ -225,7 +224,7 @@ public final class Scoreboard {
         }
 
         if (correctSidebarSlot == null) {
-            correctSidebarSlot = objectiveSlots.get(ScoreboardPosition.SIDEBAR);
+            correctSidebarSlot = objectiveSlots.get(net.minecraft.world.scores.DisplaySlot.SIDEBAR);
         }
 
         TeamColor sidebarColor = null;
@@ -265,9 +264,9 @@ public final class Scoreboard {
         }
         removedSlots.removeAll(actualRemovedSlots);
 
-        handleDisplaySlot(objectiveSlots.get(ScoreboardPosition.PLAYER_LIST), addScores, removeScores);
+        handleDisplaySlot(objectiveSlots.get(net.minecraft.world.scores.DisplaySlot.LIST), addScores, removeScores);
         handleDisplaySlot(correctSidebarSlot, addScores, removeScores);
-        handleDisplaySlot(objectiveSlots.get(ScoreboardPosition.BELOW_NAME), addScores, removeScores);
+        handleDisplaySlot(objectiveSlots.get(net.minecraft.world.scores.DisplaySlot.BELOW_NAME), addScores, removeScores);
 
         if (!removeScores.isEmpty()) {
             SetScorePacket packet = new SetScorePacket();

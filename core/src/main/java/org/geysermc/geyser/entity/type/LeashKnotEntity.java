@@ -27,7 +27,7 @@ package org.geysermc.geyser.entity.type;
 
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.util.InteractionResult;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class LeashKnotEntity extends Entity {
 
@@ -37,7 +37,7 @@ public class LeashKnotEntity extends Entity {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         // Un-leashing the knot
         return InteractionResult.SUCCESS;
     }

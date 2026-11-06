@@ -35,10 +35,10 @@ import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Instrument;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.Instrument;
 
 public class GoatHornItem extends Item {
     public GoatHornItem(String javaIdentifier, Builder builder) {
@@ -46,15 +46,15 @@ public class GoatHornItem extends Item {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         ItemData.Builder builder = super.translateToBedrock(session, count, components, mapping, mappings);
         if (components == null) {
             return builder;
         }
 
-        Holder<Instrument> instrumentComponent = components.get(DataComponentTypes.INSTRUMENT);
+        net.minecraft.world.item.component.InstrumentComponent instrumentComponent = components.get(DataComponents.INSTRUMENT);
         if (instrumentComponent != null) {
-            GeyserInstrument instrument = GeyserInstrument.fromComponent(session.javaRegistries(), instrumentComponent);
+            GeyserInstrument instrument = GeyserInstrument.fromComponent(session, instrumentComponent);
             int bedrockId = instrument.bedrockId();
             if (bedrockId >= 0) {
                 builder.damage(bedrockId);
@@ -65,12 +65,12 @@ public class GoatHornItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        Holder<Instrument> component = components.get(DataComponentTypes.INSTRUMENT);
-        if (component != null && tooltip.showInTooltip(DataComponentTypes.INSTRUMENT)) {
-            GeyserInstrument instrument = GeyserInstrument.fromComponent(session.javaRegistries(), component);
+        net.minecraft.world.item.component.InstrumentComponent component = components.get(DataComponents.INSTRUMENT);
+        if (component != null && tooltip.showInTooltip(DataComponents.INSTRUMENT)) {
+            GeyserInstrument instrument = GeyserInstrument.fromComponent(session, component);
             if (instrument.bedrockInstrument() == null) {
                 builder.getOrCreateLore().add(MessageTranslator.convertMessageForTooltip(instrument.description(), session.locale()));
             }
@@ -83,7 +83,9 @@ public class GoatHornItem extends Item {
 
         int damage = itemData.getDamage();
         // This could cause an issue since -1 is returned for non-vanilla goat horns
-        itemStack.getOrCreateComponents().put(DataComponentTypes.INSTRUMENT, Holder.ofId(GeyserInstrument.bedrockIdToJava(session.javaRegistries(), damage)));
+        int javaId = GeyserInstrument.bedrockIdToJava(session.javaRegistries(), damage);
+        session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.INSTRUMENT).get(javaId)
+            .ifPresent(instrument -> itemStack.getOrCreateComponents().put(DataComponents.INSTRUMENT, new net.minecraft.world.item.component.InstrumentComponent(instrument)));
 
         return itemStack;
     }

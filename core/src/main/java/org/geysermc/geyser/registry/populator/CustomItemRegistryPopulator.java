@@ -67,19 +67,18 @@ import org.geysermc.geyser.registry.type.GeyserMappingItem;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.NonVanillaItemRegistration;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.AttackRange;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Consumable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.FoodProperties;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.KineticWeapon;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PiercingWeapon;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.SwingAnimation;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ToolData;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.UseCooldown;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.UseEffects;
+import net.minecraft.world.item.component.AttackRange;
+import net.minecraft.world.item.component.Consumable;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.component.KineticWeapon;
+import net.minecraft.world.item.component.PiercingWeapon;
+import net.minecraft.world.item.component.SwingAnimation;
+import net.minecraft.world.item.component.Tool;
+import net.minecraft.world.item.component.UseCooldown;
+import net.minecraft.world.item.component.UseEffects;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,16 +90,16 @@ public class CustomItemRegistryPopulator {
     // In behaviour packs and Java components this is set to a text value, such as "eat" or "drink"; over Bedrock network it's sent as an int.
     // These don't all work correctly on Bedrock - see the Consumable.Animation Javadoc in the API
     // Last checked for bedrock 1.21.94 - IDs might have changed since then
-    private static final Map<Consumable.ItemUseAnimation, Integer> BEDROCK_ANIMATIONS = Map.of(
-        Consumable.ItemUseAnimation.NONE, 0,
-        Consumable.ItemUseAnimation.EAT, 1,
-        Consumable.ItemUseAnimation.DRINK, 2,
-        Consumable.ItemUseAnimation.BLOCK, 3,
-        Consumable.ItemUseAnimation.BOW, 4,
-        Consumable.ItemUseAnimation.SPEAR, 6,
-        Consumable.ItemUseAnimation.CROSSBOW, 9,
-        Consumable.ItemUseAnimation.SPYGLASS, 10,
-        Consumable.ItemUseAnimation.BRUSH, 12
+    private static final Map<net.minecraft.world.item.ItemUseAnimation, Integer> BEDROCK_ANIMATIONS = Map.of(
+        net.minecraft.world.item.ItemUseAnimation.NONE, 0,
+        net.minecraft.world.item.ItemUseAnimation.EAT, 1,
+        net.minecraft.world.item.ItemUseAnimation.DRINK, 2,
+        net.minecraft.world.item.ItemUseAnimation.BLOCK, 3,
+        net.minecraft.world.item.ItemUseAnimation.BOW, 4,
+        net.minecraft.world.item.ItemUseAnimation.SPEAR, 6,
+        net.minecraft.world.item.ItemUseAnimation.CROSSBOW, 9,
+        net.minecraft.world.item.ItemUseAnimation.SPYGLASS, 10,
+        net.minecraft.world.item.ItemUseAnimation.BRUSH, 12
     );
     // default to high use duration to slow down the player
     private static final float DEFAULT_ITEM_USE_DURATION = 1000.0F;
@@ -182,6 +181,8 @@ public class CustomItemRegistryPopulator {
         // Register item on the first pass, and on other passes get the item back from the registry.
         // This code really should be improved: only register at the start and freeze ITEM registry before populating item mappings!!!
         if (firstPass) {
+            org.geysermc.geyser.vanilla.protocol.VanillaCustomItems.register(
+                net.minecraft.resources.Identifier.parse(customItem.identifier().toString()), customItem.javaId());
             javaItem = new Item(customItem.identifier().toString(), Item.builder()
                 .components(context.components())
                 .resolvableComponents(context.resolvableComponents()));
@@ -274,16 +275,16 @@ public class CustomItemRegistryPopulator {
                 .build());
         }
 
-        ToolData toolData = context.components().get(DataComponentTypes.TOOL);
-        boolean canDestroyInCreative = toolData == null || toolData.isCanDestroyBlocksInCreative();
+        Tool toolData = context.components().get(DataComponents.TOOL);
+        boolean canDestroyInCreative = toolData == null || toolData.canDestroyBlocksInCreative();
         computeCreativeDestroyProperties(canDestroyInCreative, itemProperties, componentBuilder);
 
-        HolderSet repairable = context.components().get(DataComponentTypes.REPAIRABLE);
+        var repairable = context.components().get(DataComponents.REPAIRABLE);
         if (repairable != null) {
             computeRepairableProperties(componentBuilder);
         }
 
-        Equippable equippable = context.components().get(DataComponentTypes.EQUIPPABLE);
+        Equippable equippable = context.components().get(DataComponents.EQUIPPABLE);
         if (equippable != null) {
             boolean renderOffsets = context.definition() instanceof GeyserCustomItemDefinition definition && definition.isOldConvertedItem();
             int protectionValue = context.definition().bedrockOptions().protectionValue();
@@ -294,12 +295,12 @@ public class CustomItemRegistryPopulator {
             computeArmorProperties(equippable, protectionValue, componentBuilder, renderOffsets);
         }
 
-        Integer enchantmentValue = context.components().get(DataComponentTypes.ENCHANTABLE);
-        if (enchantmentValue != null && enchantmentValue > 0) {
-            computeEnchantableProperties(enchantmentValue, itemProperties, componentBuilder);
+        var enchantmentValue = context.components().get(DataComponents.ENCHANTABLE);
+        if (enchantmentValue != null && enchantmentValue.value() > 0) {
+            computeEnchantableProperties(enchantmentValue.value(), itemProperties, componentBuilder);
         }
 
-        Boolean glint = context.components().get(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
+        Boolean glint = context.components().get(DataComponents.ENCHANTMENT_GLINT_OVERRIDE);
         if (glint != null) {
             itemProperties.putBoolean("foil", glint);
             componentBuilder.putCompound("minecraft:glint", NbtMap.builder()
@@ -319,14 +320,14 @@ public class CustomItemRegistryPopulator {
                 .build());
         }
 
-        AttackRange attackRange = context.components().getOrDefault(DataComponentTypes.ATTACK_RANGE, DEFAULT_ATTACK_RANGE);
+        AttackRange attackRange = context.components().getOrDefault(DataComponents.ATTACK_RANGE, DEFAULT_ATTACK_RANGE);
 
-        KineticWeapon kineticWeapon = context.components().get(DataComponentTypes.KINETIC_WEAPON);
+        KineticWeapon kineticWeapon = context.components().get(DataComponents.KINETIC_WEAPON);
         if (kineticWeapon != null) {
             computeKineticWeaponProperties(componentBuilder, kineticWeapon, attackRange);
         }
 
-        PiercingWeapon piercingWeapon = context.components().get(DataComponentTypes.PIERCING_WEAPON);
+        PiercingWeapon piercingWeapon = context.components().get(DataComponents.PIERCING_WEAPON);
         if (piercingWeapon != null) {
             computePiercingWeaponProperties(componentBuilder, attackRange);
         }
@@ -334,27 +335,27 @@ public class CustomItemRegistryPopulator {
         // Please note that technically this component is present on all items in vanilla Minecraft, which, if we think about consistency, would mean
         // we'd have to translate its default value if the component is removed using a patch or not present on a non-vanilla item
         // It doesn't really matter though, since Bedrock has its own default values if the component isn't present
-        SwingAnimation attackAnimation = context.components().get(DataComponentTypes.ATTACK_ANIMATION);
+        SwingAnimation attackAnimation = context.components().get(DataComponents.ATTACK_ANIMATION);
         if (attackAnimation != null) {
             computeSwingAnimationProperties(componentBuilder, attackAnimation);
         }
 
-        Optional<Consumable> consumableComponent = Optional.ofNullable(context.components().get(DataComponentTypes.CONSUMABLE))
+        Optional<Consumable> consumableComponent = Optional.ofNullable(context.components().get(DataComponents.CONSUMABLE))
             .or(() -> context.vanillaMapping().flatMap(mapping -> {
                 // If there is no consumable component, and the vanilla item is a trident, manually add a consumable component
                 // with a spear animation and a really high consume duration, to get the trident animation in 3rd-person working
                 if (mapping.getBedrockIdentifier().equals("minecraft:trident")) {
-                    return Optional.of(new Consumable(DEFAULT_ITEM_USE_DURATION, Consumable.ItemUseAnimation.TRIDENT, null, false, List.of()));
+                    return Optional.of(new Consumable(DEFAULT_ITEM_USE_DURATION, net.minecraft.world.item.ItemUseAnimation.TRIDENT, null, false, List.of()));
                 }
                 return Optional.empty();
             }));
 
         consumableComponent.ifPresent(consumable -> {
-            FoodProperties foodProperties = context.components().get(DataComponentTypes.FOOD);
+            FoodProperties foodProperties = context.components().get(DataComponents.FOOD);
             computeConsumableProperties(consumable, foodProperties, itemProperties, componentBuilder);
         });
 
-        UseCooldown useCooldown = context.components().get(DataComponentTypes.USE_COOLDOWN);
+        UseCooldown useCooldown = context.components().get(DataComponents.USE_COOLDOWN);
         if (useCooldown != null) {
             computeUseCooldownProperties(useCooldown, itemIdentifier, componentBuilder);
         }
@@ -403,7 +404,7 @@ public class CustomItemRegistryPopulator {
         // Bedrock doesn't really use these otherwise
         if (throwable != null || chargeable != null || consumableComponent.isPresent()) {
             computeUseEffectsProperties(itemProperties, componentBuilder,
-                context.components().getOrDefault(DataComponentTypes.USE_EFFECTS, DEFAULT_USE_EFFECTS),
+                context.components().getOrDefault(DataComponents.USE_EFFECTS, DEFAULT_USE_EFFECTS),
                 consumableComponent.map(Consumable::consumeSeconds));
         }
 
@@ -416,14 +417,14 @@ public class CustomItemRegistryPopulator {
             computeEntityPlacerProperties(componentBuilder);
         }
 
-        if (context.components().get(DataComponentTypes.COMPOSTABLE) != null) {
+        if (context.components().get(DataComponents.COMPOSTABLE) != null) {
             componentBuilder.putCompound("minecraft:compostable", NbtMap.builder()
                 .putInt("composting_chance", 1)
                 .build());
         }
 
         // The client only lets an item into furnace fuel slots when it has this component.
-        if (context.components().get(DataComponentTypes.COOKING_FUEL) != null) {
+        if (context.components().get(DataComponents.COOKING_FUEL) != null) {
             componentBuilder.putCompound("minecraft:fuel", NbtMap.builder()
                 .putFloat("duration", 1.0F)
                 .build());
@@ -458,7 +459,7 @@ public class CustomItemRegistryPopulator {
 
     private static void setupBasicItemInfo(CustomItemContext context, NbtMapBuilder itemProperties, NbtMapBuilder componentBuilder) {
         CustomItemDefinition definition = context.definition();
-        DataComponents components = context.components();
+        GeyserDataComponents components = context.components();
         CustomItemBedrockOptions options = definition.bedrockOptions();
 
         // Don't send an icon if the item has a block placer component, and is set to use its block as icon
@@ -494,11 +495,11 @@ public class CustomItemRegistryPopulator {
         itemProperties.putBoolean("allow_off_hand", options.allowOffhand());
         itemProperties.putBoolean("hand_equipped", options.displayHandheld());
 
-        int maxDamage = components.getOrDefault(DataComponentTypes.MAX_DAMAGE, 0);
+        int maxDamage = components.getOrDefault(DataComponents.MAX_DAMAGE, 0);
         // Note that Java requires stack size to be 1 when max damage is above 0
         // We already checked and threw for that case in CustomItemContext#checkComponents though
         // This can be missing if a non-vanilla item didn't specify a max stack size, or if a component patch removed the component. In that case vanilla Minecraft defaults to 1
-        int stackSize = components.getOrDefault(DataComponentTypes.MAX_STACK_SIZE, 1);
+        int stackSize = components.getOrDefault(DataComponents.MAX_STACK_SIZE, 1);
 
         int bedrockStackSize = Math.min(stackSize, Item.BEDROCK_MAX_STACK_SIZE);
         itemProperties.putInt("max_stack_size", bedrockStackSize);
@@ -566,10 +567,10 @@ public class CustomItemRegistryPopulator {
 
     private static void computeArmorProperties(Equippable equippable, int protectionValue, NbtMapBuilder componentBuilder, boolean includeRenderOffsets) {
         String slotName = switch (equippable.slot()) {
-            case BOOTS -> "armor.feet";
-            case LEGGINGS -> "armor.legs";
-            case CHESTPLATE -> "armor.chest";
-            case HELMET -> "armor.head";
+            case FEET -> "armor.feet";
+            case LEGS -> "armor.legs";
+            case CHEST -> "armor.chest";
+            case HEAD -> "armor.head";
             case BODY -> "armor";
             case SADDLE -> "saddle";
             default -> "";
@@ -580,10 +581,10 @@ public class CustomItemRegistryPopulator {
 
         if (includeRenderOffsets) {
             String renderOffsetType = switch (equippable.slot()) {
-                case BOOTS -> "boots";
-                case LEGGINGS -> "leggings";
-                case CHESTPLATE -> "chestplates";
-                case HELMET -> "helmets";
+                case FEET -> "boots";
+                case LEGS -> "leggings";
+                case CHEST -> "chestplates";
+                case HEAD -> "helmets";
                 default -> null;
             };
 
@@ -659,9 +660,9 @@ public class CustomItemRegistryPopulator {
                 .build());
         }
 
-        int nutrition = foodProperties == null ? 0 : foodProperties.getNutrition();
-        float saturationModifier = foodProperties == null ? 0.0F : foodProperties.getSaturationModifier();
-        boolean canAlwaysEat = foodProperties == null || foodProperties.isCanAlwaysEat();
+        int nutrition = foodProperties == null ? 0 : foodProperties.nutrition();
+        float saturationModifier = foodProperties == null ? 0.0F : foodProperties.saturation();
+        boolean canAlwaysEat = foodProperties == null || foodProperties.canAlwaysEat();
         componentBuilder.putCompound("minecraft:food", NbtMap.builder()
             .putBoolean("can_always_eat", canAlwaysEat)
             .putInt("nutrition", nutrition)
@@ -694,7 +695,7 @@ public class CustomItemRegistryPopulator {
     }
 
     private static void computeUseCooldownProperties(UseCooldown cooldown, Key itemIdentifier, NbtMapBuilder componentBuilder) {
-        Key group = cooldown.cooldownGroup() == null ? itemIdentifier : cooldown.cooldownGroup();
+        Key group = cooldown.cooldownGroup().map(MinecraftKey::vanillaToKey).orElse(itemIdentifier);
         componentBuilder.putCompound("minecraft:cooldown", NbtMap.builder()
             .putString("category", group.asString())
             .putFloat("duration", cooldown.seconds())
@@ -709,7 +710,7 @@ public class CustomItemRegistryPopulator {
             .putFloat("damage_multiplier", 1.0F);
 
         addAttackRangeProperties(component, attackRange);
-        addKineticConditionMap(component, "dismount_conditions", weapon.dismountConditions());
+        addKineticConditionMap(component, "dismount_conditions", weapon.dismountConditions().orElse(null));
 
         componentBuilder.putCompound("minecraft:kinetic_weapon", component.build());
     }

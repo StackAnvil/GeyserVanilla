@@ -44,7 +44,7 @@ import org.geysermc.geyser.entity.EntityTypeDefinition;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.entity.type.player.PlayerEntity;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,9 +83,9 @@ public class EntitySpawnContext {
 
     public static EntitySpawnContext fromPacket(GeyserSession session, EntityTypeDefinition<?> definition, ClientboundAddEntityPacket packet) {
         Vector3f position = Vector3f.from(packet.getX(), packet.getY(), packet.getZ());
-        Vector3f motion = packet.getMovement().toFloat();
-        return new EntitySpawnContext(session, definition, packet.getEntityId(), packet.getUuid(), definition.defaultBedrockDefinition(),
-            position, motion, packet.getYaw(), packet.getPitch(), packet.getHeadYaw(), null);
+        Vector3f motion = org.geysermc.geyser.util.MathUtils.toVector3f(packet.getMovement());
+        return new EntitySpawnContext(session, definition, packet.getId(), packet.getUUID(), definition.defaultBedrockDefinition(),
+            position, motion, packet.getYRot(), packet.getXRot(), packet.getYHeadRot(), null);
     }
 
     public static EntitySpawnContext inherited(GeyserSession session, EntityTypeDefinition<?> definition, Entity base, Vector3f position) {

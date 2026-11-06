@@ -25,13 +25,14 @@
 
 package org.geysermc.geyser.entity.type.living.monster.raid;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.Items;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
+import net.minecraft.core.component.DataComponents;
 
 public class PillagerEntity extends AbstractIllagerEntity {
 
@@ -39,8 +40,8 @@ public class PillagerEntity extends AbstractIllagerEntity {
         super(context);
     }
 
-    public void setChargingCrossbow(BooleanEntityMetadata entityMetadata) {
-        boolean charging = entityMetadata.getPrimitiveValue();
+    public void setChargingCrossbow(DataValue<Boolean> entityMetadata) {
+        boolean charging = entityMetadata.value();
         setFlag(EntityFlag.CHARGING, charging);
         metadata.put(EntityDataTypes.CHARGE_AMOUNT, charging ? (byte) 64 : (byte) 0); // TODO: gradually increase
     }
@@ -71,7 +72,7 @@ public class PillagerEntity extends AbstractIllagerEntity {
         }
 
         if (activeCrossbow != null) {
-            if (activeCrossbow.getComponent(DataComponentTypes.CHARGED_PROJECTILES) != null) {
+            if (activeCrossbow.getComponent(DataComponents.CHARGED_PROJECTILES) != null) {
                 metadata.put(EntityDataTypes.CHARGE_AMOUNT, Byte.MAX_VALUE);
                 setFlag(EntityFlag.CHARGING, false);
                 setFlag(EntityFlag.CHARGED, true);

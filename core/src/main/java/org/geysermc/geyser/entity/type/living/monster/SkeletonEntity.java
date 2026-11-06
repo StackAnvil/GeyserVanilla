@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class SkeletonEntity extends AbstractSkeletonEntity {
     private boolean convertingToStray = false;
@@ -36,8 +37,8 @@ public class SkeletonEntity extends AbstractSkeletonEntity {
         super(context);
     }
 
-    public void setConvertingToStray(BooleanEntityMetadata entityMetadata) {
-        this.convertingToStray = entityMetadata.getPrimitiveValue();
+    public void setConvertingToStray(DataValue<Boolean> entityMetadata) {
+        this.convertingToStray = entityMetadata.value();
         setFlag(EntityFlag.SHAKING, isShaking());
     }
 

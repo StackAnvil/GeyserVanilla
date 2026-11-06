@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network.sidebar;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
@@ -39,16 +41,14 @@ import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObj
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.Test;
 
 public class SidebarTeamColorTests {
@@ -65,51 +65,28 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    null,
-                    new String[] {"Tim203"}
-                )
+                VanillaScoreboardPackets.createTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, null, new String[] {"Tim203"})
             );
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.BELOW_NAME, "objective1")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.BELOW_NAME, "objective1")
             );
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective2",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective2", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective2")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective2")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -137,34 +114,17 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.GREEN,
-                    new String[] {"Tim203"}
-                )
+                VanillaScoreboardPackets.createTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.GREEN, new String[] {"Tim203"})
             );
 
             // Create the first sidebar team, should work just fine.
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "green",
-                    ObjectiveAction.ADD,
-                    Component.text("green"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("green", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("green"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("abc", "green", 1));
-            context.translate(setDisplayObjectiveTranslator, new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR_TEAM_GREEN, "green"));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("abc", "green", 1));
+            context.translate(setDisplayObjectiveTranslator, VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.TEAM_GREEN, "green"));
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
                 packet.setObjectiveId("0");
@@ -184,16 +144,10 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "blue",
-                    ObjectiveAction.ADD,
-                    Component.text("blue"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("blue", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("blue"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("abc", "blue", 2));
-            context.translate(setDisplayObjectiveTranslator, new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR_TEAM_BLUE, "blue"));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("abc", "blue", 2));
+            context.translate(setDisplayObjectiveTranslator, VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.TEAM_BLUE, "blue"));
             assertNoNextPacket(context);
 
             // Update the team color the user is in to point it to another sidebar.
@@ -201,17 +155,7 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.BLUE
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.BLUE)
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -240,17 +184,7 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.GREEN
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.GREEN)
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -278,31 +212,15 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "generic",
-                    ObjectiveAction.ADD,
-                    Component.text("generic"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("generic", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("generic"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("abc", "generic", 3));
-            context.translate(setDisplayObjectiveTranslator, new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "generic"));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("abc", "generic", 3));
+            context.translate(setDisplayObjectiveTranslator, VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "generic"));
             assertNoNextPacket(context);
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    null
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, null)
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -328,17 +246,7 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.BLUE
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.BLUE)
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -366,17 +274,7 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.RED
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.RED)
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -402,17 +300,7 @@ public class SidebarTeamColorTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.GREEN
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.GREEN)
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();

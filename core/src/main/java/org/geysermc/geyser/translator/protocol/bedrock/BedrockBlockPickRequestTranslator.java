@@ -33,8 +33,8 @@ import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundPickItemFromBlockPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundPickItemFromEntityPacket;
+import net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundPickItemFromEntityPacket;
 
 @Translator(packet = BlockPickRequestPacket.class)
 public class BedrockBlockPickRequestTranslator extends PacketTranslator<BlockPickRequestPacket> {
@@ -56,6 +56,6 @@ public class BedrockBlockPickRequestTranslator extends PacketTranslator<BlockPic
         }
 
         boolean addExtraData = packet.isAddUserData() && blockToPick.block().hasBlockEntity(); // Holding down CTRL
-        session.sendDownstreamGamePacket(new ServerboundPickItemFromBlockPacket(vector, addExtraData));
+        session.sendDownstreamGamePacket(new ServerboundPickItemFromBlockPacket(org.geysermc.geyser.util.MathUtils.toBlockPos(vector), addExtraData));
     }
 }

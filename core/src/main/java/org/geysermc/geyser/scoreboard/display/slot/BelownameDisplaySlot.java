@@ -40,17 +40,16 @@ import org.geysermc.geyser.scoreboard.display.score.BelownameDisplayScore;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.BlankFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.FixedFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.NumberFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.StyledFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
+import net.minecraft.network.chat.numbers.BlankFormat;
+import net.minecraft.network.chat.numbers.FixedFormat;
+import net.minecraft.network.chat.numbers.NumberFormat;
+import net.minecraft.network.chat.numbers.StyledFormat;
 
 public class BelownameDisplaySlot extends DisplaySlot {
     private final Long2ObjectMap<BelownameDisplayScore> displayScores = new Long2ObjectOpenHashMap<>();
 
     public BelownameDisplaySlot(GeyserSession session, Objective objective) {
-        super(session, objective, ScoreboardPosition.BELOW_NAME);
+        super(session, objective, net.minecraft.world.scores.DisplaySlot.BELOW_NAME);
     }
 
     @Override
@@ -178,17 +177,13 @@ public class BelownameDisplaySlot extends DisplaySlot {
             numberFormat = objective.getNumberFormat();
         }
 
-        if (numberFormat instanceof BlankFormat) {
-            numberString = "";
-        } else if (numberFormat instanceof FixedFormat fixedFormat) {
-            numberString = MessageTranslator.convertMessageRaw(fixedFormat.getValue(), session.locale());
-        } else if (numberFormat instanceof StyledFormat styledFormat) {
-            numberString = MessageTranslator.convertMessage(
-                Component.text(score, MessageTranslator.getStyleFromNbtMap(styledFormat.getStyle())),
-                session.locale()
-            );
-        } else {
+        if (numberFormat == null) {
             numberString = String.valueOf(score);
+        } else {
+            var formatted = MessageTranslator.fromVanilla(numberFormat.format(score), session.vanillaRegistries());
+            numberString = numberFormat instanceof StyledFormat
+                ? MessageTranslator.convertMessage(formatted, session.locale())
+                : MessageTranslator.convertMessageRaw(formatted, session.locale());
         }
 
         return numberString + " " + ChatColor.RESET + objective.getDisplayName();

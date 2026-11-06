@@ -32,9 +32,9 @@ import org.geysermc.geyser.item.TooltipOptions;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.List;
 
@@ -44,12 +44,12 @@ public class CrossbowItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        List<ItemStack> chargedProjectiles = components.get(DataComponentTypes.CHARGED_PROJECTILES);
+        var chargedProjectiles = components.get(DataComponents.CHARGED_PROJECTILES);
         if (chargedProjectiles != null && !chargedProjectiles.isEmpty()) {
-            ItemStack javaProjectile = chargedProjectiles.getFirst();
+            ItemStack javaProjectile = chargedProjectiles.items().getFirst().create();
 
             ItemData itemData = ItemTranslator.translateToBedrock(session, javaProjectile);
             NbtMapBuilder newProjectile = BedrockItemBuilder.createItemNbt(itemData);

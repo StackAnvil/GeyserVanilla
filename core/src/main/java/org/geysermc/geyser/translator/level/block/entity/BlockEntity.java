@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.level.block.entity;
 
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -34,8 +34,8 @@ import java.lang.annotation.RetentionPolicy;
 public @interface BlockEntity {
 
     /**
-     * The Java block entity type
+     * The Java block entity identifiers
      * @return the type of the block entity
      */
-    BlockEntityType[] type();
+    String[] type();
 }

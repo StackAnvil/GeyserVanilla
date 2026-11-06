@@ -32,7 +32,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ContainerOpenPacket;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class CommandBlockMinecartEntity extends DefaultBlockMinecartEntity {
 
@@ -60,7 +60,7 @@ public class CommandBlockMinecartEntity extends DefaultBlockMinecartEntity {
     }
 
     @Override
-    protected InteractiveTag testInteraction(Hand hand) {
+    protected InteractiveTag testInteraction(InteractionHand hand) {
         if (session.canUseCommandBlocks()) {
             return InteractiveTag.OPEN_CONTAINER;
         } else {
@@ -69,7 +69,7 @@ public class CommandBlockMinecartEntity extends DefaultBlockMinecartEntity {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         if (session.canUseCommandBlocks()) {
             // Client-side GUI required
             ContainerOpenPacket openPacket = new ContainerOpenPacket();

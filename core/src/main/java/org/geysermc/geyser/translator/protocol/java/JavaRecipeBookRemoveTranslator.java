@@ -29,7 +29,7 @@ import org.cloudburstmc.protocol.bedrock.packet.UnlockedRecipesPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundRecipeBookRemovePacket;
+import net.minecraft.network.protocol.game.ClientboundRecipeBookRemovePacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +39,7 @@ public class JavaRecipeBookRemoveTranslator extends PacketTranslator<Clientbound
 
     @Override
     public void translate(GeyserSession session, ClientboundRecipeBookRemovePacket packet) {
-        List<String> recipes = getBedrockRecipes(session, packet.getRecipes());
+        List<String> recipes = getBedrockRecipes(session, packet.recipes());
         if (recipes.isEmpty()) {
             // Sending an empty list here will crash the client as of 1.20.60
             return;
@@ -50,10 +50,10 @@ public class JavaRecipeBookRemoveTranslator extends PacketTranslator<Clientbound
         session.sendUpstreamPacket(recipesPacket);
     }
 
-    private List<String> getBedrockRecipes(GeyserSession session, int[] javaRecipeIds) {
+    private List<String> getBedrockRecipes(GeyserSession session, List<net.minecraft.world.item.crafting.display.RecipeDisplayId> javaRecipeIds) {
         List<String> recipes = new ArrayList<>();
-        for (int javaIdentifier : javaRecipeIds) {
-            List<String> bedrockRecipes = session.getJavaToBedrockRecipeIds().get(javaIdentifier);
+        for (var javaIdentifier : javaRecipeIds) {
+            List<String> bedrockRecipes = session.getJavaToBedrockRecipeIds().get(javaIdentifier.index());
             // Some recipes are not (un)lockable on Bedrock edition, like furnace or stonecutter recipes.
             // So we don't store/send these.
             if (bedrockRecipes != null) {

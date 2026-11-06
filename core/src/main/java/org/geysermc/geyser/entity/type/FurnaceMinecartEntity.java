@@ -25,14 +25,15 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.level.block.property.Properties;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.util.InteractionResult;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class FurnaceMinecartEntity extends DefaultBlockMinecartEntity {
     private boolean hasFuel = false;
@@ -41,9 +42,9 @@ public class FurnaceMinecartEntity extends DefaultBlockMinecartEntity {
         super(context);
     }
 
-    public void setHasFuel(BooleanEntityMetadata entityMetadata) {
+    public void setHasFuel(DataValue<Boolean> entityMetadata) {
         // Note: Java ticks this entity and gives it particles if it has fuel
-        hasFuel = entityMetadata.getPrimitiveValue();
+        hasFuel = entityMetadata.value();
         updateDefaultBlockMetadata();
     }
 
@@ -55,7 +56,7 @@ public class FurnaceMinecartEntity extends DefaultBlockMinecartEntity {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         // Always works since you can "push" it this way
         return InteractionResult.SUCCESS;
     }

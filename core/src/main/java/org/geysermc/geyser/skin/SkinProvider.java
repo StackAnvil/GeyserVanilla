@@ -47,7 +47,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.FileUtils;
 import org.geysermc.geyser.util.WebUtils;
-import org.geysermc.mcprotocollib.auth.util.TextureUrlChecker;
+import org.geysermc.geyser.vanilla.protocol.VanillaProfiles;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -628,7 +628,7 @@ public class SkinProvider {
     }
 
     private static BufferedImage downloadImage(String imageUrl) throws IOException {
-        if (!TextureUrlChecker.isAllowedTextureDomain(imageUrl)) {
+        if (!VanillaProfiles.isAllowedTextureDomain(imageUrl)) {
             return EMPTY_SKIN_IMAGE;
         }
         HttpURLConnection con = (HttpURLConnection) new URL(imageUrl).openConnection();

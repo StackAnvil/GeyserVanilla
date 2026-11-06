@@ -30,7 +30,7 @@ import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundPickItemFromEntityPacket;
+import net.minecraft.network.protocol.game.ServerboundPickItemFromEntityPacket;
 
 /**
  * Called when the Bedrock user uses the pick block button on an entity

@@ -36,9 +36,11 @@ import org.geysermc.geyser.registry.java.reader.JavaRegistryReader;
 import org.geysermc.geyser.registry.java.reader.RegistryEntryContext;
 import org.geysermc.geyser.util.MinecraftKey;
 import org.geysermc.geyser.util.SoundUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Instrument;
-import org.geysermc.mcprotocollib.protocol.data.game.level.sound.BuiltinSound;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
+import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.translator.text.MessageTranslator;
+import net.minecraft.world.item.Instrument;
 
 import java.util.Locale;
 
@@ -95,20 +97,18 @@ public interface GeyserInstrument {
         return -1;
     }
 
-    // TODO test in 1.21.5
-    static GeyserInstrument fromComponent(JavaRegistryProvider registries, Holder<Instrument> component) {
-        if (component.isCustom()) {
-            return new Wrapper(component.custom());
-        } else if (component.isId()) {
-            return JavaRegistries.INSTRUMENT.getOrThrow(registries, component.id());
-        }
-        throw new IllegalStateException("Instrument must either be custom or have an id");
+    static GeyserInstrument fromComponent(GeyserSession session, net.minecraft.world.item.component.InstrumentComponent instrumentComponent) {
+        Holder<Instrument> component = instrumentComponent.instrument();
+
+        return component.unwrapKey()
+            .flatMap(key -> JavaRegistries.INSTRUMENT.get(session.javaRegistries(), MinecraftKey.key(key.identifier().toString())))
+            .orElseGet(() -> new Wrapper(component.value(), session.vanillaRegistries()));
     }
 
-    record Wrapper(Instrument instrument) implements GeyserInstrument {
+    record Wrapper(Instrument instrument, RegistryAccess registries) implements GeyserInstrument {
         @Override
         public String soundEvent() {
-            return instrument.soundEvent().getName();
+            return instrument.soundEvent().value().location().toString();
         }
 
         @Override
@@ -118,15 +118,11 @@ public interface GeyserInstrument {
 
         @Override
         public Component description() {
-            return instrument.description();
+            return MessageTranslator.fromVanilla(instrument.description(), registries);
         }
 
         @Override
         public BedrockInstrument bedrockInstrument() {
-            if (instrument.soundEvent() instanceof BuiltinSound) {
-                return BedrockInstrument.getByJavaIdentifier(MinecraftKey.key(instrument.soundEvent().getName()));
-            }
-            // Probably custom
             return null;
         }
     }

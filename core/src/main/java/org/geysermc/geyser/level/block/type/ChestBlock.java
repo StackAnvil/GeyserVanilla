@@ -32,7 +32,8 @@ import org.geysermc.geyser.level.block.property.Properties;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.level.block.entity.BlockEntityTranslator;
 import org.geysermc.geyser.util.BlockEntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityTypes;
 
 public class ChestBlock extends Block {
     public ChestBlock(String javaIdentifier, Builder builder) {
@@ -44,8 +45,8 @@ public class ChestBlock extends Block {
         super.updateBlock(session, state, position);
 
         if (state.getValue(Properties.CHEST_TYPE) != ChestType.SINGLE) {
-            NbtMapBuilder tagBuilder = BlockEntityTranslator.getConstantBedrockTag(BlockEntityType.CHEST, position.getX(), position.getY(), position.getZ());
-            BlockEntityUtils.getBlockEntityTranslator(BlockEntityType.CHEST).translateTag(session, tagBuilder, null, state); //TODO
+            NbtMapBuilder tagBuilder = BlockEntityTranslator.getConstantBedrockTag(BlockEntityTypes.CHEST, position.getX(), position.getY(), position.getZ());
+            BlockEntityUtils.getBlockEntityTranslator(BlockEntityTypes.CHEST).translateTag(session, tagBuilder, null, state); //TODO
             BlockEntityUtils.updateBlockEntity(session, tagBuilder.build(), position);
         }
     }

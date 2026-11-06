@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 /**
  * This class is used as a base for minecarts with a default block to display like furnaces and spawners
@@ -51,9 +52,9 @@ public class DefaultBlockMinecartEntity extends MinecartEntity {
     }
 
     @Override
-    public void setCustomBlock(IntEntityMetadata entityMetadata) {
-        customBlock = entityMetadata.getPrimitiveValue();
-        showCustomBlock = entityMetadata.getPrimitiveValue() != 0;
+    public void setCustomBlock(DataValue<java.util.Optional<net.minecraft.world.level.block.state.BlockState>> entityMetadata) {
+        customBlock = entityMetadata.value().map(net.minecraft.world.level.block.Block::getId).orElse(0);
+        showCustomBlock = entityMetadata.value().map(net.minecraft.world.level.block.Block::getId).orElse(0) != 0;
 
         if (showCustomBlock) {
             metadata.put(EntityDataTypes.DISPLAY_BLOCK_STATE, session.getBlockMappings().getBedrockBlock(customBlock));
@@ -64,8 +65,8 @@ public class DefaultBlockMinecartEntity extends MinecartEntity {
     }
 
     @Override
-    public void setCustomBlockOffset(IntEntityMetadata entityMetadata) {
-        customBlockOffset = entityMetadata.getPrimitiveValue();
+    public void setCustomBlockOffset(DataValue<Integer> entityMetadata) {
+        customBlockOffset = entityMetadata.value();
 
         if (showCustomBlock) {
             metadata.put(EntityDataTypes.DISPLAY_OFFSET, customBlockOffset);

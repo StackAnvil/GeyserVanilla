@@ -34,8 +34,7 @@ import org.geysermc.geyser.entity.type.player.SessionPlayerEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerState;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
 
 @Translator(packet = PlayerActionPacket.class)
 public class BedrockPlayerActionTranslator extends PacketTranslator<PlayerActionPacket> {
@@ -65,7 +64,7 @@ public class BedrockPlayerActionTranslator extends PacketTranslator<PlayerAction
                 session.getEntityCache().updateBossBars();
             }
             case STOP_SLEEP -> {
-                ServerboundPlayerCommandPacket stopSleepingPacket = new ServerboundPlayerCommandPacket(session.getPlayerEntity().getEntityId(), PlayerState.LEAVE_BED);
+                ServerboundPlayerCommandPacket stopSleepingPacket = org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerCommand(session.getPlayerEntity().getEntityId(), ServerboundPlayerCommandPacket.Action.STOP_SLEEPING);
                 session.sendDownstreamGamePacket(stopSleepingPacket);
             }
             case DIMENSION_CHANGE_SUCCESS -> {

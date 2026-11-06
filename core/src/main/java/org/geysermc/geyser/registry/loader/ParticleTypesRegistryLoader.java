@@ -32,22 +32,22 @@ import org.cloudburstmc.protocol.bedrock.data.LevelEvent;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.level.particle.ParticleMapping;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ParticleType;
+import net.minecraft.core.particles.ParticleType;
 
 import java.util.Map;
 
 /**
  * Loads particle types from the given resource path.
  */
-public class ParticleTypesRegistryLoader extends EffectRegistryLoader<Map<ParticleType, ParticleMapping>> {
+public class ParticleTypesRegistryLoader extends EffectRegistryLoader<Map<ParticleType<?>, ParticleMapping>> {
 
     @Override
-    public Map<ParticleType, ParticleMapping> load(String input) {
+    public Map<ParticleType<?>, ParticleMapping> load(String input) {
         JsonObject particlesJson = this.loadFile(input);
-        Map<ParticleType, ParticleMapping> particles = new Object2ObjectOpenHashMap<>();
+        Map<ParticleType<?>, ParticleMapping> particles = new Object2ObjectOpenHashMap<>();
         try {
             for (Map.Entry<String, JsonElement> entry : particlesJson.entrySet()) {
-                ParticleType javaType = ParticleType.from(MinecraftKey.key(entry.getKey()));
+                ParticleType<?> javaType = net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getValue(net.minecraft.resources.Identifier.parse(entry.getKey()));
                 if (javaType == null) {
                     throw new AssertionError("Unknown particle type in particle mappings: " + entry.getKey());
                 }
@@ -61,7 +61,7 @@ public class ParticleTypesRegistryLoader extends EffectRegistryLoader<Map<Partic
         return particles;
     }
 
-    private static ParticleMapping parseParticleMapping(ParticleType type, JsonObject mapping) {
+    private static ParticleMapping parseParticleMapping(ParticleType<?> type, JsonObject mapping) {
         JsonElement bedrockId = mapping.get("bedrock_id");
         if (bedrockId != null) {
             return ParticleMapping.ofIdentifier(bedrockId.getAsString());

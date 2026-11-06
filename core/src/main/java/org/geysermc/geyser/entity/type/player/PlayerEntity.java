@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.entity.type.player;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -46,13 +50,9 @@ import org.geysermc.geyser.entity.type.living.animal.tameable.ParrotEntity;
 import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.util.GliderUtils;
 import org.geysermc.geyser.util.PlayerListUtils;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.auth.texture.Texture;
-import org.geysermc.mcprotocollib.auth.texture.TextureType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.Pose;
 
 import java.util.Collections;
 import java.util.Map;
@@ -78,17 +78,17 @@ public class PlayerEntity extends AvatarEntity implements GeyserPlayerEntity {
     private boolean listed = false;
 
     public PlayerEntity(EntitySpawnContext context, GameProfile profile) {
-        super(context, profile.getName());
+        super(context, profile.name());
         this.customNameVisible = true;
         try {
-            this.textures = profile.getTextures(true);
+            this.textures = org.geysermc.geyser.vanilla.protocol.VanillaProfiles.textures(profile);
         } catch (Exception e) {
             GeyserImpl.getInstance().getLogger().debug("Error loading textures for profile %s! Got: %s", profile, e);
             this.textures = null;
         }
     }
 
-    public PlayerEntity(EntitySpawnContext context, String username, @Nullable Map<TextureType, Texture> textureMap) {
+    public PlayerEntity(EntitySpawnContext context, String username, @Nullable Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textureMap) {
         super(context, username);
         this.customNameVisible = true;
         this.textures = textureMap;
@@ -129,7 +129,7 @@ public class PlayerEntity extends AvatarEntity implements GeyserPlayerEntity {
     @Override
     protected ItemData translateEquipment(GeyserItemStack stack, EquipmentSlot slot) {
         ItemData item = super.translateEquipment(stack, slot);
-        return slot == EquipmentSlot.CHESTPLATE ? GliderUtils.toBedrockChest(session, stack, item) : item;
+        return slot == EquipmentSlot.CHEST ? GliderUtils.toBedrockChest(session, stack, item) : item;
     }
 
     public void resetMetadata() {
@@ -174,22 +174,22 @@ public class PlayerEntity extends AvatarEntity implements GeyserPlayerEntity {
         }
     }
 
-    public void setAbsorptionHearts(FloatEntityMetadata entityMetadata) {
+    public void setAbsorptionHearts(DataValue<Float> entityMetadata) {
         // Extra hearts - is not metadata but an attribute on Bedrock
         UpdateAttributesPacket attributesPacket = new UpdateAttributesPacket();
         attributesPacket.setRuntimeEntityId(geyserId);
         // Setting to a higher maximum since plugins/datapacks can probably extend the Bedrock soft limit
         attributesPacket.setAttributes(Collections.singletonList(
-                GeyserAttributeType.ABSORPTION.getAttribute(entityMetadata.getPrimitiveValue())));
+                GeyserAttributeType.ABSORPTION.getAttribute(entityMetadata.value())));
         session.sendUpstreamPacket(attributesPacket);
     }
 
-    public void setLeftParrot(EntityMetadata<OptionalInt, ?> entityMetadata) {
-        setParrot(entityMetadata.getValue(), true);
+    public void setLeftParrot(DataValue<OptionalInt> entityMetadata) {
+        setParrot(entityMetadata.value(), true);
     }
 
-    public void setRightParrot(EntityMetadata<OptionalInt, ?> entityMetadata) {
-        setParrot(entityMetadata.getValue(), false);
+    public void setRightParrot(DataValue<OptionalInt> entityMetadata) {
+        setParrot(entityMetadata.value(), false);
     }
 
     /**
@@ -281,7 +281,7 @@ public class PlayerEntity extends AvatarEntity implements GeyserPlayerEntity {
         } else if (this.getFlag(EntityFlag.DAMAGE_NEARBY_MOBS)) {
             return Pose.SPIN_ATTACK;
         } else {
-            return this.getFlag(EntityFlag.SNEAKING) && !session.isFlying() ? Pose.SNEAKING : Pose.STANDING;
+            return this.getFlag(EntityFlag.SNEAKING) && !session.isFlying() ? Pose.CROUCHING : Pose.STANDING;
         }
     }
 }

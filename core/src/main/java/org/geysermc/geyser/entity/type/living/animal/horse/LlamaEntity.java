@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.horse;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -33,8 +35,7 @@ import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
+import net.minecraft.world.entity.EquipmentSlot;
 
 public class LlamaEntity extends ChestedHorseEntity {
     /**
@@ -49,8 +50,8 @@ public class LlamaEntity extends ChestedHorseEntity {
         metadata.put(EntityDataTypes.CONTAINER_STRENGTH_MODIFIER, 3); // Presumably 3 slots for every 1 strength
     }
 
-    public void setStrength(IntEntityMetadata entityMetadata) {
-        strength = MathUtils.constrain(entityMetadata.getPrimitiveValue(), 1, 5);
+    public void setStrength(DataValue<Integer> entityMetadata) {
+        strength = MathUtils.constrain(entityMetadata.value(), 1, 5);
         this.metadata.put(EntityDataTypes.STRENGTH, strength);
     }
 

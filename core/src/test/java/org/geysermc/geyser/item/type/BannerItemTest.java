@@ -9,8 +9,8 @@ import org.geysermc.geyser.scoreboard.network.util.GeyserMockContext;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -32,27 +32,28 @@ class BannerItemTest {
         BannerItem banner = mock(BannerItem.class, CALLS_REAL_METHODS);
         GeyserSession session = mock(GeyserSession.class, RETURNS_DEEP_STUBS);
         when(session.locale()).thenReturn("en_us");
-        DataComponents components = new DataComponents(new HashMap<>());
+        when(session.vanillaRegistries()).thenReturn(org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries());
+        GeyserDataComponents components = new GeyserDataComponents();
 
         banner.translateNbtToJava(session, NbtMap.builder().putInt("Type", 1).build(), components, null);
 
-        assertEquals(Rarity.UNCOMMON.ordinal(), components.get(DataComponentTypes.RARITY));
-        assertEquals(Component.translatable("block.minecraft.ominous_banner"), components.get(DataComponentTypes.ITEM_NAME));
-        assertEquals(8, components.get(DataComponentTypes.BANNER_PATTERNS).size());
+        assertEquals(net.minecraft.world.item.Rarity.UNCOMMON, components.get(DataComponents.RARITY));
+        assertEquals(net.minecraft.network.chat.Component.translatable("block.minecraft.ominous_banner"), components.get(DataComponents.ITEM_NAME));
+        assertEquals(8, components.get(DataComponents.BANNER_PATTERNS).layers().size());
 
         ItemMapping mapping = mock(ItemMapping.class);
         when(mapping.getJavaItem()).thenReturn(banner);
         // Use literal text to keep this check independent of downloaded language files.
-        components.put(DataComponentTypes.ITEM_NAME, Component.text("Ominous Banner"));
+        components.put(DataComponents.ITEM_NAME, net.minecraft.network.chat.Component.literal("Ominous Banner"));
         assertEquals(ChatColor.RESET + ChatColor.YELLOW + "Ominous Banner",
                 ItemTranslator.getCustomName(session, components, mapping, Rarity.UNCOMMON.getColor(), false, false));
-        components.put(DataComponentTypes.ITEM_NAME, Component.text("Named Banner", NamedTextColor.RED));
+        components.put(DataComponents.ITEM_NAME, net.minecraft.network.chat.Component.literal("Named Banner").withStyle(net.minecraft.ChatFormatting.RED));
         assertEquals(ChatColor.RESET + ChatColor.YELLOW + ChatColor.RED + "Named Banner",
                 ItemTranslator.getCustomName(session, components, mapping, Rarity.UNCOMMON.getColor(), false, false));
 
-        DataComponents ordinaryBanner = new DataComponents(new HashMap<>());
+        GeyserDataComponents ordinaryBanner = new GeyserDataComponents();
         banner.translateNbtToJava(session, NbtMap.EMPTY, ordinaryBanner, null);
-        assertNull(ordinaryBanner.get(DataComponentTypes.RARITY));
-        assertNull(ordinaryBanner.get(DataComponentTypes.ITEM_NAME));
+        assertNull(ordinaryBanner.get(DataComponents.RARITY));
+        assertNull(ordinaryBanner.get(DataComponents.ITEM_NAME));
     }
 }

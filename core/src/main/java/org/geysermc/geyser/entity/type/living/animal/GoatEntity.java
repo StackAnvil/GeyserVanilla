@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
@@ -37,9 +39,8 @@ import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.InteractionHand;
 
 public class GoatEntity extends AnimalEntity {
     private static final float LONG_JUMPING_HEIGHT = 1.3f * 0.7f;
@@ -53,9 +54,9 @@ public class GoatEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setScreamer(BooleanEntityMetadata entityMetadata) {
+    public void setScreamer(DataValue<Boolean> entityMetadata) {
         // Metadata not used in Bedrock Edition
-        isScreamer = entityMetadata.getPrimitiveValue();
+        isScreamer = entityMetadata.value();
     }
 
     @Override
@@ -72,7 +73,7 @@ public class GoatEntity extends AnimalEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.BABY) && itemInHand.is(Items.BUCKET)) {
             session.playSoundEvent(isScreamer ? SoundEvent.MILK_SCREAMER : SoundEvent.MILK, bedrockPosition());
             return InteractionResult.SUCCESS;
@@ -81,13 +82,13 @@ public class GoatEntity extends AnimalEntity {
         }
     }
 
-    public void setHasLeftHorn(BooleanEntityMetadata entityMetadata) {
-        hasLeftHorn = entityMetadata.getPrimitiveValue();
+    public void setHasLeftHorn(DataValue<Boolean> entityMetadata) {
+        hasLeftHorn = entityMetadata.value();
         setHornCount();
     }
 
-    public void setHasRightHorn(BooleanEntityMetadata entityMetadata) {
-        hasRightHorn = entityMetadata.getPrimitiveValue();
+    public void setHasRightHorn(DataValue<Boolean> entityMetadata) {
+        hasRightHorn = entityMetadata.value();
         setHornCount();
     }
 

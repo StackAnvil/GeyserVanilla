@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -38,8 +40,7 @@ import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class SheepEntity extends AnimalEntity {
     private int color;
@@ -48,8 +49,8 @@ public class SheepEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setSheepFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setSheepFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.SHEARED, (xd & 0x10) == 0x10);
         color = xd & 15;
         metadata.put(EntityDataTypes.COLOR, (byte) color);
@@ -63,7 +64,7 @@ public class SheepEntity extends AnimalEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(Items.SHEARS)) {
             return InteractiveTag.SHEAR;
         } else {
@@ -81,7 +82,7 @@ public class SheepEntity extends AnimalEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(Items.SHEARS)) {
             return InteractionResult.CONSUME;
         } else {

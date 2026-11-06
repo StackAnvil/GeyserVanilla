@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.monster.raid;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 public class VindicatorEntity extends AbstractIllagerEntity {
 
@@ -38,10 +39,10 @@ public class VindicatorEntity extends AbstractIllagerEntity {
     }
 
     @Override
-    public void setMobFlags(ByteEntityMetadata entityMetadata) {
+    public void setMobFlags(DataValue<Byte> entityMetadata) {
         super.setMobFlags(entityMetadata);
         // Allow the axe to be shown if necessary
-        byte xd = entityMetadata.getPrimitiveValue();
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.ANGRY, (xd & 4) == 4);
     }
 

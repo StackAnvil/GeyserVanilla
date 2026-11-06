@@ -35,12 +35,12 @@ import org.cloudburstmc.protocol.bedrock.packet.UpdateBlockPacket;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.StructureBlockUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
-@BlockEntity(type = BlockEntityType.STRUCTURE_BLOCK)
+@BlockEntity(type = "minecraft:structure_block")
 public class StructureBlockBlockEntityTranslator extends BlockEntityTranslator {
     @Override
-    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
+    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType<?> type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
         if (javaNbt == null) {
             return super.getBlockEntityTag(session, type, x, y, z, javaNbt, blockState);
         }

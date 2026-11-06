@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundAwardStatsPacket;
+import net.minecraft.network.protocol.game.ClientboundAwardStatsPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -36,7 +36,7 @@ public class JavaAwardStatsTranslator extends PacketTranslator<ClientboundAwardS
 
     @Override
     public void translate(GeyserSession session, ClientboundAwardStatsPacket packet) {
-        session.updateStatistics(packet.getStatistics());
+        session.updateStatistics(packet.stats());
 
         if (session.isWaitingForStatistics()) {
             session.setWaitingForStatistics(false);

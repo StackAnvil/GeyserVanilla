@@ -30,7 +30,7 @@ import org.geysermc.geyser.entity.type.LivingEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundUpdateAttributesPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
 
 @Translator(packet = ClientboundUpdateAttributesPacket.class)
 public class JavaUpdateAttributesTranslator extends PacketTranslator<ClientboundUpdateAttributesPacket> {
@@ -40,6 +40,6 @@ public class JavaUpdateAttributesTranslator extends PacketTranslator<Clientbound
         Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
         if (!(entity instanceof LivingEntity livingEntity)) return;
 
-        livingEntity.updateBedrockAttributes(session, packet.getAttributes());
+        livingEntity.updateBedrockAttributes(session, packet.getValues());
     }
 }

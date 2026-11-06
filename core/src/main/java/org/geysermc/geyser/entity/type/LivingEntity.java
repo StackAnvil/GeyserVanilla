@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -56,25 +58,21 @@ import org.geysermc.geyser.scoreboard.Team;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.geyser.util.AttributeUtils;
+import org.geysermc.geyser.vanilla.protocol.VanillaAttributes;
 import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ColorParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.Particle;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket.AttributeSnapshot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.core.particles.ColorParticleOption;
+import org.geysermc.geyser.vanilla.protocol.VanillaParticles;
+import net.minecraft.core.particles.ParticleOptions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -122,11 +120,11 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     public GeyserItemStack getMainHandItem() {
-        return getItemInSlot(EquipmentSlot.MAIN_HAND);
+        return getItemInSlot(EquipmentSlot.MAINHAND);
     }
 
     public GeyserItemStack getOffHandItem() {
-        return getItemInSlot(EquipmentSlot.OFF_HAND);
+        return getItemInSlot(EquipmentSlot.OFFHAND);
     }
 
     public boolean isHolding(Item item) {
@@ -134,19 +132,19 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     public void setHelmet(GeyserItemStack stack) {
-        this.equipment.put(EquipmentSlot.HELMET, stack);
+        this.equipment.put(EquipmentSlot.HEAD, stack);
     }
 
     public void setChestplate(GeyserItemStack stack) {
-        this.equipment.put(EquipmentSlot.CHESTPLATE, stack);
+        this.equipment.put(EquipmentSlot.CHEST, stack);
     }
 
     public void setLeggings(GeyserItemStack stack) {
-        this.equipment.put(EquipmentSlot.LEGGINGS, stack);
+        this.equipment.put(EquipmentSlot.LEGS, stack);
     }
 
     public void setBoots(GeyserItemStack stack) {
-        this.equipment.put(EquipmentSlot.BOOTS, stack);
+        this.equipment.put(EquipmentSlot.FEET, stack);
     }
 
     public void setBody(GeyserItemStack stack) {
@@ -158,7 +156,7 @@ public class LivingEntity extends Entity implements Tickable {
 
         boolean saddled = false;
         if (!stack.isEmpty()) {
-            Equippable equippable = stack.getComponent(DataComponentTypes.EQUIPPABLE);
+            Equippable equippable = stack.getComponent(DataComponents.EQUIPPABLE);
             saddled = equippable != null && equippable.slot() == EquipmentSlot.SADDLE;
         }
 
@@ -166,11 +164,11 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     public void setHand(GeyserItemStack stack) {
-        this.equipment.put(EquipmentSlot.MAIN_HAND, stack);
+        this.equipment.put(EquipmentSlot.MAINHAND, stack);
     }
 
     public void setOffhand(GeyserItemStack stack) {
-        this.equipment.put(EquipmentSlot.OFF_HAND, stack);
+        this.equipment.put(EquipmentSlot.OFFHAND, stack);
     }
 
     protected void updateSaddled(boolean saddled) {
@@ -185,9 +183,9 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     public void switchHands() {
-        GeyserItemStack offhand = this.equipment.get(EquipmentSlot.OFF_HAND);
-        this.equipment.put(EquipmentSlot.OFF_HAND, this.equipment.get(EquipmentSlot.MAIN_HAND));
-        this.equipment.put(EquipmentSlot.MAIN_HAND, offhand);
+        GeyserItemStack offhand = this.equipment.get(EquipmentSlot.OFFHAND);
+        this.equipment.put(EquipmentSlot.OFFHAND, this.equipment.get(EquipmentSlot.MAINHAND));
+        this.equipment.put(EquipmentSlot.MAINHAND, offhand);
     }
 
     @Override
@@ -214,7 +212,7 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     @Override
-    public void setCustomName(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setCustomName(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         // Update custom name, but reset the nametag when there are passengers, or when this is the spectated
         // entity (its name shouldn't float in the spectator's own first-person view)
         super.setCustomName(entityMetadata);
@@ -223,8 +221,8 @@ public class LivingEntity extends Entity implements Tickable {
         }
     }
 
-    public void setLivingEntityFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setLivingEntityFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
 
         boolean isUsingItem = (xd & 0x01) == 0x01;
         boolean isUsingOffhand = (xd & 0x02) == 0x02;
@@ -253,11 +251,11 @@ public class LivingEntity extends Entity implements Tickable {
         setFlag(EntityFlag.DAMAGE_NEARBY_MOBS, value);
     }
 
-    public void setHealth(FloatEntityMetadata entityMetadata) {
+    public void setHealth(DataValue<Float> entityMetadata) {
         // The server can send health value early, causing health to be larger than maxHealth, which can freaks out Bedrock client
         // in some weird way, eg: https://github.com/GeyserMC/Geyser/issues/5918 or it could be intentional....  Either way
         // we do this to account for it, since currently it seems like Java client doesn't care while Bedrock does.
-        this.health = Math.max(0, entityMetadata.getPrimitiveValue());
+        this.health = Math.max(0, entityMetadata.value());
         if (this.health > this.maxHealth) {
             this.maxHealth = this.health;
         }
@@ -270,23 +268,23 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     // TODO: support all particle types
-    public void setParticles(ObjectEntityMetadata<List<Particle>> entityMetadata) {
-        List<Particle> particles = entityMetadata.getValue();
+    public void setParticles(DataValue<List<ParticleOptions>> entityMetadata) {
+        List<ParticleOptions> particles = entityMetadata.value();
 
         int count = 0;
         long visibleEffects = 0L;
-        for (Particle particle : particles) {
+        for (ParticleOptions particle : particles) {
             EffectType effectType = null;
 
             // Some particles are unique types on java, so we have to map them manually
-            switch (particle.getType()) {
-                case ENTITY_EFFECT -> effectType = EffectType.fromColor(((ColorParticleData) particle.getData()).getColor());
-                case INFESTED -> effectType = EffectType.INFESTED;
-                case ITEM_SLIME -> effectType = EffectType.OOZING;
-                case ITEM_COBWEB -> effectType = EffectType.WEAVING;
-                case SMALL_GUST -> effectType = EffectType.WIND_CHARGED;
-                case TRIAL_OMEN -> effectType = EffectType.TRIAL_OMEN;
-                case RAID_OMEN -> effectType = EffectType.RAID_OMEN;
+            switch (java.util.Objects.requireNonNull(net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(particle.getType())).getPath()) {
+                case "entity_effect" -> effectType = EffectType.fromColor(VanillaParticles.color((ColorParticleOption) particle));
+                case "infested" -> effectType = EffectType.INFESTED;
+                case "item_slime" -> effectType = EffectType.OOZING;
+                case "item_cobweb" -> effectType = EffectType.WEAVING;
+                case "small_gust" -> effectType = EffectType.WIND_CHARGED;
+                case "trial_omen" -> effectType = EffectType.TRIAL_OMEN;
+                case "raid_omen" -> effectType = EffectType.RAID_OMEN;
             }
 
             // If we couldn't map it, skip it
@@ -319,8 +317,8 @@ public class LivingEntity extends Entity implements Tickable {
         metadata.put(EntityDataTypes.VISIBLE_MOB_EFFECTS, visibleEffects);
     }
 
-    public @Nullable Vector3i setBedPosition(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
-        Optional<Vector3i> optionalPos = entityMetadata.getValue();
+    public @Nullable Vector3i setBedPosition(DataValue<Optional<net.minecraft.core.BlockPos>> entityMetadata) {
+        Optional<Vector3i> optionalPos = entityMetadata.value().map(org.geysermc.geyser.util.MathUtils::toVector3i);
         if (optionalPos.isPresent()) {
             Vector3i bedPosition = optionalPos.get();
             metadata.put(EntityDataTypes.BED_POSITION, bedPosition);
@@ -350,7 +348,7 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     protected boolean hasChargedProjectiles() {
-        List<ItemStack> chargedProjectiles = getMainHandItem().getComponent(DataComponentTypes.CHARGED_PROJECTILES);
+        var chargedProjectiles = getMainHandItem().getComponent(DataComponents.CHARGED_PROJECTILES);
         return chargedProjectiles != null && !chargedProjectiles.isEmpty();
     }
 
@@ -370,7 +368,7 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     @Override
-    public float setFreezing(IntEntityMetadata entityMetadata) {
+    public float setFreezing(DataValue<Integer> entityMetadata) {
         float freezingPercentage = super.setFreezing(entityMetadata);
         this.isMaxFrozenState = freezingPercentage >= 1.0f;
         setFlag(EntityFlag.SHAKING, isShaking());
@@ -403,7 +401,7 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         GeyserItemStack itemStack = session.getPlayerInventory().getItemInHand(hand);
         if (itemStack.is(Items.NAME_TAG)) {
             InteractionResult result = checkInteractWithNameTag(itemStack);
@@ -412,7 +410,7 @@ public class LivingEntity extends Entity implements Tickable {
             }
         }
 
-        final Equippable equippable = itemStack.getComponent(DataComponentTypes.EQUIPPABLE);
+        final Equippable equippable = itemStack.getComponent(DataComponents.EQUIPPABLE);
         if (equippable != null && equippable.equipOnInteract() && this.isAlive()) {
             if (isEquippableInSlot(itemStack, equippable.slot()) && getItemInSlot(equippable.slot()).isEmpty()) {
                 return InteractionResult.SUCCESS;
@@ -551,7 +549,7 @@ public class LivingEntity extends Entity implements Tickable {
      */
     // Implementation note for 1.20.5: this code was moved to the NameTag item.
     protected final InteractionResult checkInteractWithNameTag(GeyserItemStack itemStack) {
-        if (itemStack.getComponent(DataComponentTypes.CUSTOM_NAME) != null) {
+        if (itemStack.getComponent(DataComponents.CUSTOM_NAME) != null) {
             // The mob shall be named
             return InteractionResult.SUCCESS;
         }
@@ -561,8 +559,8 @@ public class LivingEntity extends Entity implements Tickable {
     public void updateArmor() {
         if (!valid) return;
 
-        GeyserItemStack helmet = getItemInSlot(EquipmentSlot.HELMET);
-        GeyserItemStack chestplate = getItemInSlot(EquipmentSlot.CHESTPLATE);
+        GeyserItemStack helmet = getItemInSlot(EquipmentSlot.HEAD);
+        GeyserItemStack chestplate = getItemInSlot(EquipmentSlot.CHEST);
         // If an entity has a banner on them, it will be in the helmet slot in Java but the chestplate spot in Bedrock
         // But don't overwrite the chestplate if it isn't empty
         if (chestplate.isEmpty() && helmet.is(session, ItemTag.BANNERS)) {
@@ -575,10 +573,10 @@ public class LivingEntity extends Entity implements Tickable {
 
         MobArmorEquipmentPacket armorEquipmentPacket = new MobArmorEquipmentPacket();
         armorEquipmentPacket.setRuntimeEntityId(geyserId);
-        armorEquipmentPacket.setHelmet(translateEquipment(helmet, EquipmentSlot.HELMET));
-        armorEquipmentPacket.setChestplate(translateEquipment(chestplate, EquipmentSlot.CHESTPLATE));
-        armorEquipmentPacket.setLeggings(translateEquipment(getItemInSlot(EquipmentSlot.LEGGINGS), EquipmentSlot.LEGGINGS));
-        armorEquipmentPacket.setBoots(translateEquipment(getItemInSlot(EquipmentSlot.BOOTS), EquipmentSlot.BOOTS));
+        armorEquipmentPacket.setHelmet(translateEquipment(helmet, EquipmentSlot.HEAD));
+        armorEquipmentPacket.setChestplate(translateEquipment(chestplate, EquipmentSlot.CHEST));
+        armorEquipmentPacket.setLeggings(translateEquipment(getItemInSlot(EquipmentSlot.LEGS), EquipmentSlot.LEGS));
+        armorEquipmentPacket.setBoots(translateEquipment(getItemInSlot(EquipmentSlot.FEET), EquipmentSlot.FEET));
         armorEquipmentPacket.setBody(translateEquipment(getItemInSlot(EquipmentSlot.BODY), EquipmentSlot.BODY));
 
         session.sendUpstreamPacket(armorEquipmentPacket);
@@ -596,7 +594,7 @@ public class LivingEntity extends Entity implements Tickable {
 
         MobEquipmentPacket handPacket = new MobEquipmentPacket();
         handPacket.setRuntimeEntityId(geyserId);
-        handPacket.setItem(translateEquipment(getMainHandItem(), EquipmentSlot.MAIN_HAND));
+        handPacket.setItem(translateEquipment(getMainHandItem(), EquipmentSlot.MAINHAND));
         handPacket.setHotbarSlot(-1);
         handPacket.setInventorySlot(0);
         handPacket.setContainerId(ContainerId.INVENTORY);
@@ -609,7 +607,7 @@ public class LivingEntity extends Entity implements Tickable {
 
         MobEquipmentPacket offHandPacket = new MobEquipmentPacket();
         offHandPacket.setRuntimeEntityId(geyserId);
-        offHandPacket.setItem(translateEquipment(getOffHandItem(), EquipmentSlot.OFF_HAND));
+        offHandPacket.setItem(translateEquipment(getOffHandItem(), EquipmentSlot.OFFHAND));
         offHandPacket.setHotbarSlot(-1);
         offHandPacket.setInventorySlot(0);
         offHandPacket.setContainerId(ContainerId.OFFHAND);
@@ -632,12 +630,12 @@ public class LivingEntity extends Entity implements Tickable {
      *
      * @param attributes the Java list of attributes sent from the server
      */
-    public void updateBedrockAttributes(GeyserSession session, List<Attribute> attributes) {
+    public void updateBedrockAttributes(GeyserSession session, List<AttributeSnapshot> attributes) {
         if (!valid) return;
 
         List<AttributeData> newAttributes = new ArrayList<>();
 
-        for (Attribute attribute : attributes) {
+        for (AttributeSnapshot attribute : attributes) {
             // Convert the attribute to a Bedrock version, if relevant
             updateAttribute(attribute, newAttributes);
         }
@@ -656,68 +654,68 @@ public class LivingEntity extends Entity implements Tickable {
     /**
      * Takes the Java attribute and adds it to newAttributes as a Bedrock-formatted attribute
      */
-    protected void updateAttribute(Attribute javaAttribute, List<AttributeData> newAttributes) {
-        if (javaAttribute.getType() instanceof AttributeType.Builtin type) {
-            switch (type) {
-                case MAX_HEALTH -> {
+    protected void updateAttribute(AttributeSnapshot javaAttribute, List<AttributeData> newAttributes) {
+        {
+            switch (org.geysermc.geyser.vanilla.protocol.VanillaAttributes.key(javaAttribute).toString()) {
+                case "minecraft:max_health" -> {
                     // Since 1.18.0, setting the max health to 0 or below causes the entity to die on Bedrock but not on Java
                     // See https://github.com/GeyserMC/Geyser/issues/2971
-                    this.maxHealth = Math.max((float) AttributeUtils.calculateValue(javaAttribute), 1f);
+                    this.maxHealth = Math.max((float) VanillaAttributes.calculateValue(javaAttribute), 1f);
                     newAttributes.add(createHealthAttribute());
                 }
-                case MOVEMENT_SPEED -> {
+                case "minecraft:movement_speed" -> {
                     AttributeData attributeData = calculateAttribute(javaAttribute, GeyserAttributeType.MOVEMENT_SPEED);
                     newAttributes.add(attributeData);
                     if (this instanceof ClientVehicle clientVehicle) {
                         clientVehicle.getVehicleComponent().setMoveSpeed(attributeData.getValue());
                     }
                 }
-                case STEP_HEIGHT -> {
+                case "minecraft:step_height" -> {
                     if (this instanceof ClientVehicle clientVehicle) {
-                        clientVehicle.getVehicleComponent().setStepHeight((float) AttributeUtils.calculateValue(javaAttribute));
+                        clientVehicle.getVehicleComponent().setStepHeight((float) VanillaAttributes.calculateValue(javaAttribute));
                     }
                 }
-                case GRAVITY ->  {
+                case "minecraft:gravity" ->  {
                     if (this instanceof ClientVehicle clientVehicle) {
-                        clientVehicle.getVehicleComponent().setGravity(AttributeUtils.calculateValue(javaAttribute));
+                        clientVehicle.getVehicleComponent().setGravity(VanillaAttributes.calculateValue(javaAttribute));
                     }
                 }
-                case ATTACK_DAMAGE -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.ATTACK_DAMAGE));
-                case FLYING_SPEED -> {
+                case "minecraft:attack_damage" -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.ATTACK_DAMAGE));
+                case "minecraft:flying_speed" -> {
                     AttributeData attributeData = calculateAttribute(javaAttribute, GeyserAttributeType.FLYING_SPEED);
                     newAttributes.add(attributeData);
                     if (this instanceof HappyGhastEntity ghast && ghast.getVehicleComponent() instanceof HappyGhastVehicleComponent component) {
                         component.setFlyingSpeed(attributeData.getValue());
                     }
                 }
-                case FOLLOW_RANGE -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.FOLLOW_RANGE));
-                case KNOCKBACK_RESISTANCE -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.KNOCKBACK_RESISTANCE));
-                case JUMP_STRENGTH -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.HORSE_JUMP_STRENGTH));
-                case SCALE -> {
-                    // Attribute on Java, entity data on Bedrock
-                    setAttributeScale((float) AttributeUtils.calculateValue(javaAttribute));
+                case "minecraft:follow_range" -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.FOLLOW_RANGE));
+                case "minecraft:knockback_resistance" -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.KNOCKBACK_RESISTANCE));
+                case "minecraft:jump_strength" -> newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.HORSE_JUMP_STRENGTH));
+                case "minecraft:scale" -> {
+                    // AttributeSnapshot on Java, entity data on Bedrock
+                    setAttributeScale((float) VanillaAttributes.calculateValue(javaAttribute));
                     updateBedrockMetadata();
                     if (this instanceof ClientVehicle clientVehicle) {
                         clientVehicle.getVehicleComponent().setScale(scale * attributeScale);
                     }
                 }
-                case WATER_MOVEMENT_EFFICIENCY -> {
+                case "minecraft:water_movement_efficiency" -> {
                     if (this instanceof ClientVehicle clientVehicle) {
-                        clientVehicle.getVehicleComponent().setWaterMovementEfficiency(AttributeUtils.calculateValue(javaAttribute));
+                        clientVehicle.getVehicleComponent().setWaterMovementEfficiency(VanillaAttributes.calculateValue(javaAttribute));
                     }
                 }
-                case MOVEMENT_EFFICIENCY -> {
+                case "minecraft:movement_efficiency" -> {
                     if (this instanceof ClientVehicle clientVehicle) {
-                        clientVehicle.getVehicleComponent().setMovementEfficiency(AttributeUtils.calculateValue(javaAttribute));
+                        clientVehicle.getVehicleComponent().setMovementEfficiency(VanillaAttributes.calculateValue(javaAttribute));
                     }
                 }
-                case FRICTION_MODIFIER -> {
+                case "minecraft:friction_modifier" -> {
                     newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.FRICTION_MODIFIER));
                 }
-                case BOUNCINESS -> {
+                case "minecraft:bounciness" -> {
                     newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.BOUNCINESS));
                 }
-                case AIR_DRAG_MODIFIER -> {
+                case "minecraft:air_drag_modifier" -> {
                     newAttributes.add(calculateAttribute(javaAttribute, GeyserAttributeType.AIR_DRAG_MODIFIER));
                 }
             }
@@ -733,13 +731,13 @@ public class LivingEntity extends Entity implements Tickable {
         GeyserItemStack itemInSlot = equipment.get(slot);
         if (itemInSlot != null) {
             // MojMap LivingEntity#isEquippableInSlot
-            Equippable equippable = itemInSlot.getComponent(DataComponentTypes.EQUIPPABLE);
+            Equippable equippable = itemInSlot.getComponent(DataComponents.EQUIPPABLE);
             if (equippable != null) {
                 return slot == equippable.slot() &&
                     canUseSlot(slot) &&
                     EntityUtils.equipmentUsableByEntity(session.javaRegistries(), equippable, javaDefinition);
             } else {
-                return slot == EquipmentSlot.MAIN_HAND && canUseSlot(EquipmentSlot.MAIN_HAND);
+                return slot == EquipmentSlot.MAINHAND && canUseSlot(EquipmentSlot.MAINHAND);
             }
         }
 
@@ -747,9 +745,9 @@ public class LivingEntity extends Entity implements Tickable {
     }
 
     public final boolean isEquippableInSlot(GeyserItemStack item, EquipmentSlot slot) {
-        Equippable equippable = item.getComponent(DataComponentTypes.EQUIPPABLE);
+        Equippable equippable = item.getComponent(DataComponents.EQUIPPABLE);
         if (equippable == null) {
-            return slot == EquipmentSlot.MAIN_HAND && this.canUseSlot(EquipmentSlot.MAIN_HAND);
+            return slot == EquipmentSlot.MAINHAND && this.canUseSlot(EquipmentSlot.MAINHAND);
         } else {
             return slot == equippable.slot() && this.canUseSlot(equippable.slot()) && EntityUtils.equipmentUsableByEntity(session.javaRegistries(), equippable, javaDefinition);
         }
@@ -762,7 +760,7 @@ public class LivingEntity extends Entity implements Tickable {
     /**
      * Calculates the complete attribute value to send to Bedrock. Will be overriden if attributes need to be cached.
      */
-    protected AttributeData calculateAttribute(Attribute javaAttribute, GeyserAttributeType type) {
-        return type.getAttribute((float) AttributeUtils.calculateValue(javaAttribute));
+    protected AttributeData calculateAttribute(AttributeSnapshot javaAttribute, GeyserAttributeType type) {
+        return type.getAttribute((float) VanillaAttributes.calculateValue(javaAttribute));
     }
 }

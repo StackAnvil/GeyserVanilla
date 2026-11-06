@@ -54,7 +54,6 @@ import org.geysermc.geyser.registry.loader.SoundRegistryLoader;
 import org.geysermc.geyser.registry.loader.SoundTranslatorRegistryLoader;
 import org.geysermc.geyser.registry.loader.WaypointStyleLoader;
 import org.geysermc.geyser.registry.mappings.MappingsType;
-import org.geysermc.geyser.registry.populator.DataComponentRegistryPopulator;
 import org.geysermc.geyser.registry.populator.ItemRegistryPopulator;
 import org.geysermc.geyser.registry.populator.PacketRegistryPopulator;
 import org.geysermc.geyser.registry.populator.TagRegistryPopulator;
@@ -68,11 +67,10 @@ import org.geysermc.geyser.translator.level.event.LevelEventTranslator;
 import org.geysermc.geyser.translator.sound.SoundInteractionTranslator;
 import org.geysermc.geyser.translator.sound.SoundTranslator;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.network.packet.Packet;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
-import org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEvent;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ParticleType;
+import net.minecraft.network.protocol.Packet;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.core.particles.ParticleType;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -125,7 +123,7 @@ public final class Registries {
     /**
      * A mapped registry which stores a block entity identifier to its {@link BlockEntityTranslator}.
      */
-    public static final SimpleMappedDeferredRegistry<BlockEntityType, BlockEntityTranslator> BLOCK_ENTITIES = SimpleMappedDeferredRegistry.create("org.geysermc.geyser.translator.level.block.entity.BlockEntity", BlockEntityRegistryLoader::new);
+    public static final SimpleMappedDeferredRegistry<BlockEntityType<?>, BlockEntityTranslator> BLOCK_ENTITIES = SimpleMappedDeferredRegistry.create("org.geysermc.geyser.translator.level.block.entity.BlockEntity", BlockEntityRegistryLoader::new);
 
     public static final SimpleMappedRegistry<Identifier, BedrockEntityDefinition> BEDROCK_ENTITY_DEFINITIONS = SimpleMappedRegistry.create(RegistryLoaders.empty(Object2ObjectOpenHashMap::new));
 
@@ -139,8 +137,6 @@ public final class Registries {
      */
     public static final PacketTranslatorRegistry<Packet> JAVA_PACKET_TRANSLATORS = PacketTranslatorRegistry.create();
 
-    public static final ListRegistry<DataComponents> DEFAULT_DATA_COMPONENTS = ListRegistry.create(RegistryLoaders.empty(ArrayList::new));
-    public static final ListRegistry<List<ResolvableComponent<?>>> RESOLVABLE_DEFAULT_DATA_COMPONENTS = ListRegistry.create(RegistryLoaders.empty(ArrayList::new));
 
     /**
      * A versioned registry which holds {@link ItemMappings} for each version. These item mappings contain
@@ -149,10 +145,10 @@ public final class Registries {
     public static final VersionedRegistry<ItemMappings> ITEMS = VersionedRegistry.create(RegistryLoaders.empty(Int2ObjectOpenHashMap::new));
 
     /**
-     * A mapped registry holding the {@link ParticleType} to a corresponding {@link ParticleMapping}, containing various pieces of
+     * A mapped registry holding the {@link ParticleType<?>} to a corresponding {@link ParticleMapping}, containing various pieces of
      * data primarily for how Bedrock should handle the particle.
      */
-    public static final SimpleMappedDeferredRegistry<ParticleType, ParticleMapping> PARTICLES = SimpleMappedDeferredRegistry.create("mappings/particles.json", ParticleTypesRegistryLoader::new);
+    public static final SimpleMappedDeferredRegistry<ParticleType<?>, ParticleMapping> PARTICLES = SimpleMappedDeferredRegistry.create("mappings/particles.json", ParticleTypesRegistryLoader::new);
 
     /**
      * A mapped registry holding {@link ResourcePackHolder}'s with the pack uuid as keys.
@@ -170,9 +166,9 @@ public final class Registries {
     public static final SimpleMappedDeferredRegistry<String, SoundMapping> SOUNDS = SimpleMappedDeferredRegistry.create("mappings/sounds.json", SoundRegistryLoader::new);
 
     /**
-     * A mapped registry holding {@link LevelEvent}s to their corresponding {@link LevelEventTranslator}.
+     * A mapped registry holding Java level event IDs to their corresponding {@link LevelEventTranslator}.
      */
-    public static final SimpleMappedDeferredRegistry<LevelEvent, LevelEventTranslator> SOUND_LEVEL_EVENTS = SimpleMappedDeferredRegistry.create("mappings/effects.json", SoundEventsRegistryLoader::new);
+    public static final SimpleMappedDeferredRegistry<Integer, LevelEventTranslator> SOUND_LEVEL_EVENTS = SimpleMappedDeferredRegistry.create("mappings/effects.json", SoundEventsRegistryLoader::new);
 
     /**
      * A mapped registry holding {@link SoundTranslator}s to their corresponding {@link SoundInteractionTranslator}.
@@ -218,7 +214,6 @@ public final class Registries {
         // (by using the Items or Blocks class, which loads all the blocks)
 
         // Bootstrap registries holding hardcoded (built-in) Java Edition content
-        DataComponentRegistryPopulator.load(GeyserImpl.getInstance().getBootstrap());
         BuiltInJavaRegistries.bootstrap();
 
         BEDROCK_ENTITY_IDENTIFIERS.load();

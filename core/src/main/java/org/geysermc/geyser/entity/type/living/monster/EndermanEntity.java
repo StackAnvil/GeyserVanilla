@@ -25,14 +25,14 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
 import org.cloudburstmc.protocol.bedrock.data.definitions.BlockDefinition;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.cloudburstmc.protocol.bedrock.packet.LevelSoundEventPacket;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class EndermanEntity extends MonsterEntity {
 
@@ -40,8 +40,8 @@ public class EndermanEntity extends MonsterEntity {
         super(context);
     }
 
-    public void setCarriedBlock(IntEntityMetadata entityMetadata) {
-        BlockDefinition bedrockBlockId = session.getBlockMappings().getBedrockBlock(entityMetadata.getPrimitiveValue());
+    public void setCarriedBlock(DataValue<java.util.Optional<net.minecraft.world.level.block.state.BlockState>> entityMetadata) {
+        BlockDefinition bedrockBlockId = session.getBlockMappings().getBedrockBlock(entityMetadata.value().map(net.minecraft.world.level.block.Block::getId).orElse(0));
 
         metadata.put(EntityDataTypes.CARRY_BLOCK_STATE, bedrockBlockId);
     }
@@ -49,10 +49,10 @@ public class EndermanEntity extends MonsterEntity {
     /**
      * Controls the screaming sound
      */
-    public void setScreaming(BooleanEntityMetadata entityMetadata) {
+    public void setScreaming(DataValue<Boolean> entityMetadata) {
         //TODO see if Bedrock controls this differently
         // Java Edition this controls which ambient sound is used
-        if (entityMetadata.getPrimitiveValue()) {
+        if (entityMetadata.value()) {
             LevelSoundEventPacket packet = new LevelSoundEventPacket();
             packet.setSound(SoundEvent.STARE);
             packet.setPosition(bedrockPosition());
@@ -62,8 +62,8 @@ public class EndermanEntity extends MonsterEntity {
         }
     }
 
-    public void setAngry(BooleanEntityMetadata entityMetadata) {
+    public void setAngry(DataValue<Boolean> entityMetadata) {
         // "Is staring/provoked" - controls visuals
-        setFlag(EntityFlag.ANGRY, entityMetadata.getPrimitiveValue());
+        setFlag(EntityFlag.ANGRY, entityMetadata.value());
     }
 }

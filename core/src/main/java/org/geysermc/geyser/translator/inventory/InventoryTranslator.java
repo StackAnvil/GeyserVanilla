@@ -76,10 +76,10 @@ import org.geysermc.geyser.translator.inventory.furnace.FurnaceInventoryTranslat
 import org.geysermc.geyser.translator.inventory.furnace.SmokerInventoryTranslator;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.ItemUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.EmptySlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SlotDisplay;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.crafting.display.SlotDisplay.Empty;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -95,40 +95,40 @@ import static org.geysermc.geyser.translator.inventory.BundleInventoryTranslator
 public abstract class InventoryTranslator<Type extends Inventory> {
 
     public static final InventoryTranslator<PlayerInventory> PLAYER_INVENTORY_TRANSLATOR = new PlayerInventoryTranslator();
-    private static final Map<ContainerType, InventoryTranslator<? extends Inventory>> INVENTORY_TRANSLATORS = new EnumMap<>(ContainerType.class) {
+    private static final Map<MenuType<?>, InventoryTranslator<? extends Inventory>> INVENTORY_TRANSLATORS = new java.util.IdentityHashMap<>() {
         {
             /* Chest UIs */
-            put(ContainerType.GENERIC_9X1, new SingleChestInventoryTranslator(9));
-            put(ContainerType.GENERIC_9X2, new SingleChestInventoryTranslator(18));
-            put(ContainerType.GENERIC_9X3, new SingleChestInventoryTranslator(27));
-            put(ContainerType.GENERIC_9X4, new DoubleChestInventoryTranslator(36));
-            put(ContainerType.GENERIC_9X5, new DoubleChestInventoryTranslator(45));
-            put(ContainerType.GENERIC_9X6, new DoubleChestInventoryTranslator(54));
+            put(MenuType.GENERIC_9x1, new SingleChestInventoryTranslator(9));
+            put(MenuType.GENERIC_9x2, new SingleChestInventoryTranslator(18));
+            put(MenuType.GENERIC_9x3, new SingleChestInventoryTranslator(27));
+            put(MenuType.GENERIC_9x4, new DoubleChestInventoryTranslator(36));
+            put(MenuType.GENERIC_9x5, new DoubleChestInventoryTranslator(45));
+            put(MenuType.GENERIC_9x6, new DoubleChestInventoryTranslator(54));
 
             /* Furnaces */
-            put(ContainerType.FURNACE, new FurnaceInventoryTranslator());
-            put(ContainerType.BLAST_FURNACE, new BlastFurnaceInventoryTranslator());
-            put(ContainerType.SMOKER, new SmokerInventoryTranslator());
+            put(MenuType.FURNACE, new FurnaceInventoryTranslator());
+            put(MenuType.BLAST_FURNACE, new BlastFurnaceInventoryTranslator());
+            put(MenuType.SMOKER, new SmokerInventoryTranslator());
 
             /* Specific Inventories */
-            put(ContainerType.ANVIL, new AnvilInventoryTranslator());
-            put(ContainerType.BEACON, new BeaconInventoryTranslator());
-            put(ContainerType.BREWING_STAND, new BrewingInventoryTranslator());
-            put(ContainerType.CARTOGRAPHY, new CartographyInventoryTranslator());
-            put(ContainerType.CRAFTER_3x3, new CrafterInventoryTranslator());
-            put(ContainerType.CRAFTING, new CraftingInventoryTranslator());
-            put(ContainerType.ENCHANTMENT, new EnchantingInventoryTranslator());
-            put(ContainerType.HOPPER, new HopperInventoryTranslator());
-            put(ContainerType.GENERIC_3X3, new Generic3X3InventoryTranslator());
-            put(ContainerType.GRINDSTONE, new GrindstoneInventoryTranslator());
-            put(ContainerType.LOOM, new LoomInventoryTranslator());
-            put(ContainerType.MERCHANT, new MerchantInventoryTranslator());
-            put(ContainerType.SHULKER_BOX, new ShulkerInventoryTranslator());
-            put(ContainerType.SMITHING, new SmithingInventoryTranslator());
-            put(ContainerType.STONECUTTER, new StonecutterInventoryTranslator());
+            put(MenuType.ANVIL, new AnvilInventoryTranslator());
+            put(MenuType.BEACON, new BeaconInventoryTranslator());
+            put(MenuType.BREWING_STAND, new BrewingInventoryTranslator());
+            put(MenuType.CARTOGRAPHY_TABLE, new CartographyInventoryTranslator());
+            put(MenuType.CRAFTER_3x3, new CrafterInventoryTranslator());
+            put(MenuType.CRAFTING, new CraftingInventoryTranslator());
+            put(MenuType.ENCHANTMENT, new EnchantingInventoryTranslator());
+            put(MenuType.HOPPER, new HopperInventoryTranslator());
+            put(MenuType.GENERIC_3x3, new Generic3X3InventoryTranslator());
+            put(MenuType.GRINDSTONE, new GrindstoneInventoryTranslator());
+            put(MenuType.LOOM, new LoomInventoryTranslator());
+            put(MenuType.MERCHANT, new MerchantInventoryTranslator());
+            put(MenuType.SHULKER_BOX, new ShulkerInventoryTranslator());
+            put(MenuType.SMITHING, new SmithingInventoryTranslator());
+            put(MenuType.STONECUTTER, new StonecutterInventoryTranslator());
 
             /* Lectern */
-            put(ContainerType.LECTERN, new LecternInventoryTranslator());
+            put(MenuType.LECTERN, new LecternInventoryTranslator());
         }
     };
 
@@ -214,7 +214,7 @@ public abstract class InventoryTranslator<Type extends Inventory> {
     /**
      * Creates a new inventory.
      */
-    public abstract Type createInventory(GeyserSession session, String name, int windowId, ContainerType containerType);
+    public abstract Type createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType);
 
     /**
      * Used for crafting-related transactions. Will override in PlayerInventoryTranslator and CraftingInventoryTranslator.
@@ -335,7 +335,7 @@ public abstract class InventoryTranslator<Type extends Inventory> {
                             // only set the head if the destination is the head slot
                             GeyserItemStack javaItem = inventory.getItem(sourceSlot);
                             if (javaItem.is(Items.PLAYER_HEAD) && javaItem.hasNonBaseComponents()) {
-                                FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponentTypes.PROFILE));
+                                FakeHeadProvider.setHead(session, session.getPlayerEntity(), javaItem.getComponent(DataComponents.PROFILE));
                             }
                         } else if (sourceSlot == 5) {
                             // we are probably removing the head, so restore the original skin
@@ -849,7 +849,7 @@ public abstract class InventoryTranslator<Type extends Inventory> {
 
                     if (ingRemaining == 0) {
                         while (++ingredientIndex < ingredients.size()) {
-                            if (!(ingredients.get(ingredientIndex) instanceof EmptySlotDisplay)) { // TODO I guess can technically other options be empty?
+                            if (!(ingredients.get(ingredientIndex) instanceof Empty)) { // TODO I guess can technically other options be empty?
                                 ingRemaining = timesCrafted;
                                 break;
                             }
@@ -1121,7 +1121,7 @@ public abstract class InventoryTranslator<Type extends Inventory> {
             // As of 1.16.210: Bedrock needs confirmation on what the current item durability is.
             // If 0 is sent, then Bedrock thinks the item is not damaged
             int durability = 0;
-            Integer damage = itemStack.getComponent(DataComponentTypes.DAMAGE);
+            Integer damage = itemStack.getComponent(DataComponents.DAMAGE);
             if (damage != null) {
                 durability = ItemUtils.getCorrectBedrockDurability(itemStack.asItem(), damage);
             }
@@ -1138,14 +1138,14 @@ public abstract class InventoryTranslator<Type extends Inventory> {
     }
 
     /**
-     * Gets the {@link InventoryTranslator} for the given {@link ContainerType}.
+     * Gets the {@link InventoryTranslator} for the given {@link MenuType<?>}.
      * Returns {@link #PLAYER_INVENTORY_TRANSLATOR} if type is null.
      *
      * @param type the type
-     * @return the InventoryType for the given ContainerType.
+     * @return the InventoryType for the given MenuType.
      */
     @Nullable
-    public static InventoryTranslator<? extends Inventory> inventoryTranslator(@Nullable ContainerType type) {
+    public static InventoryTranslator<? extends Inventory> inventoryTranslator(@Nullable MenuType<?> type) {
         if (type == null) {
             return PLAYER_INVENTORY_TRANSLATOR;
         }

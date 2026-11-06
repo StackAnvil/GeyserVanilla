@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class FallingBlockEntity extends Entity {
 
@@ -39,9 +40,9 @@ public class FallingBlockEntity extends Entity {
     }
 
     @Override
-    public void setGravity(BooleanEntityMetadata entityMetadata) {
+    public void setGravity(DataValue<Boolean> entityMetadata) {
         super.setGravity(entityMetadata);
         // Set the NO_AI flag based on the no gravity flag to prevent movement
-        setFlag(EntityFlag.NO_AI, entityMetadata.getPrimitiveValue());
+        setFlag(EntityFlag.NO_AI, entityMetadata.value());
     }
 }

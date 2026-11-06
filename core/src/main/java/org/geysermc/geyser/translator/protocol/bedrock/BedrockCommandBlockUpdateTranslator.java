@@ -29,9 +29,9 @@ import org.cloudburstmc.protocol.bedrock.packet.CommandBlockUpdatePacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.CommandBlockMode;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetCommandBlockPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetCommandMinecartPacket;
+import net.minecraft.world.level.block.entity.CommandBlockEntity.Mode;
+import net.minecraft.network.protocol.game.ServerboundSetCommandBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCommandMinecartPacket;
 
 @Translator(packet = CommandBlockUpdatePacket.class)
 public class BedrockCommandBlockUpdateTranslator extends PacketTranslator<CommandBlockUpdatePacket> {
@@ -41,18 +41,17 @@ public class BedrockCommandBlockUpdateTranslator extends PacketTranslator<Comman
         String command = packet.getCommand();
         boolean outputTracked = packet.isOutputTracked();
         if (packet.isBlock()) {
-            CommandBlockMode mode = switch (packet.getMode()) {
+            Mode mode = switch (packet.getMode()) {
                 case CHAIN -> // The green one
-                        CommandBlockMode.SEQUENCE;
+                        Mode.SEQUENCE;
                 case REPEATING -> // The purple one
-                        CommandBlockMode.AUTO;
+                        Mode.AUTO;
                 default -> // NORMAL, the orange one
-                        CommandBlockMode.REDSTONE;
+                        Mode.REDSTONE;
             };
             boolean isConditional = packet.isConditional();
             boolean automatic = !packet.isRedstoneMode(); // Automatic = Always Active option in Java
-            ServerboundSetCommandBlockPacket commandBlockPacket = new ServerboundSetCommandBlockPacket(
-                    packet.getBlockPosition(), command, mode, outputTracked, isConditional, automatic);
+            ServerboundSetCommandBlockPacket commandBlockPacket = new ServerboundSetCommandBlockPacket(org.geysermc.geyser.util.MathUtils.toBlockPos(packet.getBlockPosition()), command, mode, outputTracked, isConditional, automatic);
             session.sendDownstreamGamePacket(commandBlockPacket);
         } else {
             ServerboundSetCommandMinecartPacket commandMinecartPacket = new ServerboundSetCommandMinecartPacket(

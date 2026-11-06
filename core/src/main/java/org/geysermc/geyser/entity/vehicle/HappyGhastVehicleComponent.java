@@ -32,7 +32,7 @@ import org.geysermc.geyser.entity.type.living.animal.HappyGhastEntity;
 import org.geysermc.geyser.entity.type.player.SessionPlayerEntity;
 import org.geysermc.geyser.level.block.Fluid;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 
 @Setter
 @Getter
@@ -71,7 +71,7 @@ public class HappyGhastVehicleComponent extends VehicleComponent<HappyGhastEntit
     public void onDismount() {
         super.onDismount();
         SessionPlayerEntity playerEntity = vehicle.getSession().getPlayerEntity();
-        playerEntity.getMetadata().put(EntityDataTypes.SEAT_THIRD_PERSON_CAMERA_RADIUS, (float) AttributeType.Builtin.CAMERA_DISTANCE.getDef());
+        playerEntity.getMetadata().put(EntityDataTypes.SEAT_THIRD_PERSON_CAMERA_RADIUS, (float) Attributes.CAMERA_DISTANCE.value().getDefaultValue());
         playerEntity.getMetadata().put(EntityDataTypes.SEAT_CAMERA_RELAX_DISTANCE_SMOOTHING, cameraDistance * 0.75f);
         playerEntity.getMetadata().put(EntityDataTypes.CONTROLLING_RIDER_SEAT_INDEX, (byte) 0);
     }

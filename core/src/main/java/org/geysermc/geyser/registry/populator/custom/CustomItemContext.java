@@ -35,8 +35,8 @@ import org.geysermc.geyser.item.custom.ComponentConverters;
 import org.geysermc.geyser.item.exception.InvalidItemComponentsException;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.registry.type.GeyserMappingItem;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +53,7 @@ import java.util.function.Consumer;
  * @param customItemId the bedrock ID of the item
  * @param protocolVersion the bedrock protocol version
  */
-public record CustomItemContext(CustomItemDefinition definition, DataComponents components, List<ResolvableComponent<?>> resolvableComponents,
+public record CustomItemContext(CustomItemDefinition definition, GeyserDataComponents components, List<ResolvableComponent<?>> resolvableComponents,
                                 Optional<GeyserMappingItem> vanillaMapping, int customItemId, int protocolVersion) {
 
     /**
@@ -83,7 +83,7 @@ public record CustomItemContext(CustomItemDefinition definition, DataComponents 
      */
     public static CustomItemContext createNonVanillaAndValidateComponents(NonVanillaCustomItemDefinition customItem, int customItemId, int protocolVersion, boolean firstPass) throws InvalidItemComponentsException {
         List<ResolvableComponent<?>> resolvableComponents = new ArrayList<>();
-        DataComponents components = checkComponents(customItem, null, resolvableComponents::add, firstPass);
+        GeyserDataComponents components = checkComponents(customItem, null, resolvableComponents::add, firstPass);
         return new CustomItemContext(customItem, components, resolvableComponents, Optional.empty(), customItemId, protocolVersion);
     }
 
@@ -96,10 +96,10 @@ public record CustomItemContext(CustomItemDefinition definition, DataComponents 
      * @param javaItem the vanilla item to patch components on to, can be null for non-vanilla custom items
      * @return the custom data components patched on the vanilla item's components (if present), validated
      */
-    private static DataComponents checkComponents(CustomItemDefinition definition, Item javaItem, Consumer<ResolvableComponent<?>> resolvableConsumer, boolean firstPass) throws InvalidItemComponentsException {
-        DataComponents components = patchDataComponents(javaItem, definition, resolvableConsumer);
-        int stackSize = components.getOrDefault(DataComponentTypes.MAX_STACK_SIZE, 0);
-        int maxDamage = components.getOrDefault(DataComponentTypes.MAX_DAMAGE, 0);
+    private static GeyserDataComponents checkComponents(CustomItemDefinition definition, Item javaItem, Consumer<ResolvableComponent<?>> resolvableConsumer, boolean firstPass) throws InvalidItemComponentsException {
+        GeyserDataComponents components = patchDataComponents(javaItem, definition, resolvableConsumer);
+        int stackSize = components.getOrDefault(DataComponents.MAX_STACK_SIZE, 0);
+        int maxDamage = components.getOrDefault(DataComponents.MAX_DAMAGE, 0);
 
         if (stackSize > Item.BEDROCK_MAX_STACK_SIZE && firstPass) {
             GeyserImpl.getInstance().getLogger().warning("Bedrock doesn't support stack sizes above %s! Custom item %s with stack size %s will be clamped to %1$s!"
@@ -112,15 +112,15 @@ public record CustomItemContext(CustomItemDefinition definition, DataComponents 
     }
 
     /**
-     * Converts the API components to MCPL ones using the converters in {@link ComponentConverters}, and applies these on top of the default item components.
+     * Converts the API components to native values using the converters in {@link ComponentConverters}, and applies these on top of the default item components.
      *
      * <p>Note that not every API component has a converter in {@link ComponentConverters}. See the documentation there.</p>
      *
      * @param javaItem can be null for non-vanilla custom items
      * @see ComponentConverters
      */
-    private static DataComponents patchDataComponents(@Nullable Item javaItem, CustomItemDefinition definition, Consumer<ResolvableComponent<?>> resolvableConsumer) throws InvalidItemComponentsException {
-        DataComponents convertedComponents = ComponentConverters.convertComponentPatch(definition.components(), definition.removedComponents(), resolvableConsumer);
+    private static GeyserDataComponents patchDataComponents(@Nullable Item javaItem, CustomItemDefinition definition, Consumer<ResolvableComponent<?>> resolvableConsumer) throws InvalidItemComponentsException {
+        GeyserDataComponents convertedComponents = ComponentConverters.convertComponentPatch(definition.components(), definition.removedComponents(), resolvableConsumer);
         if (javaItem != null) {
             // We can use an empty resolvable component getter here, since we won't need to use any resolvable components
             return javaItem.gatherComponents(ResolvableComponentGetter.EMPTY, convertedComponents);

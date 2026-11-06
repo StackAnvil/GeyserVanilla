@@ -36,17 +36,17 @@ import org.geysermc.geyser.item.parser.ItemStackParser;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.List;
 import java.util.UUID;
 
-@BlockEntity(type = BlockEntityType.VAULT)
+@BlockEntity(type = "minecraft:vault")
 public class VaultBlockEntityTranslator extends BlockEntityTranslator {
 
     // Bedrock 1.21 does not send the position nor ID in the tag.
     @Override
-    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
+    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType<?> type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
         NbtMapBuilder builder = NbtMap.builder();
         if (javaNbt != null) {
             translateTag(session, builder, javaNbt, blockState);

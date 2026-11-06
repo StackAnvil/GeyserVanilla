@@ -25,14 +25,9 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
-import org.geysermc.mcprotocollib.protocol.data.game.ClientCommand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.EnterCreditsValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.RainStrengthValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.RespawnScreenValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.notify.ThunderStrengthValue;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundGameEventPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
+import net.minecraft.world.level.GameType;
+import net.minecraft.network.protocol.game.ClientboundGameEventPacket;
+import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
 import org.cloudburstmc.protocol.bedrock.data.GameRuleData;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
 import org.cloudburstmc.protocol.bedrock.packet.*;
@@ -50,7 +45,6 @@ public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEve
     public void translate(GeyserSession session, ClientboundGameEventPacket packet) {
         PlayerEntity entity = session.getPlayerEntity();
 
-        switch (packet.getNotification()) {
             // Yes, START_RAIN and STOP_RAIN are swapped in terms of what they cause the client to do.
             // This is how the Mojang mappings name them, so we go with it
             // It seems Mojang's intent was that START_RAIN would set the rain strength to 0 so that it can then be incremeneted on a gradient by the server
@@ -59,94 +53,79 @@ public class JavaGameEventTranslator extends PacketTranslator<ClientboundGameEve
             // However, it seems most server software (at least Spigot and Paper) did not go along with this
             // As a result many developers use these packets for the opposite of what their names implies
             // Behavior last verified with Java 1.19.4 and Bedrock 1.19.71
-            case START_RAINING:
-                session.updateRain(0);
-                break;
-            case STOP_RAINING:
-                session.updateRain(1);
-                break;
-            case RAIN_LEVEL_CHANGE:
-                // This is the rain strength on LevelEventType.START_RAINING, but can be any value on LevelEventType.STOP_RAINING
-                float rainStrength = ((RainStrengthValue) packet.getValue()).getStrength();
-                session.updateRain(rainStrength);
-                break;
-            case THUNDER_LEVEL_CHANGE:
-                // See above, same process
-                float thunderStrength = ((ThunderStrengthValue) packet.getValue()).getStrength();
-                session.updateThunder(thunderStrength);
-                break;
-            case CHANGE_GAME_MODE:
-                GameMode gameMode = (GameMode) packet.getValue();
+        if (packet.getEvent() == ClientboundGameEventPacket.START_RAINING) {
+            session.updateRain(0);
+        } else if (packet.getEvent() == ClientboundGameEventPacket.STOP_RAINING) {
+            session.updateRain(1);
+        } else if (packet.getEvent() == ClientboundGameEventPacket.RAIN_LEVEL_CHANGE) {
+            // This is the rain strength on LevelEventType.START_RAINING, but can be any value on LevelEventType.STOP_RAINING
+            float rainStrength = packet.getParam();
+            session.updateRain(rainStrength);
+        } else if (packet.getEvent() == ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE) {
+            // See above, same process
+            float thunderStrength = packet.getParam();
+            session.updateThunder(thunderStrength);
+        } else if (packet.getEvent() == ClientboundGameEventPacket.CHANGE_GAME_MODE) {
+            GameType gameMode = GameType.byId((int) packet.getParam());
 
-                SetPlayerGameTypePacket playerGameTypePacket = new SetPlayerGameTypePacket();
-                playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(gameMode).ordinal());
-                session.sendUpstreamPacket(playerGameTypePacket);
-                session.setGameMode(gameMode);
+            SetPlayerGameTypePacket playerGameTypePacket = new SetPlayerGameTypePacket();
+            playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(gameMode).ordinal());
+            session.sendUpstreamPacket(playerGameTypePacket);
+            session.setGameMode(gameMode);
 
-                session.sendAdventureSettings();
+            session.sendAdventureSettings();
 
-                if (session.getPlayerEntity().isOnGround() && gameMode == GameMode.SPECTATOR) {
-                    // Fix a bug where the player has glitched movement and thinks they are still on the ground
-                    MovePlayerPacket movePlayerPacket = new MovePlayerPacket();
-                    movePlayerPacket.setRuntimeEntityId(entity.geyserId());
-                    movePlayerPacket.setPosition(entity.bedrockPosition());
-                    movePlayerPacket.setRotation(entity.bedrockRotation());
-                    movePlayerPacket.setOnGround(false);
-                    movePlayerPacket.setMode(MovePlayerPacket.Mode.TELEPORT);
-                    movePlayerPacket.setTeleportationCause(MovePlayerPacket.TeleportationCause.UNKNOWN);
-                    session.sendUpstreamPacket(movePlayerPacket);
-                }
+            if (session.getPlayerEntity().isOnGround() && gameMode == GameType.SPECTATOR) {
+                // Fix a bug where the player has glitched movement and thinks they are still on the ground
+                MovePlayerPacket movePlayerPacket = new MovePlayerPacket();
+                movePlayerPacket.setRuntimeEntityId(entity.geyserId());
+                movePlayerPacket.setPosition(entity.bedrockPosition());
+                movePlayerPacket.setRotation(entity.bedrockRotation());
+                movePlayerPacket.setOnGround(false);
+                movePlayerPacket.setMode(MovePlayerPacket.Mode.TELEPORT);
+                movePlayerPacket.setTeleportationCause(MovePlayerPacket.TeleportationCause.UNKNOWN);
+                session.sendUpstreamPacket(movePlayerPacket);
+            }
 
-                // Update the crafting grid to add/remove barriers for creative inventory
-                PlayerInventoryTranslator.updateCraftingGrid(session, session.getPlayerInventory());
-                break;
-            case WIN_GAME:
-                switch ((EnterCreditsValue) packet.getValue()) {
-                    case SEEN_BEFORE -> {
-                        ServerboundClientCommandPacket javaRespawnPacket = new ServerboundClientCommandPacket(ClientCommand.PERFORM_RESPAWN);
-                        session.sendDownstreamGamePacket(javaRespawnPacket);
-                    }
-                    case FIRST_TIME -> {
-                        ShowCreditsPacket showCreditsPacket = new ShowCreditsPacket();
-                        showCreditsPacket.setStatus(ShowCreditsPacket.Status.START_CREDITS);
-                        showCreditsPacket.setRuntimeEntityId(entity.geyserId());
-                        session.sendUpstreamPacket(showCreditsPacket);
-                    }
-                }
-                break;
-            case GUARDIAN_ELDER_EFFECT:
-                // note: There is a ElderGuardianEffectValue that determines if a sound should be made or not,
-                // but that doesn't seem to be controllable on Bedrock Edition
-                EntityEventPacket eventPacket = new EntityEventPacket();
-                eventPacket.setType(EntityEventType.ELDER_GUARDIAN_CURSE);
-                eventPacket.setData(0);
-                eventPacket.setRuntimeEntityId(entity.geyserId());
-                session.sendUpstreamPacket(eventPacket);
-                break;
-            case IMMEDIATE_RESPAWN:
-                GameRulesChangedPacket gamerulePacket = new GameRulesChangedPacket();
-                gamerulePacket.getGameRules().add(new GameRuleData<>("doimmediaterespawn",
-                        packet.getValue() == RespawnScreenValue.IMMEDIATE_RESPAWN));
-                session.sendUpstreamPacket(gamerulePacket);
-                break;
-            case NO_RESPAWN_BLOCK_AVAILABLE:
-                // Not sent as a proper message? Odd.
-                session.sendMessage(MinecraftLocale.getLocaleString("block.minecraft.spawn.not_valid",
-                        session.locale()));
-                break;
-            case PLAY_ARROW_HIT_SOUND:
-                PlaySoundPacket arrowSoundPacket = new PlaySoundPacket();
-                arrowSoundPacket.setSound("random.orb");
-                arrowSoundPacket.setPitch(0.5f);
-                arrowSoundPacket.setVolume(0.5f);
-                arrowSoundPacket.setPosition(entity.bedrockPosition());
-                session.sendUpstreamPacket(arrowSoundPacket);
-                break;
-            default:
-                // DEMO_EVENT               - for JE game demo
-                // LEVEL_CHUNKS_LOAD_START  - ???
-                // PUFFER_FISH_STING        - doesn't exist on bedrock
-                break;
+            // Update the crafting grid to add/remove barriers for creative inventory
+            PlayerInventoryTranslator.updateCraftingGrid(session, session.getPlayerInventory());
+        } else if (packet.getEvent() == ClientboundGameEventPacket.WIN_GAME) {
+            if (packet.getParam() == 0) {
+                session.sendDownstreamGamePacket(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.PERFORM_RESPAWN));
+            } else if (packet.getParam() == 1) {
+                ShowCreditsPacket showCreditsPacket = new ShowCreditsPacket();
+                showCreditsPacket.setStatus(ShowCreditsPacket.Status.START_CREDITS);
+                showCreditsPacket.setRuntimeEntityId(entity.geyserId());
+                session.sendUpstreamPacket(showCreditsPacket);
+            }
+        } else if (packet.getEvent() == ClientboundGameEventPacket.GUARDIAN_ELDER_EFFECT) {
+            // note: There is a ElderGuardianEffectValue that determines if a sound should be made or not,
+            // but that doesn't seem to be controllable on Bedrock Edition
+            EntityEventPacket eventPacket = new EntityEventPacket();
+            eventPacket.setType(EntityEventType.ELDER_GUARDIAN_CURSE);
+            eventPacket.setData(0);
+            eventPacket.setRuntimeEntityId(entity.geyserId());
+            session.sendUpstreamPacket(eventPacket);
+        } else if (packet.getEvent() == ClientboundGameEventPacket.IMMEDIATE_RESPAWN) {
+            GameRulesChangedPacket gamerulePacket = new GameRulesChangedPacket();
+            gamerulePacket.getGameRules().add(new GameRuleData<>("doimmediaterespawn",
+                    packet.getParam() == 1));
+            session.sendUpstreamPacket(gamerulePacket);
+        } else if (packet.getEvent() == ClientboundGameEventPacket.NO_RESPAWN_BLOCK_AVAILABLE) {
+            // Not sent as a proper message? Odd.
+            session.sendMessage(MinecraftLocale.getLocaleString("block.minecraft.spawn.not_valid",
+                    session.locale()));
+        } else if (packet.getEvent() == ClientboundGameEventPacket.PLAY_ARROW_HIT_SOUND) {
+            PlaySoundPacket arrowSoundPacket = new PlaySoundPacket();
+            arrowSoundPacket.setSound("random.orb");
+            arrowSoundPacket.setPitch(0.5f);
+            arrowSoundPacket.setVolume(0.5f);
+            arrowSoundPacket.setPosition(entity.bedrockPosition());
+            session.sendUpstreamPacket(arrowSoundPacket);
+        } else {
+            // DEMO_EVENT               - for JE game demo
+            // LEVEL_CHUNKS_LOAD_START  - ???
+            // PUFFER_FISH_STING        - doesn't exist on bedrock
         }
     }
 }

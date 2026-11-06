@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.TrigMath;
@@ -45,14 +47,13 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.geyser.util.AttributeUtils;
+import org.geysermc.geyser.vanilla.protocol.VanillaAttributes;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket.AttributeSnapshot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.InteractionHand;
 
 import java.util.List;
 
@@ -106,21 +107,21 @@ public class HappyGhastEntity extends AnimalEntity implements ClientVehicle {
     }
 
     @Override
-    public void setBaby(BooleanEntityMetadata entityMetadata) {
+    public void setBaby(DataValue<Boolean> entityMetadata) {
         super.setBaby(entityMetadata);
         // Players can only stand on grown up happy ghasts
-        setFlag(EntityFlag.COLLIDABLE, !entityMetadata.getPrimitiveValue());
+        setFlag(EntityFlag.COLLIDABLE, !entityMetadata.value());
     }
 
-    public void setStaysStill(BooleanEntityMetadata entityMetadata) {
-        staysStill = entityMetadata.getPrimitiveValue();
-        CAN_MOVE_PROPERTY.apply(propertyManager, !entityMetadata.getPrimitiveValue());
+    public void setStaysStill(DataValue<Boolean> entityMetadata) {
+        staysStill = entityMetadata.value();
+        CAN_MOVE_PROPERTY.apply(propertyManager, !entityMetadata.value());
         updateBedrockEntityProperties();
     }
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (this.isBaby()) {
             return super.testMobInteraction(hand, itemInHand);
         } else {
@@ -149,7 +150,7 @@ public class HappyGhastEntity extends AnimalEntity implements ClientVehicle {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (this.isBaby()) {
             return super.mobInteract(hand, itemInHand);
         } else {
@@ -223,12 +224,10 @@ public class HappyGhastEntity extends AnimalEntity implements ClientVehicle {
     }
 
     @Override
-    protected void updateAttribute(Attribute javaAttribute, List<AttributeData> newAttributes) {
+    protected void updateAttribute(AttributeSnapshot javaAttribute, List<AttributeData> newAttributes) {
         super.updateAttribute(javaAttribute, newAttributes);
-        if (javaAttribute.getType() instanceof AttributeType.Builtin type) {
-            if (type == AttributeType.Builtin.CAMERA_DISTANCE) {
-                vehicleComponent.setCameraDistance((float) AttributeUtils.calculateValue(javaAttribute));
-            }
+        if (javaAttribute.attribute().value() == Attributes.CAMERA_DISTANCE.value()) {
+            vehicleComponent.setCameraDistance((float) VanillaAttributes.calculateValue(javaAttribute));
         }
     }
 

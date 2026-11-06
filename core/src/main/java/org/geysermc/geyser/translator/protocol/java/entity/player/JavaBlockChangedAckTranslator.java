@@ -28,13 +28,13 @@ package org.geysermc.geyser.translator.protocol.java.entity.player;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundBlockChangedAckPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockChangedAckPacket;
 
 @Translator(packet = ClientboundBlockChangedAckPacket.class)
 public class JavaBlockChangedAckTranslator extends PacketTranslator<ClientboundBlockChangedAckPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundBlockChangedAckPacket packet) {
-        session.getWorldCache().endPredictionsUpTo(packet.getSequence());
+        session.getWorldCache().endPredictionsUpTo(packet.sequence());
     }
 }

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -72,13 +74,9 @@ import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
 
 import java.util.Collections;
 import java.util.EnumMap;
@@ -536,8 +534,8 @@ public class Entity implements GeyserEntity {
         }
     }
 
-    public void setFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.ON_FIRE, ((xd & 0x01) == 0x01) && !getFlag(EntityFlag.FIRE_IMMUNE)); // Otherwise immune entities sometimes flicker onfire
         setSneaking((xd & 0x02) == 0x02);
         setSprinting((xd & 0x08) == 0x08);
@@ -573,8 +571,8 @@ public class Entity implements GeyserEntity {
     /**
      * Set an int from 0 - this entity's maximum air - (air / maxAir) represents the percentage of bubbles left
      */
-    public final void setAir(IntEntityMetadata entityMetadata) {
-        setAirSupply(entityMetadata.getPrimitiveValue());
+    public final void setAir(DataValue<Integer> entityMetadata) {
+        setAirSupply(entityMetadata.value());
     }
 
     protected void setAirSupply(int amount) {
@@ -592,11 +590,11 @@ public class Entity implements GeyserEntity {
         return uuid != null ? uuid.toString() : null;
     }
 
-    public void setCustomName(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setCustomName(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         // customName is shown when always custom name is enabled. Either with or without team.
         // That's why there are both a customName and a nametag variable.
         // CustomName is ignored for players, and is always their username.
-        Optional<Component> name = entityMetadata.getValue();
+        Optional<Component> name = entityMetadata.value().map(component -> org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(component, session.vanillaRegistries()));
         if (name.isPresent()) {
             this.customName = MessageTranslator.convertMessageRaw(name.get(), session.locale());
             setNametag(customName, true);
@@ -677,8 +675,8 @@ public class Entity implements GeyserEntity {
         return null;
     }
 
-    public void setCustomNameVisible(BooleanEntityMetadata entityMetadata) {
-        this.customNameVisible = entityMetadata.getPrimitiveValue();
+    public void setCustomNameVisible(DataValue<Boolean> entityMetadata) {
+        this.customNameVisible = entityMetadata.value();
         // We must show a nametag (either custom name, or entity type fallback).
         // But we also have to apply team styling if present.
         setNametag(getDisplayName(customNameVisible), true);
@@ -689,12 +687,12 @@ public class Entity implements GeyserEntity {
         metadata.put(EntityDataTypes.NAMETAG_ALWAYS_SHOW, (byte) (value ? 1 : 0));
     }
 
-    public final void setSilent(BooleanEntityMetadata entityMetadata) {
-        silent = entityMetadata.getPrimitiveValue();
+    public final void setSilent(DataValue<Boolean> entityMetadata) {
+        silent = entityMetadata.value();
     }
 
-    public void setGravity(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.HAS_GRAVITY, !entityMetadata.getPrimitiveValue());
+    public void setGravity(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.HAS_GRAVITY, !entityMetadata.value());
     }
 
     /**
@@ -747,10 +745,10 @@ public class Entity implements GeyserEntity {
     /**
      * Set a float from 0-1 - how strong the "frozen" overlay should be on screen.
      */
-    public float setFreezing(IntEntityMetadata entityMetadata) {
+    public float setFreezing(DataValue<Integer> entityMetadata) {
         // The value that Java edition gives us is in ticks, but Bedrock uses a float percentage of the strength 0.0 -> 1.0
         // The Java client caps its freezing tick percentage at 140
-        int freezingTicks = Math.min(entityMetadata.getPrimitiveValue(), 140);
+        int freezingTicks = Math.min(entityMetadata.value(), 140);
         float freezingPercentage = freezingTicks / 140f;
         metadata.put(EntityDataTypes.FREEZING_EFFECT_STRENGTH, freezingPercentage);
         return freezingPercentage;
@@ -836,7 +834,7 @@ public class Entity implements GeyserEntity {
      */
     public final void updateInteractiveTag() {
         InteractiveTag tag = InteractiveTag.NONE;
-        for (Hand hand: EntityUtils.HANDS) {
+        for (InteractionHand hand: EntityUtils.HANDS) {
             tag = testInteraction(hand);
             if (tag != InteractiveTag.NONE) {
                 break;
@@ -848,9 +846,9 @@ public class Entity implements GeyserEntity {
 
     /**
      * Test interacting with the given hand to see if we should send a tag to the Bedrock client.
-     * Should usually mirror {@link #interact(Hand)} without any side effects.
+     * Should usually mirror {@link #interact(InteractionHand)} without any side effects.
      */
-    protected InteractiveTag testInteraction(Hand hand) {
+    protected InteractiveTag testInteraction(InteractionHand hand) {
         if (isAlive() && this instanceof Leashable leashable) {
             if (leashable.leashHolderBedrockId() == session.getPlayerEntity().geyserId()) {
                 // Note this might be client side. Has yet to be an issue though, as of Java 1.21.
@@ -869,7 +867,7 @@ public class Entity implements GeyserEntity {
      * Simulates interacting with an entity. The code here should mirror Java Edition code to the best of its ability,
      * to ensure packet parity as well as functionality parity (such as sound effect responses).
      */
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         Item itemInHand = session.getPlayerInventory().getItemInHand(hand).asItem();
         if (itemInHand == Items.SHEARS) {
             if (hasLeashesToDrop()) {
@@ -915,7 +913,7 @@ public class Entity implements GeyserEntity {
     /**
      * Simulates interacting with this entity at a specific click point. As of Java Edition 1.18.1, this is only used for armor stands.
      */
-    public InteractionResult interactAt(Hand hand) {
+    public InteractionResult interactAt(InteractionHand hand) {
         return InteractionResult.PASS;
     }
 
@@ -1031,6 +1029,6 @@ public class Entity implements GeyserEntity {
     }
 
     public EntityType getEntityType() {
-        return javaDefinition.type().mcpl();
+        return javaDefinition.type().nativeType();
     }
 }

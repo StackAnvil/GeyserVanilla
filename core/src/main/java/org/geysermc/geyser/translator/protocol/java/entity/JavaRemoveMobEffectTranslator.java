@@ -26,7 +26,7 @@
 package org.geysermc.geyser.translator.protocol.java.entity;
 
 import org.geysermc.geyser.level.EffectType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveMobEffectPacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveMobEffectPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MobEffectPacket;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.entity.vehicle.ClientVehicle;
@@ -39,21 +39,22 @@ public class JavaRemoveMobEffectTranslator extends PacketTranslator<ClientboundR
 
     @Override
     public void translate(GeyserSession session, ClientboundRemoveMobEffectPacket packet) {
-        Entity entity  = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity  = session.getEntityCache().getEntityByJavaId(packet.entityId());
         if (entity == null) {
             return;
         }
 
+        EffectType effect = EffectType.fromJavaEffect(packet.effect().value());
         if (entity == session.getPlayerEntity()) {
-            session.getEffectCache().removeEffect(packet.getEffect());
+            session.getEffectCache().removeEffect(effect);
         } else if (entity instanceof ClientVehicle clientVehicle) {
-            clientVehicle.getVehicleComponent().removeEffect(packet.getEffect());
+            clientVehicle.getVehicleComponent().removeEffect(effect);
         }
 
         MobEffectPacket mobEffectPacket = new MobEffectPacket();
         mobEffectPacket.setEvent(MobEffectPacket.Event.REMOVE);
         mobEffectPacket.setRuntimeEntityId(entity.geyserId());
-        mobEffectPacket.setEffectId(EffectType.fromJavaEffect(packet.getEffect()).getBedrockId());
+        mobEffectPacket.setEffectId(effect.getBedrockId());
         session.sendUpstreamPacket(mobEffectPacket);
     }
 }

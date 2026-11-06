@@ -28,7 +28,7 @@ package org.geysermc.geyser.registry.java;
 import net.kyori.adventure.key.Key;
 import org.geysermc.geyser.registry.java.reader.JavaRegistryReaders;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
+import org.geysermc.geyser.registry.java.JavaRegistryReference;
 
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -207,7 +207,7 @@ public record JavaRegistryKey<T>(Key registryKey) {
     }
 
     /**
-     * Returns an {@link IntFunction} that turns a network ID of this registry into a {@link T}. Useful to combine with {@link Holder#getOrCompute(IntFunction)}.
+     * Returns an {@link IntFunction} that turns a network ID of this registry into a {@link T}. Useful to combine with {@link JavaRegistryReference#resolve(IntFunction)}.
      *
      * <p>Note that the returned function will use {@link JavaRegistryKey#getOrThrow(JavaRegistryProvider, int)} and as such throw an {@link IllegalStateException}
      * on missing IDs.</p>
@@ -223,82 +223,78 @@ public record JavaRegistryKey<T>(Key registryKey) {
      * Shorthand method for {@link JavaRegistryKey#wrapOrThrow(JavaRegistryProvider, Key)}.
      *
      * @param session the {@link GeyserSession}
-     * @param key the key to wrap into a {@link Holder}
-     * @param <H> the type of the holder
+     * @param key the key to wrap into a {@link JavaRegistryReference}
      * @return a holder representing the key
      * @throws IllegalStateException when the {@code key} was not present in this registry
      * @see JavaRegistryKey#wrapOrThrow(JavaRegistryProvider, Key)
      */
-    public <H> Holder<H> wrapOrThrow(GeyserSession session, Key key) {
+    public JavaRegistryReference<T> wrapOrThrow(GeyserSession session, Key key) {
         return wrapOrThrow(session.javaRegistries(), key);
     }
 
     /**
-     * Gets the network ID of the given {@code key}, and wraps it into a {@link Holder} using {@link Holder#ofId(int)}.
+     * Gets the network ID of the given {@code key}, and wraps it into a {@link JavaRegistryReference} using {@link JavaRegistryReference#byId(int)}.
      *
      * @param registries the {@link JavaRegistryProvider}
-     * @param key the key to wrap into a {@link Holder}
-     * @param <H> the type of the holder
+     * @param key the key to wrap into a {@link JavaRegistryReference}
      * @return a holder representing the key
      * @throws IllegalStateException when the {@code key} was not present in this registry
      * @see JavaRegistryKey#wrapOrThrow(GeyserSession, Object)
      */
-    public <H> Holder<H> wrapOrThrow(JavaRegistryProvider registries, Key key) {
-        return Holder.ofId(getIdOrThrow(registries, key));
+    public JavaRegistryReference<T> wrapOrThrow(JavaRegistryProvider registries, Key key) {
+        return JavaRegistryReference.byId(getIdOrThrow(registries, key));
     }
 
     /**
      * Shorthand method for {@link JavaRegistryKey#wrapOrThrow(JavaRegistryProvider, Object)}.
      *
      * @param session the {@link GeyserSession}
-     * @param object the object to wrap into a {@link Holder}
-     * @param <H> the type of the holder
+     * @param object the object to wrap into a {@link JavaRegistryReference}
      * @return a holder representing the object
      * @throws IllegalStateException when the {@code object} was not present in this registry
      * @see JavaRegistryKey#wrapOrThrow(JavaRegistryProvider, Object)
      */
-    public <H> Holder<H> wrapOrThrow(GeyserSession session, T object) {
+    public JavaRegistryReference<T> wrapOrThrow(GeyserSession session, T object) {
         return wrapOrThrow(session.javaRegistries(), object);
     }
 
     /**
-     * Gets the network ID of the given {@code object}, and wraps it into a {@link Holder} using {@link Holder#ofId(int)}.
+     * Gets the network ID of the given {@code object}, and wraps it into a {@link JavaRegistryReference} using {@link JavaRegistryReference#byId(int)}.
      *
      * @param registries the {@link JavaRegistryProvider}
-     * @param object the object to wrap into a {@link Holder}
-     * @param <H> the type of the holder
+     * @param object the object to wrap into a {@link JavaRegistryReference}
      * @return a holder representing the object
      * @throws IllegalStateException when the {@code object} was not present in this registry
      * @see JavaRegistryKey#wrapOrThrow(GeyserSession, Key)
      */
-    public <H> Holder<H> wrapOrThrow(JavaRegistryProvider registries, T object) {
-        return Holder.ofId(getIdOrThrow(registries, object));
+    public JavaRegistryReference<T> wrapOrThrow(JavaRegistryProvider registries, T object) {
+        return JavaRegistryReference.byId(getIdOrThrow(registries, object));
     }
 
     /**
      * Shorthand method for {@link JavaRegistryKey#wrap(JavaRegistryProvider, Object)}.
      *
      * @param session the {@link GeyserSession}
-     * @param object the object to wrap into a {@link Holder}
+     * @param object the object to wrap into a {@link JavaRegistryReference}
      * @return a holder representing the object
      */
-    public Holder<T> wrap(GeyserSession session, T object) {
+    public JavaRegistryReference<T> wrap(GeyserSession session, T object) {
         return wrap(session.javaRegistries(), object);
     }
 
     /**
-     * Tries to get the network ID of the given {@code object}, wrapping it into a {@link Holder} using {@link Holder#ofId(int)}.
-     * If the {@code object} was not present in this registry, then it is wrapped into a {@link Holder} using {@link Holder#ofCustom(Object)}.
+     * Tries to get the network ID of the given {@code object}, wrapping it into a {@link JavaRegistryReference} using {@link JavaRegistryReference#byId(int)}.
+     * If the {@code object} was not present in this registry, then it is wrapped into a {@link JavaRegistryReference} using {@link JavaRegistryReference#inline(Object)}.
      *
      * @param registries the {@link JavaRegistryProvider}
-     * @param object the object to wrap into a {@link Holder}
+     * @param object the object to wrap into a {@link JavaRegistryReference}
      * @return a holder representing the object
      */
-    public Holder<T> wrap(JavaRegistryProvider registries, T object) {
+    public JavaRegistryReference<T> wrap(JavaRegistryProvider registries, T object) {
         return getId(registries, object).stream()
-            .<Holder<T>>mapToObj(Holder::ofId)
+            .<JavaRegistryReference<T>>mapToObj(JavaRegistryReference::byId)
             .findFirst()
-            .orElseGet(() -> Holder.ofCustom(object));
+            .orElseGet(() -> JavaRegistryReference.inline(object));
     }
 
     @Override

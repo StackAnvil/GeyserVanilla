@@ -53,7 +53,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.PistonCache;
 import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntity;
 import org.geysermc.geyser.util.BlockEntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValueType;
+import org.geysermc.geyser.level.physics.PistonAction;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -165,7 +165,7 @@ public final class GeyserboundPacketHandlerImpl extends AbstractGeyserboundPacke
             PistonCache pistonCache = session.getPistonCache();
             PistonBlockEntity blockEntity = pistonCache.getPistons().computeIfAbsent(position, pos ->
                     new PistonBlockEntity(session, position, orientation, packet.isSticky(), !isExtend));
-            blockEntity.setAction(isExtend ? PistonValueType.PUSHING : PistonValueType.PULLING, attachedBlocks);
+            blockEntity.setAction(isExtend ? PistonAction.EXTEND : PistonAction.RETRACT, attachedBlocks);
         });
     }
 

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.GenericMath;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -32,8 +34,7 @@ import org.cloudburstmc.protocol.bedrock.packet.PlaySoundPacket;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.Tickable;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
+import net.minecraft.world.entity.Pose;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -62,8 +63,8 @@ public class WardenEntity extends MonsterEntity implements Tickable {
         super.setPose(pose);
     }
 
-    public void setAngerLevel(IntEntityMetadata entityMetadata) {
-        float anger = (float) entityMetadata.getPrimitiveValue() / 80f;
+    public void setAngerLevel(DataValue<Integer> entityMetadata) {
+        float anger = (float) entityMetadata.value() / 80f;
         heartBeatDelay = 40 - GenericMath.floor(MathUtils.clamp(anger, 0.0F, 1.0F) * 30F);
         metadata.put(EntityDataTypes.HEARTBEAT_INTERVAL_TICKS, heartBeatDelay);
     }

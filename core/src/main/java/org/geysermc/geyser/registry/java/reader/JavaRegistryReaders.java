@@ -42,7 +42,6 @@ import org.geysermc.geyser.level.PaintingType;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryKey;
 import org.geysermc.geyser.session.dialog.Dialog;
-import org.geysermc.geyser.text.ChatDecoration;
 import org.geysermc.geyser.translator.level.BiomeTranslator;
 import org.geysermc.geyser.translator.level.block.entity.DecoratedPotBlockEntityTranslator;
 import org.geysermc.geyser.translator.protocol.java.entity.JavaDamageEventTranslator;
@@ -71,7 +70,6 @@ public final class JavaRegistryReaders {
     private static final Map<JavaRegistryKey<?>, KeyDependentJavaRegistryReader<?>> READERS = new HashMap<>();
 
     static {
-        register(JavaRegistries.CHAT_TYPE, ChatDecoration::readChatType);
         registerKeyDependent(JavaRegistries.DIMENSION_TYPE, JavaDimension::read);
         registerKeyDependent(JavaRegistries.BIOME, BiomeTranslator::loadServerBiome);
         register(JavaRegistries.ENCHANTMENT, Enchantment::read);

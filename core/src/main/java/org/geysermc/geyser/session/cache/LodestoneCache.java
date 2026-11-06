@@ -30,8 +30,8 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.kyori.adventure.key.Key;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.inventory.GeyserItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.GlobalPos;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.LodestoneTracker;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.world.item.component.LodestoneTracker;
 
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -53,14 +53,14 @@ public final class LodestoneCache {
     private int id = 1;
 
     public void cacheInventoryItem(GeyserItemStack itemStack, LodestoneTracker tracker) {
-        GlobalPos position = tracker.getPos();
+        GlobalPos position = tracker.target().orElse(null);
         if (position == null) {
             return;
         }
-        int x = position.getX();
-        int y = position.getY();
-        int z = position.getZ();
-        Key dim = position.getDimension();
+        int x = position.pos().getX();
+        int y = position.pos().getY();
+        int z = position.pos().getZ();
+        Key dim = org.geysermc.geyser.util.MinecraftKey.key(position.dimension().identifier().toString());
 
         for (LodestonePos pos : this.activeLodestones.values()) {
             if (pos.equals(x, y, z, dim)) {
@@ -81,16 +81,16 @@ public final class LodestoneCache {
     }
 
     public int store(LodestoneTracker tracker) {
-        GlobalPos position = tracker.getPos();
+        GlobalPos position = tracker.target().orElse(null);
         if (position == null) {
             // No coordinates; nothing to convert
             return 0;
         }
 
-        int x = position.getX();
-        int y = position.getY();
-        int z = position.getZ();
-        Key dim = position.getDimension();
+        int x = position.pos().getX();
+        int y = position.pos().getY();
+        int z = position.pos().getZ();
+        Key dim = org.geysermc.geyser.util.MinecraftKey.key(position.dimension().identifier().toString());
 
         for (LodestonePos pos : this.activeLodestones.values()) {
             if (pos.equals(x, y, z, dim)) {

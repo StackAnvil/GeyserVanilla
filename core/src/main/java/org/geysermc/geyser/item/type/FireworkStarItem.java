@@ -31,9 +31,8 @@ import org.geysermc.geyser.item.TooltipOptions;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Fireworks;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 public class FireworkStarItem extends Item {
     public FireworkStarItem(String javaIdentifier, Builder builder) {
@@ -41,14 +40,14 @@ public class FireworkStarItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        Fireworks.FireworkExplosion explosion = components.get(DataComponentTypes.FIREWORK_EXPLOSION);
+        net.minecraft.world.item.component.FireworkExplosion explosion = components.get(DataComponents.FIREWORK_EXPLOSION);
         if (explosion != null) {
             NbtMap newExplosion = FireworkRocketItem.translateExplosionToBedrock(explosion);
             builder.putCompound("FireworksItem", newExplosion);
-            int[] colors = explosion.getColors();
+            int[] colors = explosion.colors().toIntArray();
             if (colors.length != 0) {
                 // Determine the custom color, if any.
                 // Mostly replicates Java's own rendering code, as Java determines the final firework star color client-side
@@ -79,16 +78,16 @@ public class FireworkStarItem extends Item {
     }
 
     @Override
-    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull DataComponents components, @NonNull ItemMapping mapping) {
+    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull GeyserDataComponents components, @NonNull ItemMapping mapping) {
         super.translateNbtToJava(session, bedrockTag, components, mapping);
 
         NbtMap explosion = bedrockTag.getCompound("FireworksItem");
         if (!explosion.isEmpty()) {
-            Fireworks.FireworkExplosion newExplosion = FireworkRocketItem.translateExplosionToJava(explosion);
+            net.minecraft.world.item.component.FireworkExplosion newExplosion = FireworkRocketItem.translateExplosionToJava(explosion);
             if (newExplosion == null) {
                 return;
             }
-            components.put(DataComponentTypes.FIREWORK_EXPLOSION, newExplosion);
+            components.put(DataComponents.FIREWORK_EXPLOSION, newExplosion);
         }
     }
 

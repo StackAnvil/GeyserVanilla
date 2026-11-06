@@ -112,7 +112,7 @@ public class BrewingInventoryTranslator extends AbstractBlockInventoryTranslator
     }
 
     @Override
-    public BrewingContainer createInventory(GeyserSession session, String name, int windowId, org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType containerType) {
+    public BrewingContainer createInventory(GeyserSession session, String name, int windowId, net.minecraft.world.inventory.MenuType<?> containerType) {
         return new BrewingContainer(session, name, windowId, this.size, containerType);
     }
 }

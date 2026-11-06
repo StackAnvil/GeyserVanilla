@@ -36,9 +36,9 @@ import org.cloudburstmc.protocol.bedrock.data.structure.StructureSettings;
 import org.cloudburstmc.protocol.bedrock.data.structure.StructureTemplateResponseType;
 import org.cloudburstmc.protocol.bedrock.packet.StructureTemplateDataResponsePacket;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.UpdateStructureBlockAction;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.UpdateStructureBlockMode;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetStructureBlockPacket;
+import net.minecraft.world.level.block.entity.StructureBlockEntity.UpdateType;
+import net.minecraft.world.level.block.state.properties.StructureMode;
+import net.minecraft.network.protocol.game.ServerboundSetStructureBlockPacket;
 
 public class StructureBlockUtils {
 
@@ -121,20 +121,20 @@ public class StructureBlockUtils {
         return Vector3i.from(newOffsetX, 0, newOffsetZ);
     }
 
-    public static void sendJavaStructurePacket(GeyserSession session, Vector3i blockPosition, Vector3i size, UpdateStructureBlockMode mode, UpdateStructureBlockAction action,
+    public static void sendJavaStructurePacket(GeyserSession session, Vector3i blockPosition, Vector3i size, StructureMode mode, UpdateType action,
                                                StructureSettings settings, boolean boundingBoxVisible, String structureName) {
 
-        org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureMirror mirror = switch (settings.getMirror()) {
-            case X -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureMirror.FRONT_BACK;
-            case Z -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureMirror.LEFT_RIGHT;
-            default -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureMirror.NONE;
+        net.minecraft.world.level.block.Mirror mirror = switch (settings.getMirror()) {
+            case X -> net.minecraft.world.level.block.Mirror.FRONT_BACK;
+            case Z -> net.minecraft.world.level.block.Mirror.LEFT_RIGHT;
+            default -> net.minecraft.world.level.block.Mirror.NONE;
         };
 
-        org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureRotation rotation = switch (settings.getRotation()) {
-            case ROTATE_90 -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureRotation.CLOCKWISE_90;
-            case ROTATE_180 -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureRotation.CLOCKWISE_180;
-            case ROTATE_270 -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureRotation.COUNTERCLOCKWISE_90;
-            default -> org.geysermc.mcprotocollib.protocol.data.game.level.block.StructureRotation.NONE;
+        net.minecraft.world.level.block.Rotation rotation = switch (settings.getRotation()) {
+            case ROTATE_90 -> net.minecraft.world.level.block.Rotation.CLOCKWISE_90;
+            case ROTATE_180 -> net.minecraft.world.level.block.Rotation.CLOCKWISE_180;
+            case ROTATE_270 -> net.minecraft.world.level.block.Rotation.COUNTERCLOCKWISE_90;
+            default -> net.minecraft.world.level.block.Rotation.NONE;
         };
 
         Vector3i offset = settings.getOffset();
@@ -142,23 +142,7 @@ public class StructureBlockUtils {
             offset = settings.getOffset().sub(session.getStructureBlockCache().getBedrockOffset());
         }
 
-        ServerboundSetStructureBlockPacket structureBlockPacket = new ServerboundSetStructureBlockPacket(
-                blockPosition,
-                action,
-                mode,
-                structureName,
-                offset,
-                settings.getSize(),
-                mirror,
-                rotation,
-                "",
-                settings.getIntegrityValue(),
-                settings.getIntegritySeed(),
-                settings.isIgnoringEntities(),
-                false,
-                boundingBoxVisible,
-                false
-        );
+        ServerboundSetStructureBlockPacket structureBlockPacket = new ServerboundSetStructureBlockPacket(org.geysermc.geyser.util.MathUtils.toBlockPos(blockPosition), action, mode, structureName, org.geysermc.geyser.util.MathUtils.toBlockPos(offset), org.geysermc.geyser.util.MathUtils.toBlockPos(settings.getSize()), mirror, rotation, "", settings.isIgnoringEntities(), false, false, boundingBoxVisible, settings.getIntegrityValue(), settings.getIntegritySeed());
 
         session.sendDownstreamPacket(structureBlockPacket);
     }

@@ -39,16 +39,16 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.SkullCache;
 import org.geysermc.geyser.skin.SkinManager;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-@BlockEntity(type = BlockEntityType.SKULL)
+@BlockEntity(type = "minecraft:skull")
 public class SkullBlockEntityTranslator extends BlockEntityTranslator implements RequiresBlockState {
 
     @Override
@@ -63,29 +63,11 @@ public class SkullBlockEntityTranslator extends BlockEntityTranslator implements
         }
     }
 
-    private static List<GameProfile.Property> parseProperties(List<NbtMap> properties) {
-        if (properties == null) {
-            return null;
-        }
-        return properties.stream()
-            .map(property -> {
-                String name = property.getString("name");
-                String value = property.getString("value");
-                String signature = property.getString("signature");
-                return new GameProfile.Property(name, value, signature);
-            })
-            .toList();
-    }
-
     public static ResolvableProfile parseResolvableProfile(NbtMap profile) {
-        UUID uuid = EntityUtils.uuidFromIntArray(profile.getIntArray("id", null));
-        String name = profile.getString("name", null);
-        List<GameProfile.Property> properties = parseProperties(profile.getList("properties", NbtType.COMPOUND, null));
-
-        GameProfile partialOrStatic = new GameProfile(uuid, name);
-        partialOrStatic.setProperties(properties);
-        // Only if all fields are present, then the profile is a static one
-        return new ResolvableProfile(partialOrStatic);
+        return ResolvableProfile.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE,
+            org.geysermc.geyser.util.MinecraftNbt.fromCloudburst(profile))
+            .resultOrPartial(message -> GeyserImpl.getInstance().getLogger().debug("Invalid skull profile: " + message))
+            .orElse(ResolvableProfile.Static.EMPTY);
     }
 
     public static @Nullable BlockDefinition translateSkull(GeyserSession session, NbtMap javaNbt, Vector3i blockPosition, BlockState blockState) {

@@ -26,7 +26,7 @@
 package org.geysermc.geyser.translator.protocol.java;
 
 import org.geysermc.geyser.session.cache.registry.JavaRegistryTagCache;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
+import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;

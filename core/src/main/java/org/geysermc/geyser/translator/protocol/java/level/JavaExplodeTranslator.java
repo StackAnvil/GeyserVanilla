@@ -38,7 +38,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.SoundUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundExplodePacket;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -47,19 +47,19 @@ public class JavaExplodeTranslator extends PacketTranslator<ClientboundExplodePa
 
     @Override
     public void translate(GeyserSession session, ClientboundExplodePacket packet) {
-        Vector3f vector = packet.getCenter().toFloat();
+        Vector3f vector = org.geysermc.geyser.util.MathUtils.toVector3f(packet.center());
         LevelEventGenericPacket levelEventPacket = new LevelEventGenericPacket();
         levelEventPacket.setType(LevelEvent.PARTICLE_BLOCK_EXPLOSION);
         NbtMapBuilder builder = NbtMap.builder();
-        builder.putFloat("originX", (float) packet.getCenter().getX());
-        builder.putFloat("originY", (float) packet.getCenter().getY());
-        builder.putFloat("originZ", (float) packet.getCenter().getZ());
+        builder.putFloat("originX", (float) packet.center().x);
+        builder.putFloat("originY", (float) packet.center().y);
+        builder.putFloat("originZ", (float) packet.center().z);
 
         // As of Bedrock 1.21 - particles will only be created by the above packet if there are blocks to blow up?
         // Not sure if the packet does anything - sending it just in case, because BDS still sends it.
-        ParticleMapping particleMapping = Registries.PARTICLES.get(packet.getExplosionParticle().getType());
+        ParticleMapping particleMapping = Registries.PARTICLES.get(packet.explosionParticle().getType());
         if (particleMapping != null) {
-            session.sendUpstreamPacket(particleMapping.mapParticle(session, packet.getExplosionParticle().getData()).apply(vector));
+            session.sendUpstreamPacket(particleMapping.mapParticle(session, packet.explosionParticle()).apply(vector));
         }
 
         levelEventPacket.setTag(builder.build());
@@ -67,11 +67,11 @@ public class JavaExplodeTranslator extends PacketTranslator<ClientboundExplodePa
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
         float pitch = (1.0f + (random.nextFloat() - random.nextFloat()) * 0.2f) * 0.7f; // As of 1.21, Explosion#finalizeExplosion
-        SoundUtils.playSound(session, packet.getExplosionSound(), vector, 4.0f, pitch);
+        SoundUtils.playSound(session, packet.explosionSound(), vector, 4.0f, pitch);
 
-        if (packet.getPlayerKnockback() != null) {
+        if (packet.playerKnockback().isPresent()) {
             SessionPlayerEntity entity = session.getPlayerEntity();
-            entity.setMotion(entity.getMotion().add(packet.getPlayerKnockback().toFloat()));
+            entity.setMotion(entity.getMotion().add(org.geysermc.geyser.util.MathUtils.toVector3f(packet.playerKnockback().get())));
 
             SetEntityMotionPacket motionPacket = new SetEntityMotionPacket();
             motionPacket.setRuntimeEntityId(entity.geyserId());

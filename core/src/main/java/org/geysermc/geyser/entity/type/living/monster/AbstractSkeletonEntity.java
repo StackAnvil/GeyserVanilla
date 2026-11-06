@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.Items;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 public class AbstractSkeletonEntity extends MonsterEntity {
 
@@ -38,9 +39,9 @@ public class AbstractSkeletonEntity extends MonsterEntity {
     }
 
     @Override
-    public void setMobFlags(ByteEntityMetadata entityMetadata) {
+    public void setMobFlags(DataValue<Byte> entityMetadata) {
         super.setMobFlags(entityMetadata);
-        byte xd = entityMetadata.getPrimitiveValue();
+        byte xd = entityMetadata.value();
         // A bit of a loophole so the hands get raised - set the target ID to its own ID
         metadata.put(EntityDataTypes.TARGET_EID, ((xd & 4) == 4) ? geyserId : 0);
 

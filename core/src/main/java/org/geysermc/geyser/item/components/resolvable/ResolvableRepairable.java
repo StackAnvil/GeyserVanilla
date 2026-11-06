@@ -29,19 +29,18 @@ import org.geysermc.geyser.api.item.custom.v2.component.java.JavaRepairable;
 import org.geysermc.geyser.impl.HoldersImpl;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 
-public record ResolvableRepairable(JavaRepairable repairable) implements ResolvableComponent<HolderSet> {
+public record ResolvableRepairable(JavaRepairable repairable) implements ResolvableComponent<net.minecraft.world.item.enchantment.Repairable> {
 
     @Override
-    public DataComponentType<HolderSet> type() {
-        return DataComponentTypes.REPAIRABLE;
+    public DataComponentType<net.minecraft.world.item.enchantment.Repairable> type() {
+        return DataComponents.REPAIRABLE;
     }
 
     @Override
-    public HolderSet resolve(JavaRegistryProvider registries) {
-        return ((HoldersImpl) repairable.items()).toHolderSet(registries, JavaRegistries.ITEM);
+    public net.minecraft.world.item.enchantment.Repairable resolve(net.minecraft.core.RegistryAccess registries) {
+        return new net.minecraft.world.item.enchantment.Repairable(((HoldersImpl) repairable.items()).toVanilla(registries, net.minecraft.core.registries.Registries.ITEM));
     }
 }

@@ -30,28 +30,20 @@ import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityPosRotPacket;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 
-@Translator(packet = ClientboundMoveEntityPosRotPacket.class)
-public class JavaMoveEntityPosRotTranslator extends PacketTranslator<ClientboundMoveEntityPosRotPacket> {
+@Translator(packet = ClientboundMoveEntityPacket.PosRot.class)
+public class JavaMoveEntityPosRotTranslator extends PacketTranslator<ClientboundMoveEntityPacket.PosRot> {
 
     @Override
-    public void translate(GeyserSession session, ClientboundMoveEntityPosRotPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+    public void translate(GeyserSession session, ClientboundMoveEntityPacket.PosRot packet) {
+        Entity entity = session.getEntityCache().getEntityByJavaId(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.entityId(packet));
         if (entity == null) return;
 
-        // TODO lerp through the steps
-        Vector3d move;
-        if (packet.getSteps() == null) {
-            move = Vector3d.from(packet.getMoveX(), packet.getMoveY(), packet.getMoveZ());
-        } else {
-            // Each step is relative to the one before it
-            move = Vector3d.ZERO;
-            for (ClientboundMoveEntityPosRotPacket.DeltaStep step : packet.getSteps()) {
-                move = move.add(step.moveX(), step.moveY(), step.moveZ());
-            }
-        }
+        // Preserve the final delta until Bedrock can represent the individual movement steps.
+        Vector3d move = org.geysermc.geyser.util.MathUtils.toVector3d(
+            org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.movementDelta(packet));
 
-        entity.updatePositionAndRotation(move.getX(), move.getY(), move.getZ(), packet.getYaw(), packet.getPitch(), packet.isOnGround());
+        entity.updatePositionAndRotation(move.getX(), move.getY(), move.getZ(), packet.getYRot(), packet.getXRot(), packet.isOnGround());
     }
 }

@@ -31,9 +31,9 @@ import net.kyori.adventure.text.Component;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundRenameItemPacket;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ServerboundRenameItemPacket;
 
 /**
  * Used to determine if rename packets should be sent and stores
@@ -62,7 +62,7 @@ public class AnvilContainer extends Container {
 
     private int lastTargetSlot = -1;
 
-    public AnvilContainer(GeyserSession session, String title, int id, int size, ContainerType containerType) {
+    public AnvilContainer(GeyserSession session, String title, int id, int size, MenuType<?> containerType) {
         super(session, title, id, size, containerType);
     }
 
@@ -73,9 +73,9 @@ public class AnvilContainer extends Container {
         String correctRename;
         newName = rename;
 
-        Component originalName = getInput().getComponent(DataComponentTypes.CUSTOM_NAME);
+        net.minecraft.network.chat.Component originalName = getInput().getComponent(DataComponents.CUSTOM_NAME);
 
-        String plainOriginalName = MessageTranslator.convertToPlainText(originalName, session.locale());
+        String plainOriginalName = MessageTranslator.convertToPlainText(MessageTranslator.fromVanilla(originalName, session.vanillaRegistries()), session.locale());
         String plainNewName = MessageTranslator.convertIncomingToPlainText(rename);
         if (!plainOriginalName.equals(plainNewName)) {
             // Strip out formatting since Java Edition does not allow it

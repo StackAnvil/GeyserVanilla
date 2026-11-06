@@ -34,8 +34,8 @@ import org.geysermc.geyser.item.type.FishingRodItem;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ItemEnchantments;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 public final class ItemUtils {
 
@@ -44,13 +44,13 @@ public final class ItemUtils {
             return false;
         }
 
-        ItemEnchantments enchantmentData = itemStack.getComponent(DataComponentTypes.ENCHANTMENTS);
+        ItemEnchantments enchantmentData = itemStack.getComponent(DataComponents.ENCHANTMENTS);
         if (enchantmentData == null) {
             return false;
         }
 
-        for (Integer id : enchantmentData.getEnchantments().keySet()) {
-            Enchantment enchantment = JavaRegistries.ENCHANTMENT.getOrThrow(registries, id);
+        for (var holder : enchantmentData.keySet()) {
+            Enchantment enchantment = JavaRegistries.ENCHANTMENT.getOrThrow(registries, MinecraftKey.key(holder.unwrapKey().orElseThrow().identifier().toString()));
             if (enchantment.effects().contains(component)) {
                 return true;
             }

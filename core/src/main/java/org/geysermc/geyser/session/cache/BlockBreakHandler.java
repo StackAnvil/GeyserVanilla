@@ -60,16 +60,14 @@ import org.geysermc.geyser.translator.item.CustomItemTranslator;
 import org.geysermc.geyser.translator.protocol.bedrock.BedrockInventoryTransactionTranslator;
 import org.geysermc.geyser.translator.protocol.java.level.JavaBlockDestructionTranslator;
 import org.geysermc.geyser.util.BlockUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.BlockBreakStage;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerAction;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.AdventureModePredicate;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ToolData;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundAttackPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerActionPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundUseItemOnPacket;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.world.item.AdventureModePredicate;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.Tool;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
+import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -147,7 +145,7 @@ public class BlockBreakHandler {
      * See {@link JavaBlockDestructionTranslator} for usage and explanation
      */
     @Getter
-    private final Cache<Vector3i, Pair<Long, BlockBreakStage>> destructionStageCache = CacheBuilder.newBuilder()
+    private final Cache<Vector3i, Pair<Long, Integer>> destructionStageCache = CacheBuilder.newBuilder()
         .maximumSize(200)
         .expireAfterWrite(3, TimeUnit.MINUTES)
         .build();
@@ -196,8 +194,7 @@ public class BlockBreakHandler {
             // This is why blockFace is individually turned into a Direction in each of the switch statements, except for the ABORT_BREAK one
             switch (actionData.getAction()) {
                 case DROP_ITEM -> {
-                    ServerboundPlayerActionPacket dropItemPacket = new ServerboundPlayerActionPacket(PlayerAction.DROP_ITEM,
-                        position, Direction.getUntrusted(actionData, PlayerBlockActionData::getFace).mcpl(), 0);
+                    ServerboundPlayerActionPacket dropItemPacket = new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.DROP_ITEM, org.geysermc.geyser.util.MathUtils.toBlockPos(position), Direction.getUntrusted(actionData, PlayerBlockActionData::getFace).javaDirection(), 0);
                     session.sendDownstreamGamePacket(dropItemPacket);
                 }
                 case START_BREAK -> {
@@ -313,8 +310,7 @@ public class BlockBreakHandler {
         Vector3i fireBlockPos = BlockUtils.getBlockPosition(position, blockFace);
         Block possibleFireBlock = session.getGeyser().getWorldManager().blockAt(session, fireBlockPos).block();
         if (possibleFireBlock == Blocks.FIRE || possibleFireBlock == Blocks.SOUL_FIRE) {
-            ServerboundPlayerActionPacket startBreakingPacket = new ServerboundPlayerActionPacket(PlayerAction.START_DIGGING, fireBlockPos,
-                blockFace.mcpl(), session.getWorldCache().nextPredictionSequence());
+            ServerboundPlayerActionPacket startBreakingPacket = new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, org.geysermc.geyser.util.MathUtils.toBlockPos(fireBlockPos), blockFace.javaDirection(), session.getWorldCache().nextPredictionSequence());
             session.sendDownstreamGamePacket(startBreakingPacket);
         }
 
@@ -329,7 +325,7 @@ public class BlockBreakHandler {
         } else {
             // If the block is custom or the breaking item is custom, we must keep track of break time ourselves
             ItemMapping mapping = item.getMapping(session);
-            ItemDefinition customItem = item.has(DataComponentTypes.TOOL) ? CustomItemTranslator.getCustomItem(session, item.getAmount(), item.getAllComponents(), mapping) : null;
+            ItemDefinition customItem = item.has(DataComponents.TOOL) ? CustomItemTranslator.getCustomItem(session, item.getAmount(), item.getAllComponents(), mapping) : null;
             CustomBlockState blockStateOverride = BlockRegistries.CUSTOM_BLOCK_STATE_OVERRIDES.get(state.javaId());
             SkullCache.Skull skull = session.getSkullCache().getSkulls().get(position);
 
@@ -355,8 +351,7 @@ public class BlockBreakHandler {
             // but also #continueDestroyBlock in the same tick to advance the break progress.
             this.currentProgress = breakProgress;
 
-            session.sendDownstreamGamePacket(new ServerboundPlayerActionPacket(PlayerAction.START_DIGGING, position,
-                blockFace.mcpl(), session.getWorldCache().nextPredictionSequence()));
+            session.sendDownstreamGamePacket(new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK, org.geysermc.geyser.util.MathUtils.toBlockPos(position), blockFace.javaDirection(), session.getWorldCache().nextPredictionSequence()));
         }
     }
 
@@ -426,8 +421,7 @@ public class BlockBreakHandler {
         // Bedrock edition "confirms" it stopped breaking blocks by sending an abort packet
         // We don't forward those as a Java client wouldn't send those either
         if (currentBlockPos != null) {
-            ServerboundPlayerActionPacket abortBreakingPacket = new ServerboundPlayerActionPacket(PlayerAction.CANCEL_DIGGING, currentBlockPos,
-                Direction.DOWN.mcpl(), 0);
+            ServerboundPlayerActionPacket abortBreakingPacket = new ServerboundPlayerActionPacket(ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK, org.geysermc.geyser.util.MathUtils.toBlockPos(currentBlockPos), Direction.DOWN.javaDirection(), 0);
             session.sendDownstreamGamePacket(abortBreakingPacket);
         }
 
@@ -463,7 +457,7 @@ public class BlockBreakHandler {
         }
 
         // Cannot take out lectern books in adventure mode
-        if (session.getGameMode() == GameMode.ADVENTURE) {
+        if (session.getGameMode() == GameType.ADVENTURE) {
             return false;
         }
 
@@ -472,14 +466,7 @@ public class BlockBreakHandler {
         if (block instanceof LecternBlock && state.getValue(Properties.HAS_BOOK, false)) {
             this.session.setDroppingLecternBook(true);
 
-            ServerboundUseItemOnPacket blockPacket = new ServerboundUseItemOnPacket(
-                position,
-                org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.DOWN,
-                Hand.MAIN_HAND,
-                0, 0, 0,
-                false,
-                false,
-                this.session.getWorldCache().nextPredictionSequence());
+            ServerboundUseItemOnPacket blockPacket = new ServerboundUseItemOnPacket(InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atLowerCornerOf(org.geysermc.geyser.util.MathUtils.toBlockPos(position)).add(0, 0, 0), net.minecraft.core.Direction.DOWN, org.geysermc.geyser.util.MathUtils.toBlockPos(position), false, false), this.session.getWorldCache().nextPredictionSequence());
             this.session.sendDownstreamGamePacket(blockPacket);
             interactPosition = position;
             return true;
@@ -515,7 +502,7 @@ public class BlockBreakHandler {
 
     /**
      * Checks whether a block interaction may proceed, or whether it must be interrupted.
-     * This includes world border, "hands busy" (boat steering), and GameMode checks.
+     * This includes world border, "hands busy" (boat steering), and GameType checks.
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     protected boolean canBreak(Vector3i vector, BlockState state, PlayerActionType action) {
@@ -541,8 +528,8 @@ public class BlockBreakHandler {
     protected boolean canDestroyBlock(BlockState state) {
         boolean instabuild = session.isInstabuild();
         if (instabuild) {
-            ToolData data = session.getPlayerInventory().getItemInHand().getComponent(DataComponentTypes.TOOL);
-            if (data != null && !data.isCanDestroyBlocksInCreative()) {
+            Tool data = session.getPlayerInventory().getItemInHand().getComponent(DataComponents.TOOL);
+            if (data != null && !data.canDestroyBlocksInCreative()) {
                 return false;
             }
         }
@@ -563,8 +550,7 @@ public class BlockBreakHandler {
 
     protected void destroyBlock(BlockState state, Vector3i vector, Direction direction, boolean instamine) {
         // Send java packet
-        session.sendDownstreamGamePacket(new ServerboundPlayerActionPacket(instamine ? PlayerAction.START_DIGGING : PlayerAction.FINISH_DIGGING,
-            vector, direction.mcpl(), session.getWorldCache().nextPredictionSequence()));
+        session.sendDownstreamGamePacket(new ServerboundPlayerActionPacket(instamine ? ServerboundPlayerActionPacket.Action.START_DESTROY_BLOCK : ServerboundPlayerActionPacket.Action.STOP_DESTROY_BLOCK, org.geysermc.geyser.util.MathUtils.toBlockPos(vector), direction.javaDirection(), session.getWorldCache().nextPredictionSequence()));
         session.getWorldCache().markPositionInSequence(vector);
 
         if (canDestroyBlock(state)) {
@@ -657,7 +643,7 @@ public class BlockBreakHandler {
                 return false;
             }
 
-            AdventureModePredicate canBreak = stack.getComponent(DataComponentTypes.CAN_BREAK);
+            AdventureModePredicate canBreak = stack.getComponent(DataComponents.CAN_BREAK);
             if (canBreak == null) { // Neither will a stack without can_break
                 return false;
             } else if (state.equals(lastBlockState) && stack.equals(lastItemStack) && lastResult != null) { // Check lastResult just in case.
@@ -668,7 +654,7 @@ public class BlockBreakHandler {
             this.lastItemStack = stack;
 
             // Any of the predicates have to match for the stack to match
-            for (AdventureModePredicate.BlockPredicate predicate : canBreak.getPredicates()) {
+            for (net.minecraft.advancements.predicates.BlockPredicate predicate : org.geysermc.geyser.vanilla.protocol.VanillaAdventurePredicates.predicates(canBreak)) {
                 if (BlockUtils.blockMatchesPredicate(session, state, predicate)) {
                     return lastResult = true;
                 }

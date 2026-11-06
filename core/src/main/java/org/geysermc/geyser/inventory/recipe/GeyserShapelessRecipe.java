@@ -34,9 +34,9 @@ import org.cloudburstmc.protocol.bedrock.data.inventory.crafting.recipe.RecipeDa
 import org.cloudburstmc.protocol.bedrock.data.inventory.crafting.recipe.ShapelessRecipeData;
 import org.cloudburstmc.protocol.bedrock.data.inventory.descriptor.ItemDescriptorWithCount;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.FurnaceRecipeDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.ShapelessCraftingRecipeDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SlotDisplay;
+import net.minecraft.world.item.crafting.display.FurnaceRecipeDisplay;
+import net.minecraft.world.item.crafting.display.ShapelessCraftingRecipeDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,7 +53,7 @@ public record GeyserShapelessRecipe(int id,
         this(id, netId, data.ingredients(), data.result(), "crafting_table");
     }
 
-    public GeyserShapelessRecipe(int id, int netId, FurnaceRecipeDisplay data, int category) {
+    public GeyserShapelessRecipe(int id, int netId, FurnaceRecipeDisplay data, net.minecraft.world.item.crafting.RecipeBookCategory category) {
         this(id, netId, List.of(data.ingredient()), data.result(), FurnaceRecipeType.fromCategory(category).tag);
     }
 
@@ -83,28 +83,26 @@ public record GeyserShapelessRecipe(int id,
     }
 
     public enum FurnaceRecipeType {
-        FURNACE("furnace", 4, 5, 6), // furnace
-        BLAST_FURNACE("blast_furnace", 7, 8), // blast_furnace_blocks, blast_furnace_misc
-        SMOKER("smoker", 9, 12); // smoker_food, campfire
+        FURNACE("furnace"),
+        BLAST_FURNACE("blast_furnace"),
+        SMOKER("smoker");
 
         private final String tag;
-        @Getter
-        @Accessors(fluent = true)
-        private final IntList categories;
 
-        FurnaceRecipeType(String tag, int... categories) {
+        FurnaceRecipeType(String tag) {
             this.tag = tag;
-            this.categories = IntList.of(categories);
         }
 
-        public static FurnaceRecipeType fromCategory(int category) {
-            for (FurnaceRecipeType type : values()) {
-                if (type.categories.contains(category)) {
-                    return type;
-                }
+        public static FurnaceRecipeType fromCategory(net.minecraft.world.item.crafting.RecipeBookCategory category) {
+            if (category == net.minecraft.world.item.crafting.RecipeBookCategories.BLAST_FURNACE_BLOCKS
+                || category == net.minecraft.world.item.crafting.RecipeBookCategories.BLAST_FURNACE_MISC) {
+                return BLAST_FURNACE;
             }
-
-            return FURNACE; // /shrug
+            if (category == net.minecraft.world.item.crafting.RecipeBookCategories.SMOKER_FOOD
+                || category == net.minecraft.world.item.crafting.RecipeBookCategories.CAMPFIRE) {
+                return SMOKER;
+            }
+            return FURNACE;
         }
     }
 }

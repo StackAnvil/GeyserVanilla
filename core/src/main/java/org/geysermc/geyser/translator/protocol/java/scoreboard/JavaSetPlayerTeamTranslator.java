@@ -33,8 +33,7 @@ import org.geysermc.geyser.scoreboard.Team;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamAction;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
 
 import java.util.Arrays;
 
@@ -44,53 +43,47 @@ public class JavaSetPlayerTeamTranslator extends PacketTranslator<ClientboundSet
 
     @Override
     public void translate(GeyserSession session, ClientboundSetPlayerTeamPacket packet) {
+        var teamAction = packet.getTeamAction();
+        var playerAction = packet.getPlayerAction();
+        var parameters = packet.getParameters().orElse(null);
+        String name = packet.getName();
+        String[] players = packet.getPlayers().toArray(String[]::new);
         if (logger.isDebug()) {
-            logger.debug("Team packet (" + session.bedrockUsername() + ") " + packet.getTeamName() + " " + packet.getAction() + " " + Arrays.toString(packet.getPlayers()));
+            logger.debug("Team packet (" + session.bedrockUsername() + ") " + name + " " + teamAction + " "
+                + playerAction + " " + Arrays.toString(players));
         }
-
-        if ((packet.getAction() == TeamAction.ADD_PLAYER || packet.getAction() == TeamAction.REMOVE_PLAYER) && packet.getPlayers().length == 0) {
+        if (teamAction == null && playerAction != null && players.length == 0) {
             return;
         }
-
         int pps = session.getWorldCache().increaseAndGetScoreboardPacketsPerSecond();
-
         Scoreboard scoreboard = session.getWorldCache().getScoreboard();
-
-        if (packet.getAction() == TeamAction.CREATE) {
-            scoreboard.registerNewTeam(
-                packet.getTeamName(),
-                packet.getPlayers(),
-                packet.getPlayerPrefix(),
-                packet.getPlayerSuffix(),
-                packet.getNameTagVisibility(),
-                packet.getColor()
-            );
+        if (teamAction == ClientboundSetPlayerTeamPacket.Action.ADD) {
+            var properties = java.util.Objects.requireNonNull(parameters);
+            scoreboard.registerNewTeam(name, players,
+                org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(properties.playerPrefix(), session.vanillaRegistries()),
+                org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(properties.playerSuffix(), session.vanillaRegistries()),
+                properties.nameTagVisibility(), properties.color().orElse(null));
         } else {
-            Team team = scoreboard.getTeam(packet.getTeamName());
+            Team team = scoreboard.getTeam(name);
             if (team == null) {
                 if (logger.isDebug()) {
-                    logger.debug("Error while translating Team Packet " + packet.getAction()
-                        + "! Scoreboard Team " + packet.getTeamName() + " is not registered."
-                    );
+                    logger.debug("Scoreboard team " + name + " is not registered for update " + teamAction + "/" + playerAction);
                 }
                 return;
             }
-
-            switch (packet.getAction()) {
-                case UPDATE -> {
-                    team.updateProperties(
-                        packet.getPlayerPrefix(),
-                        packet.getPlayerSuffix(),
-                        packet.getNameTagVisibility(),
-                        packet.getColor()
-                    );
-                }
-                case ADD_PLAYER -> team.addEntities(packet.getPlayers());
-                case REMOVE_PLAYER -> team.removeEntities(packet.getPlayers());
-                case REMOVE -> scoreboard.removeTeam(packet.getTeamName());
+            if (teamAction == ClientboundSetPlayerTeamPacket.Action.REMOVE) {
+                scoreboard.removeTeam(name);
+            } else if (parameters != null) {
+                team.updateProperties(
+                    org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(parameters.playerPrefix(), session.vanillaRegistries()),
+                    org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(parameters.playerSuffix(), session.vanillaRegistries()),
+                    parameters.nameTagVisibility(), parameters.color().orElse(null));
+            } else if (playerAction == ClientboundSetPlayerTeamPacket.Action.ADD) {
+                team.addEntities(players);
+            } else if (playerAction == ClientboundSetPlayerTeamPacket.Action.REMOVE) {
+                team.removeEntities(players);
             }
         }
-
 
         // ScoreboardUpdater will handle it for us if the packets per second
         // (for score and team packets) is higher than the first threshold

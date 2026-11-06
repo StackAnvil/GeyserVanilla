@@ -28,65 +28,66 @@ package org.geysermc.geyser.level;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.session.cache.AdvancementsCache;
 import org.geysermc.geyser.text.ChatColor;
-import org.geysermc.mcprotocollib.protocol.data.game.advancement.Advancement;
-import org.geysermc.mcprotocollib.protocol.data.game.advancement.Advancement.DisplayData;
-import org.geysermc.mcprotocollib.protocol.data.game.advancement.Advancement.DisplayData.AdvancementType;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementRequirements;
+import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.advancements.AdvancementType;
 
 import java.util.List;
 
 /**
- * A wrapper around MCProtocolLib's {@link Advancement} class so we can control the parent of an advancement
+ * Tracks the root of a native advancement for the Bedrock forms.
  */
 public class GeyserAdvancement {
-    private final Advancement advancement;
+    private final AdvancementHolder advancement;
     private String rootId = null;
 
-    public static GeyserAdvancement from(Advancement advancement) {
+    public static GeyserAdvancement from(AdvancementHolder advancement) {
         return new GeyserAdvancement(advancement);
     }
 
-    private GeyserAdvancement(Advancement advancement) {
+    private GeyserAdvancement(AdvancementHolder advancement) {
         this.advancement = advancement;
     }
 
     @NonNull
     public String getId() {
-        return this.advancement.getId();
+        return this.advancement.id().toString();
     }
 
     @NonNull
-    public List<List<String>> getRequirements() {
-        return this.advancement.getRequirements();
+    public AdvancementRequirements getRequirements() {
+        return this.advancement.value().requirements();
     }
 
     public String getParentId() {
-        return this.advancement.getParentId();
+        return this.advancement.value().parent().map(Object::toString).orElse(null);
     }
 
-    public DisplayData getDisplayData() {
-        return this.advancement.getDisplayData();
+    public DisplayInfo getDisplayData() {
+        return this.advancement.value().display().orElse(null);
     }
 
     /**
      * @return Purple for challenges and green for normal advancements
      */
     public String getDisplayColor() {
-        DisplayData displayData = getDisplayData();
-        return displayData != null && displayData.getAdvancementType() == AdvancementType.CHALLENGE ? ChatColor.LIGHT_PURPLE : ChatColor.GREEN;
+        DisplayInfo displayData = getDisplayData();
+        return displayData != null && displayData.type() == AdvancementType.CHALLENGE ? ChatColor.LIGHT_PURPLE : ChatColor.GREEN;
     }
 
     public @NonNull String getRootId(AdvancementsCache advancementsCache) {
         if (rootId == null) {
-            if (this.advancement.getParentId() == null) {
+            if (getParentId() == null) {
                 // We are the root ID
-                this.rootId = this.advancement.getId();
+                this.rootId = this.advancement.id().toString();
             } else {
                 // Go through our cache, and descend until we find the root ID
-                GeyserAdvancement parent = advancementsCache.getStoredAdvancements().get(this.advancement.getParentId());
+                GeyserAdvancement parent = advancementsCache.getStoredAdvancements().get(getParentId());
                 if (parent == null) {
                     // Parent doesn't exist, is invalid, or couldn't be found for another reason
                     // So assuming there is no parent and this is the root
-                    this.rootId = this.advancement.getId();
+                    this.rootId = this.advancement.id().toString();
                 } else if (parent.getParentId() == null) {
                     this.rootId = parent.getId();
                 } else {

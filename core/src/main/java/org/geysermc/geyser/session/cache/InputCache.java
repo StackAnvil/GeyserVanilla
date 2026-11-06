@@ -37,13 +37,13 @@ import org.cloudburstmc.protocol.bedrock.packet.PlayerAuthInputPacket;
 import org.geysermc.geyser.entity.EntitySpectateHelper;
 import org.geysermc.geyser.entity.type.player.SessionPlayerEntity;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundPlayerInputPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerInputPacket;
 
 import java.util.Set;
 
 public final class InputCache {
     private final GeyserSession session;
-    private ServerboundPlayerInputPacket inputPacket = new ServerboundPlayerInputPacket(false, false, false, false, false, false, false);
+    private ServerboundPlayerInputPacket inputPacket = new ServerboundPlayerInputPacket(net.minecraft.world.entity.player.Input.EMPTY);
     @Setter
     private boolean lastHorizontalCollision;
     private int ticksSinceLastMovePacket;
@@ -125,18 +125,12 @@ public final class InputCache {
 
         boolean sneaking = isSneaking(bedrockInput);
 
-        this.inputPacket = this.inputPacket
-            .withForward(up)
-            .withBackward(down)
-            .withLeft(left)
-            .withRight(right)
-            // https://mojang.github.io/bedrock-protocol-docs/html/enums.html
-            // using the "raw" values allows us sending key presses even with locked input
-            // There appear to be cases where the raw value is not sent - e.g. sneaking with a shield on mobile (1.21.80)
-            // We also need to check for water auto jumping, since bedrock don't send jumping value in those cases.
-            .withJump(bedrockInput.contains(PlayerAuthInputData.JUMP_CURRENT_RAW) || bedrockInput.contains(PlayerAuthInputData.JUMP_DOWN) || bedrockInput.contains(PlayerAuthInputData.AUTO_JUMPING_IN_WATER))
-            .withShift(session.isShouldSendSneak() || sneaking)
-            .withSprint(bedrockInput.contains(PlayerAuthInputData.SPRINT_DOWN));
+        this.inputPacket = new ServerboundPlayerInputPacket(new net.minecraft.world.entity.player.Input(
+            up, down, left, right,
+            bedrockInput.contains(PlayerAuthInputData.JUMP_CURRENT_RAW) || bedrockInput.contains(PlayerAuthInputData.JUMP_DOWN)
+                || bedrockInput.contains(PlayerAuthInputData.AUTO_JUMPING_IN_WATER),
+            session.isShouldSendSneak() || sneaking, bedrockInput.contains(PlayerAuthInputData.SPRINT_DOWN)));
+
 
         // TODO - test whether we can rely on the Java server setting sneaking for us.
         // 1.21.6+ only sends the shifting state in the input packet, and removed the START/STOP sneak command packet sending
@@ -155,7 +149,7 @@ public final class InputCache {
             }
         }
 
-        if (oldInputPacket != this.inputPacket) { // Simple equality check is fine since we're checking for an instance change.
+        if (!oldInputPacket.equals(this.inputPacket)) {
             session.sendDownstreamGamePacket(this.inputPacket);
         }
 
@@ -163,7 +157,7 @@ public final class InputCache {
     }
 
     public boolean wasJumping() {
-        return this.inputPacket.isJump();
+        return this.inputPacket.input().jump();
     }
 
     public void markPositionPacketSent() {

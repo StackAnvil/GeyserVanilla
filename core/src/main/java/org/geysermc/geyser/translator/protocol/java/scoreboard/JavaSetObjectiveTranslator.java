@@ -34,8 +34,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.WorldCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
 
 @Translator(packet = ClientboundSetObjectivePacket.class)
 public class JavaSetObjectiveTranslator extends PacketTranslator<ClientboundSetObjectivePacket> {
@@ -44,7 +43,7 @@ public class JavaSetObjectiveTranslator extends PacketTranslator<ClientboundSetO
     @Override
     public void translate(GeyserSession session, ClientboundSetObjectivePacket packet) {
         if (logger.isDebug()) {
-            logger.debug("Set objective packet (" + session.bedrockUsername() + "): " + packet.getName() + " " + packet.getAction() + " " + packet.getType() + " " + packet.getNumberFormat());
+            logger.debug("Set objective packet (" + session.bedrockUsername() + "): " + packet.getObjectiveName() + " " + packet.getMethod() + " " + packet.type() + " " + packet.getNumberFormat());
         }
 
         WorldCache worldCache = session.getWorldCache();
@@ -52,10 +51,10 @@ public class JavaSetObjectiveTranslator extends PacketTranslator<ClientboundSetO
         int pps = worldCache.increaseAndGetScoreboardPacketsPerSecond();
 
         Objective objective;
-        if (packet.getAction() == ObjectiveAction.ADD) {
-            objective = scoreboard.registerNewObjective(packet.getName());
+        if (packet.getMethod() == ClientboundSetObjectivePacket.METHOD_ADD) {
+            objective = scoreboard.registerNewObjective(packet.getObjectiveName());
         } else {
-            objective = scoreboard.getObjective(packet.getName());
+            objective = scoreboard.getObjective(packet.getObjectiveName());
         }
 
         // matches vanilla
@@ -63,10 +62,10 @@ public class JavaSetObjectiveTranslator extends PacketTranslator<ClientboundSetO
             return;
         }
 
-        switch (packet.getAction()) {
-            case ADD, UPDATE ->
-                objective.updateProperties(packet.getDisplayName(), packet.getType(), packet.getNumberFormat());
-            case REMOVE -> scoreboard.removeObjective(objective);
+        switch (packet.getMethod()) {
+            case ClientboundSetObjectivePacket.METHOD_ADD, ClientboundSetObjectivePacket.METHOD_CHANGE ->
+                objective.updateProperties(org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(packet.getDisplayName(), session.vanillaRegistries()), packet.getRenderType(), packet.getNumberFormat().orElse(null));
+            case ClientboundSetObjectivePacket.METHOD_REMOVE -> scoreboard.removeObjective(objective);
         }
 
         // Scoreboard#removeObjective doesn't touch the display slot(s) that were attached to it.

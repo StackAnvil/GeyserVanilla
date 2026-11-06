@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.packet.AddEntityPacket;
@@ -35,8 +37,7 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class MooshroomEntity extends CowEntity {
     private boolean isBrown = false;
@@ -45,9 +46,9 @@ public class MooshroomEntity extends CowEntity {
         super(context);
     }
 
-    public void setMooshroomVariant(IntEntityMetadata metadata) {
-        isBrown = metadata.getPrimitiveValue() == 1;
-        this.metadata.put(EntityDataTypes.VARIANT, metadata.getPrimitiveValue());
+    public void setMooshroomVariant(DataValue<Integer> metadata) {
+        isBrown = metadata.value() == 1;
+        this.metadata.put(EntityDataTypes.VARIANT, metadata.value());
     }
 
     @Override
@@ -57,7 +58,7 @@ public class MooshroomEntity extends CowEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!isBaby()) {
             if (itemInHand.is(Items.BOWL)) {
                 // Stew
@@ -72,7 +73,7 @@ public class MooshroomEntity extends CowEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         boolean isBaby = isBaby();
         if (!isBaby && itemInHand.is(Items.BOWL)) {
             // Stew

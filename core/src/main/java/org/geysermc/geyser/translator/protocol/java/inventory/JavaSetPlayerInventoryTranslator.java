@@ -30,14 +30,14 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundSetPlayerInventoryPacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerInventoryPacket;
 
 @Translator(packet = ClientboundSetPlayerInventoryPacket.class)
 public class JavaSetPlayerInventoryTranslator extends PacketTranslator<ClientboundSetPlayerInventoryPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSetPlayerInventoryPacket packet) {
-        int slot = packet.getSlot();
+        int slot = packet.slot();
         if (slot == 41 || slot == 42) {
             // ugly temp hack https://github.com/GeyserMC/Geyser/issues/6118
             // the player's "body" / "saddle" slot is not free real estate
@@ -60,7 +60,7 @@ public class JavaSetPlayerInventoryTranslator extends PacketTranslator<Clientbou
             return;
         }
 
-        GeyserItemStack newItem = GeyserItemStack.from(session, packet.getContents());
+        GeyserItemStack newItem = GeyserItemStack.from(session, packet.contents());
         session.getBundleCache().initialize(newItem);
         session.getPlayerInventory().setItem(slot, newItem, session);
         session.getPlayerInventoryHolder().updateSlot(slot);

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network.sidebar;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
@@ -39,17 +41,15 @@ import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObj
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundResetScorePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundResetScorePacket;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.Test;
 
 public class OrderAndLimitSidebarScoreboardTests {
@@ -63,40 +63,34 @@ public class OrderAndLimitSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
 
             // some are in an odd order to make sure that there is no bias for which score is send first,
             // and to make sure that the score value also doesn't influence the order
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("a", "objective", 1));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("b", "objective", 2));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("c", "objective", 3));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("d", "objective", 5));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("e", "objective", 4));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("f", "objective", 6));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("g", "objective", 9));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("h", "objective", 8));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("i", "objective", 7));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("p", "objective", 10));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("o", "objective", 11));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("n", "objective", 12));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("m", "objective", 13));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("k", "objective", 14));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("l", "objective", 15));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("j", "objective", 16));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("q", "objective", 17));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("a", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("b", "objective", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("c", "objective", 3));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("d", "objective", 5));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("e", "objective", 4));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("f", "objective", 6));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("g", "objective", 9));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("h", "objective", 8));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("i", "objective", 7));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("p", "objective", 10));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("o", "objective", 11));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("n", "objective", 12));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("m", "objective", 13));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("k", "objective", 14));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("l", "objective", 15));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("j", "objective", 16));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("q", "objective", 17));
             assertNoNextPacket(context);
 
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -152,7 +146,7 @@ public class OrderAndLimitSidebarScoreboardTests {
             // add a score
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("aa", "objective", 13)
+                VanillaScoreboardPackets.score("aa", "objective", 13)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -170,7 +164,7 @@ public class OrderAndLimitSidebarScoreboardTests {
             // add score with same score value (after)
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("ga", "objective", 9)
+                VanillaScoreboardPackets.score("ga", "objective", 9)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -194,7 +188,7 @@ public class OrderAndLimitSidebarScoreboardTests {
             // add another score with same score value (before all)
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("ag", "objective", 9)
+                VanillaScoreboardPackets.score("ag", "objective", 9)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -278,54 +272,37 @@ public class OrderAndLimitSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
 
             // some are in an odd order to make sure that there is no bias for which score is send first,
             // and to make sure that the score value also doesn't influence the order
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("a", "objective", 1));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("b", "objective", 2));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("c", "objective", 3));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("d", "objective", 5));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("e", "objective", 4));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("f", "objective", 6));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("g", "objective", 9));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("h", "objective", 8));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("i", "objective", 7));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("p", "objective", 10));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("o", "objective", 11));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("n", "objective", 12));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("m", "objective", 13));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("k", "objective", 14));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("l", "objective", 15));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("j", "objective", 16));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("q", "objective", 17));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("a", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("b", "objective", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("c", "objective", 3));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("d", "objective", 5));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("e", "objective", 4));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("f", "objective", 6));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("g", "objective", 9));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("h", "objective", 8));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("i", "objective", 7));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("p", "objective", 10));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("o", "objective", 11));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("n", "objective", 12));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("m", "objective", 13));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("k", "objective", 14));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("l", "objective", 15));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("j", "objective", 16));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("q", "objective", 17));
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{ "f", "o" }
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{ "f", "o" })
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -381,7 +358,7 @@ public class OrderAndLimitSidebarScoreboardTests {
             // add a score
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("aa", "objective", 13)
+                VanillaScoreboardPackets.score("aa", "objective", 13)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -399,33 +376,11 @@ public class OrderAndLimitSidebarScoreboardTests {
             // add some teams for the upcoming score adds
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_AQUA,
-                    new String[]{ "oa" }
-                )
+                VanillaScoreboardPackets.createTeam("team2", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.DARK_AQUA, new String[]{ "oa" })
             );
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team3",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_PURPLE,
-                    new String[]{ "ao" }
-                )
+                VanillaScoreboardPackets.createTeam("team3", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.DARK_PURPLE, new String[]{ "ao" })
             );
             assertNoNextPacket(context);
 
@@ -433,7 +388,7 @@ public class OrderAndLimitSidebarScoreboardTests {
             // due to the team color
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("oa", "objective", 11)
+                VanillaScoreboardPackets.score("oa", "objective", 11)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -458,7 +413,7 @@ public class OrderAndLimitSidebarScoreboardTests {
             // due to the team color
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("ao", "objective", 11)
+                VanillaScoreboardPackets.score("ao", "objective", 11)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();

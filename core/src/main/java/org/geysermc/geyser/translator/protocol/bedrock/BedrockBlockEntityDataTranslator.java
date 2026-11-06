@@ -26,8 +26,8 @@
 package org.geysermc.geyser.translator.protocol.bedrock;
 
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSetJigsawBlockPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundSignUpdatePacket;
+import net.minecraft.network.protocol.game.ServerboundSetJigsawBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.protocol.bedrock.packet.BlockEntityDataPacket;
@@ -111,7 +111,7 @@ public class BedrockBlockEntityDataTranslator extends PacketTranslator<BlockEnti
             // Put the final line on since it isn't done in the for loop
             if (iterator < lines.size()) lines.set(iterator, newMessage.toString());
             Vector3i pos = Vector3i.from(tag.getInt("x"), tag.getInt("y"), tag.getInt("z"));
-            ServerboundSignUpdatePacket signUpdatePacket = new ServerboundSignUpdatePacket(pos, lines, session.getWorldCache().isEditingSignOnFront());
+            ServerboundSignUpdatePacket signUpdatePacket = new ServerboundSignUpdatePacket(org.geysermc.geyser.util.MathUtils.toBlockPos(pos), lines, session.getWorldCache().isEditingSignOnFront() ? net.minecraft.world.level.block.entity.SignTextSlot.FRONT : net.minecraft.world.level.block.entity.SignTextSlot.BACK);
             session.sendDownstreamGamePacket(signUpdatePacket);
 
         } else if (id.equals("JigsawBlock")) {
@@ -123,9 +123,7 @@ public class BedrockBlockEntityDataTranslator extends PacketTranslator<BlockEnti
             String finalState = tag.getString("final_state");
             String joint = tag.getString("joint");
             // last two parameters are priority values that Bedrock doesn't have (yet?)
-            ServerboundSetJigsawBlockPacket jigsawPacket = new ServerboundSetJigsawBlockPacket(pos,
-                    MinecraftKey.key(name), MinecraftKey.key(target), MinecraftKey.key(pool),
-                    finalState, joint, 0, 0);
+            ServerboundSetJigsawBlockPacket jigsawPacket = new ServerboundSetJigsawBlockPacket(org.geysermc.geyser.util.MathUtils.toBlockPos(pos), net.minecraft.resources.Identifier.parse(name), net.minecraft.resources.Identifier.parse(target), net.minecraft.resources.Identifier.parse(pool), finalState, net.minecraft.world.level.block.entity.JigsawBlockEntity.JointType.CODEC.byName(joint, net.minecraft.world.level.block.entity.JigsawBlockEntity.JointType.ALIGNED), 0, 0);
             session.sendDownstreamGamePacket(jigsawPacket);
         }
 

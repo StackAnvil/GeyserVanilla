@@ -31,9 +31,9 @@ import org.geysermc.geyser.inventory.item.Potion;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotionContents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 public class TippedArrowItem extends ArrowItem {
     public TippedArrowItem(String javaIdentifier, Builder builder) {
@@ -41,18 +41,18 @@ public class TippedArrowItem extends ArrowItem {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         if (components != null) {
-            PotionContents potionContents = components.get(DataComponentTypes.POTION_CONTENTS);
+            PotionContents potionContents = components.get(DataComponents.POTION_CONTENTS);
             if (potionContents != null) {
-                Potion potion = Potion.getByJavaId(potionContents.getPotionId());
+                Potion potion = Potion.fromComponent(potionContents);
                 if (potion != null) {
                     return ItemData.builder()
                             .definition(mapping.getBedrockDefinition())
                             .damage(potion.tippedArrowId())
                             .count(Math.min(count, BEDROCK_MAX_STACK_SIZE));
                 }
-                GeyserImpl.getInstance().getLogger().debug("Unknown Java potion (tipped arrow): " + potionContents.getPotionId());
+                GeyserImpl.getInstance().getLogger().debug("Unknown Java potion (tipped arrow): " + potionContents.potion());
             }
         }
         return super.translateToBedrock(session, count, components, mapping, mappings);

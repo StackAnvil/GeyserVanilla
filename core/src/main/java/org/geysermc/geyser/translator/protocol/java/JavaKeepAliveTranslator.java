@@ -28,8 +28,8 @@ package org.geysermc.geyser.translator.protocol.java;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundKeepAlivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundKeepAlivePacket;
+import net.minecraft.network.protocol.common.ClientboundKeepAlivePacket;
+import net.minecraft.network.protocol.common.ServerboundKeepAlivePacket;
 
 /**
  * Used to forward the keep alive packet to the client in order to get back a reliable ping.
@@ -43,7 +43,7 @@ public class JavaKeepAliveTranslator extends PacketTranslator<ClientboundKeepAli
             return;
         }
 
-        final long javaId = packet.getPingId();
+        final long javaId = packet.getId();
         // ClientboundKeepAlivePacket's are async, hence we won't add additional delay ensuring it's sent in the event loop would add
         session.sendNetworkLatencyStackPacket(javaId, false, () -> session.sendDownstreamPacket(new ServerboundKeepAlivePacket(javaId)));
     }

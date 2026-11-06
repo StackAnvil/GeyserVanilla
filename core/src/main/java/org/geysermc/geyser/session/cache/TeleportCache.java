@@ -33,7 +33,7 @@ import org.geysermc.geyser.session.GeyserSession;
  * Represents a teleport ID and corresponding coordinates that need to be confirmed. <br>
  *
  * The vanilla Java client, after getting a
- * {@link org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerPositionPacket},
+ * {@link net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket},
  * adjusts the player's positions and immediately sends a teleport back. However, we want to acknowledge that the
  * Bedrock player actually moves close to that point, so we store the teleport until we get a movement packet from
  * Bedrock that the teleport was successful.

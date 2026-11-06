@@ -30,7 +30,6 @@ import lombok.experimental.Accessors;
 import net.kyori.adventure.key.Key;
 import org.cloudburstmc.nbt.NbtMap;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
 
 /**
  * Small class to manage the currently open dialog.
@@ -49,8 +48,11 @@ public class DialogManager {
         openDialog(Dialog.getDialogFromKey(session.javaRegistries(), dialog));
     }
 
-    public void openDialog(Holder<NbtMap> dialog) {
-        openDialog(Dialog.getDialogFromHolder(session.javaRegistries(), dialog));
+    public void openDialog(net.minecraft.core.Holder<net.minecraft.server.dialog.Dialog> dialog) {
+        var ops = session.vanillaRegistries().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        var data = net.minecraft.server.dialog.Dialog.DIRECT_CODEC.encodeStart(ops, dialog.value()).getOrThrow();
+        openDialog(Dialog.readDialogFromNbt(session.javaRegistries(),
+            org.geysermc.geyser.util.MinecraftNbt.toCloudburst((net.minecraft.nbt.CompoundTag) data)));
     }
 
     /**

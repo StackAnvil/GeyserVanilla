@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
 
 import java.util.Optional;
 
@@ -46,10 +47,10 @@ public class EnderCrystalEntity extends Entity {
         setFlag(EntityFlag.FIRE_IMMUNE, true);
     }
 
-    public void setBlockTarget(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
+    public void setBlockTarget(DataValue<Optional<net.minecraft.core.BlockPos>> entityMetadata) {
         // Show beam
         // Usually performed client-side on Bedrock except for Ender Dragon respawn event
-        Optional<Vector3i> optionalPos = entityMetadata.getValue();
+        Optional<Vector3i> optionalPos = entityMetadata.value().map(org.geysermc.geyser.util.MathUtils::toVector3i);
         if (optionalPos.isPresent()) {
             metadata.put(EntityDataTypes.BLOCK_TARGET_POS, optionalPos.get());
         } else {

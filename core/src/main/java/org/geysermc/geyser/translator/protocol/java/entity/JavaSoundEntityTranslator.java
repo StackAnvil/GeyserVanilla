@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.entity;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSoundEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -36,7 +36,7 @@ import org.geysermc.geyser.util.SoundUtils;
 public class JavaSoundEntityTranslator extends PacketTranslator<ClientboundSoundEntityPacket> {
     @Override
     public void translate(GeyserSession session, ClientboundSoundEntityPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getId());
         if (entity == null) {
             return;
         }

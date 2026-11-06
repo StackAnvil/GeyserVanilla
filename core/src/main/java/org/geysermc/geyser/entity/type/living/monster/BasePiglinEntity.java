@@ -25,11 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 public class BasePiglinEntity extends MonsterEntity {
     private boolean isImmuneToZombification;
@@ -42,15 +42,15 @@ public class BasePiglinEntity extends MonsterEntity {
     }
 
     @Override
-    public void setMobFlags(ByteEntityMetadata entityMetadata) {
+    public void setMobFlags(DataValue<Byte> entityMetadata) {
         super.setMobFlags(entityMetadata);
-        byte xd = entityMetadata.getPrimitiveValue();
+        byte xd = entityMetadata.value();
         metadata.put(EntityDataTypes.TARGET_EID, (xd & 4) == 4 ? session.getPlayerEntity().geyserId() : 0);
     }
 
-    public void setImmuneToZombification(BooleanEntityMetadata entityMetadata) {
+    public void setImmuneToZombification(DataValue<Boolean> entityMetadata) {
         // Apply shaking effect if not in the nether and zombification is possible
-        this.isImmuneToZombification = entityMetadata.getPrimitiveValue();
+        this.isImmuneToZombification = entityMetadata.value();
         setFlag(EntityFlag.SHAKING, isShaking());
     }
 

@@ -38,14 +38,13 @@ import org.geysermc.geyser.scoreboard.ScoreReference;
 import org.geysermc.geyser.scoreboard.UpdateType;
 import org.geysermc.geyser.scoreboard.display.score.PlayerlistDisplayScore;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
 
 public class PlayerlistDisplaySlot extends DisplaySlot {
     private final Long2ObjectMap<PlayerlistDisplayScore> displayScores = new Long2ObjectOpenHashMap<>();
     private final List<PlayerlistDisplayScore> removedScores = Collections.synchronizedList(new ArrayList<>());
 
     public PlayerlistDisplaySlot(GeyserSession session, Objective objective) {
-        super(session, objective, ScoreboardPosition.PLAYER_LIST);
+        super(session, objective, net.minecraft.world.scores.DisplaySlot.LIST);
         registerExisting();
     }
 

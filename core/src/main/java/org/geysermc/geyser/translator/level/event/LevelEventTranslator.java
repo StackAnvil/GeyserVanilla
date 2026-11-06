@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.level.event;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 import org.geysermc.geyser.session.GeyserSession;
 
 /**

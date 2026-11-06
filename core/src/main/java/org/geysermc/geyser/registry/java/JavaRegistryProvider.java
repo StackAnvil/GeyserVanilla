@@ -32,7 +32,6 @@ import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
 
 import java.util.List;
 
@@ -43,11 +42,8 @@ import java.util.List;
  *
  * <ul>
  *     <li>{@link Block#is(GeyserSession, Tag)}</li>
- *     <li>{@link Block#is(GeyserSession, HolderSet)}</li>
  *     <li>{@link GeyserItemStack#is(GeyserSession, Tag)}</li>
- *     <li>{@link GeyserItemStack#is(GeyserSession, HolderSet)}</li>
  *     <li>{@link Item#is(GeyserSession, Tag)}</li>
- *     <li>{@link Item#is(GeyserSession, HolderSet)}</li>
  * </ul>
  *
  * @see JavaRegistry
@@ -112,24 +108,6 @@ public interface JavaRegistryProvider {
      */
     default <T> boolean is(Tag<T> tag, T object) {
         return rawTag(tag).contains(registry(tag.registry()).getId(object).orElse(-1));
-    }
-
-    /**
-     * Checks and returns true if the given {@code holderSet} contains the given {@code id}.
-     *
-     * @param registry the registry the {@code holderSet} belongs to
-     * @param holderSet the set. If null, this method will always return false
-     * @param id the id to check for
-     * @param <T> the type of the registry
-     * @return true if the specified network ID is in the given {@link HolderSet}
-     */
-    default <T> boolean is(JavaRegistryKey<T> registry, @Nullable HolderSet holderSet, int id) {
-        if (holderSet == null) {
-            return false;
-        }
-
-        IntList entries = holderSet.resolve(key -> rawTag(new Tag<>(registry, key)));
-        return entries.contains(id);
     }
 
     /**

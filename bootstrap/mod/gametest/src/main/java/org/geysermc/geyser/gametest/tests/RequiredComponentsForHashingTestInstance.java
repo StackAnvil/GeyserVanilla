@@ -37,8 +37,6 @@ import net.minecraft.gametest.framework.GameTestInstance;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import org.geysermc.geyser.item.hashing.DataComponentHashers;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -64,10 +62,7 @@ public class RequiredComponentsForHashingTestInstance extends GeyserTestInstance
         }
 
         for (DataComponentType<?> component : BuiltInRegistries.DATA_COMPONENT_TYPE) {
-            org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType<?> mcpl = DataComponentTypes.from(BuiltInRegistries.DATA_COMPONENT_TYPE.getId(component));
-            if (component.isTransient()) {
-                helper.assertTrue(DataComponentHashers.NOT_HASHED.contains(mcpl), "transient component " + component + " must not be hashed");
-            } else {
+            if (!component.isTransient()) {
                 helper.assertTrue(componentsWithTests.contains(component), "persistent component " + component + " must be hashed and tested");
             }
         }

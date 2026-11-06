@@ -57,7 +57,6 @@ repositories {
         name = "viaversion"
     }
 
-    // Jitpack for e.g. MCPL
     maven("https://jitpack.io") {
         content { includeGroupByRegex("com\\.github\\..*") }
     }

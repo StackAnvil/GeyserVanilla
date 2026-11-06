@@ -34,11 +34,13 @@ import org.geysermc.geyser.level.chunk.GeyserChunk;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class ChunkCache {
     @Getter
     private final boolean cache;
+    private final GeyserSession session;
     private final Long2ObjectMap<GeyserChunk> chunks;
 
     @Setter
@@ -47,11 +49,12 @@ public class ChunkCache {
     private int heightY;
 
     public ChunkCache(GeyserSession session) {
+        this.session = session;
         this.cache = !session.getGeyser().getWorldManager().hasOwnChunkCache(); // To prevent Spigot from initializing
         chunks = cache ? new Long2ObjectOpenHashMap<>() : null;
     }
 
-    public void addToCache(int x, int z, DataPalette[] chunks) {
+    public void addToCache(int x, int z, PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] chunks) {
         if (!cache) {
             return;
         }
@@ -73,7 +76,7 @@ public class ChunkCache {
      * Doesn't check for cache enabled, so don't use this without checking that first!
      */
     @Deprecated
-    public DataPalette getChunkSection(int chunkX, int chunkY, int chunkZ, boolean createIfAbsent) {
+    public PalettedContainer<net.minecraft.world.level.block.state.BlockState> getChunkSection(int chunkX, int chunkY, int chunkZ, boolean createIfAbsent) {
         GeyserChunk chunk = this.getChunk(chunkX, chunkZ);
         if (chunk == null) {
             return null;
@@ -83,9 +86,9 @@ public class ChunkCache {
             return null;
         }
 
-        DataPalette palette = chunk.sections()[chunkY - getChunkMinY()];
+        PalettedContainer<net.minecraft.world.level.block.state.BlockState> palette = chunk.sections()[chunkY - getChunkMinY()];
         if (createIfAbsent && palette == null) {
-            palette = DataPalette.createForBlockState(Block.JAVA_AIR_ID, BlockRegistries.BLOCK_STATES.get().size());
+            palette = new PalettedContainer<>(net.minecraft.world.level.block.Block.stateById(Block.JAVA_AIR_ID), net.minecraft.world.level.chunk.PalettedContainerFactory.create(session.vanillaRegistries()).blockStatesStrategy());
             chunk.sections()[chunkY - getChunkMinY()] = palette;
         }
 
@@ -97,12 +100,12 @@ public class ChunkCache {
             return;
         }
 
-        DataPalette palette = this.getChunkSection(x >> 4, y >> 4, z >> 4, true);
+        PalettedContainer<net.minecraft.world.level.block.state.BlockState> palette = this.getChunkSection(x >> 4, y >> 4, z >> 4, true);
         if (palette == null) {
             return;
         }
 
-        palette.set(x & 0xF, y & 0xF, z & 0xF, block);
+        palette.set(x & 0xF, y & 0xF, z & 0xF, net.minecraft.world.level.block.Block.stateById(block));
     }
 
     public int getBlockAt(int x, int y, int z) {
@@ -110,12 +113,12 @@ public class ChunkCache {
             return Block.JAVA_AIR_ID;
         }
 
-        DataPalette palette = this.getChunkSection(x >> 4, y >> 4, z >> 4, false);
+        PalettedContainer<net.minecraft.world.level.block.state.BlockState> palette = this.getChunkSection(x >> 4, y >> 4, z >> 4, false);
         if (palette == null) {
             return Block.JAVA_AIR_ID;
         }
 
-        return palette.get(x & 0xF, y & 0xF, z & 0xF);
+        return net.minecraft.world.level.block.Block.getId(palette.get(x & 0xF, y & 0xF, z & 0xF));
     }
 
     public void removeChunk(int chunkX, int chunkZ) {

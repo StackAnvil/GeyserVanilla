@@ -43,7 +43,6 @@ import org.geysermc.geyser.registry.mappings.util.MappingsUtil;
 import org.geysermc.geyser.registry.mappings.util.NodeReader;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.DefaultComponentSerializer;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -77,7 +76,7 @@ public class SingleDefinitionReader implements ItemDefinitionReader {
         JsonElement displayName = definition.get("display_name");
         if (displayName != null) {
             try {
-                builder.displayName(MessageTranslator.convertMessageRaw(DefaultComponentSerializer.get().deserializeFromTree(displayName), GeyserLocale.getDefaultLocale()));
+                builder.displayName(MessageTranslator.convertMessageRaw(net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().deserializeFromTree(displayName), GeyserLocale.getDefaultLocale()));
             } catch (Exception exception) {
                 throw new InvalidCustomMappingsFileException("reading display name", "error while reading: " + exception.getMessage(), context);
             }

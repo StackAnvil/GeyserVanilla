@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.entity.type.player;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.text.Component;
@@ -54,14 +58,9 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.skin.SkinManager;
 import org.geysermc.geyser.skin.SkinProvider;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.auth.texture.Texture;
-import org.geysermc.mcprotocollib.auth.texture.TextureType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +79,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
     @Getter
     @Setter
     @Nullable
-    Map<TextureType, Texture> textures;
+    Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures;
 
     private String cachedScore = "";
     private boolean scoreVisible = true;
@@ -194,7 +193,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
     }
 
     @Override
-    public @Nullable Vector3i setBedPosition(EntityMetadata<Optional<Vector3i>, ?> entityMetadata) {
+    public @Nullable Vector3i setBedPosition(DataValue<Optional<net.minecraft.core.BlockPos>> entityMetadata) {
         bedPosition = super.setBedPosition(entityMetadata);
         if (bedPosition != null) {
             // Indicate that the player should enter the sleep cycle
@@ -214,9 +213,9 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
     }
 
     public void setSkin(GameProfile profile, @Nullable Runnable after) {
-        Map<TextureType, Texture> textures;
+        Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures;
         try {
-            textures = profile.getTextures(false);
+            textures = org.geysermc.geyser.vanilla.protocol.VanillaProfiles.textures(profile);
         } catch (IllegalStateException e) {
             GeyserImpl.getInstance().getLogger().debug("Error loading textures for profile (%s)! Got: %s", profile, e);
             textures = null;
@@ -224,7 +223,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
         setSkin(textures, after);
     }
 
-    public void setSkin(@Nullable Map<TextureType, Texture> textures, @Nullable Runnable after) {
+    public void setSkin(@Nullable Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures, @Nullable Runnable after) {
         if (Objects.equals(textures, this.textures)) {
             return;
         }
@@ -233,12 +232,12 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
         SkinManager.requestAndHandleSkinAndCape(this, session, after == null ? null : skin -> after.run());
     }
 
-    public void setSkinVisibility(ByteEntityMetadata entityMetadata) {
+    public void setSkinVisibility(DataValue<Byte> entityMetadata) {
         // OptionalPack usage for toggling skin bits
         // In Java Edition, a bit being set means that part should be enabled
         // However, to ensure that the pack still works on other servers, we invert the bit so all values by default
         // are true (0).
-        metadata.put(EntityDataTypes.MARK_VARIANT, ~entityMetadata.getPrimitiveValue() & 0xff);
+        metadata.put(EntityDataTypes.MARK_VARIANT, ~entityMetadata.value() & 0xff);
     }
 
     @Override
@@ -250,7 +249,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
     }
 
     @Override
-    public void setCustomName(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setCustomName(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         // Doesn't do anything for players
         if (!(this instanceof PlayerEntity)) {
             super.setCustomName(entityMetadata);
@@ -258,7 +257,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
     }
 
     @Override
-    public void setCustomNameVisible(BooleanEntityMetadata entityMetadata) {
+    public void setCustomNameVisible(DataValue<Boolean> entityMetadata) {
         // Doesn't do anything for players
         if (!(this instanceof PlayerEntity)) {
             super.setCustomNameVisible(entityMetadata);
@@ -333,7 +332,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
         float height;
         float width;
         switch (pose) {
-            case SNEAKING -> {
+            case CROUCHING -> {
                 height = SNEAKING_POSE_HEIGHT;
                 width = javaDefinition.width();
             }
@@ -365,7 +364,7 @@ public abstract class AvatarEntity extends LivingEntity implements GeyserAvatarE
 
     public @Nullable String getSkinId() {
         if (textures != null) {
-            Texture texture = textures.get(TextureType.SKIN);
+            MinecraftProfileTexture texture = textures.get(MinecraftProfileTexture.Type.SKIN);
             if (texture != null) {
                 return texture.getHash();
             }

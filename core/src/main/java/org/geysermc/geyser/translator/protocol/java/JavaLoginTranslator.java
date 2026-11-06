@@ -43,13 +43,12 @@ import org.geysermc.geyser.util.ChunkUtils;
 import org.geysermc.geyser.util.DimensionUtils;
 import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerSpawnInfo;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLoginPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundPlayerLoadedPacket;
+import net.minecraft.network.protocol.game.CommonPlayerSpawnInfo;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.game.ClientboundLoginPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 @Translator(packet = ClientboundLoginPacket.class)
 public class JavaLoginTranslator extends PacketTranslator<ClientboundLoginPacket> {
@@ -57,10 +56,10 @@ public class JavaLoginTranslator extends PacketTranslator<ClientboundLoginPacket
     @Override
     public void translate(GeyserSession session, ClientboundLoginPacket packet) {
         SessionPlayerEntity entity = session.getPlayerEntity();
-        entity.setEntityId(packet.getEntityId());
+        entity.setEntityId(packet.playerId());
 
-        PlayerSpawnInfo spawnInfo = packet.getCommonPlayerSpawnInfo();
-        JavaDimension newDimension = JavaRegistries.DIMENSION_TYPE.getOrThrow(session.javaRegistries(), spawnInfo.getDimension());
+        CommonPlayerSpawnInfo spawnInfo = packet.commonPlayerSpawnInfo();
+        JavaDimension newDimension = JavaRegistries.DIMENSION_TYPE.getOrThrow(session.javaRegistries(), org.geysermc.geyser.util.MinecraftKey.key(spawnInfo.dimensionType().unwrapKey().orElseThrow().identifier().toString()));
 
         // If the player is already initialized and a join game packet is sent, they
         // are swapping servers
@@ -89,9 +88,9 @@ public class JavaLoginTranslator extends PacketTranslator<ClientboundLoginPacket
         }
 
         session.setDimensionType(newDimension);
-        session.setWorldName(spawnInfo.getWorldName());
-        session.setLevels(Arrays.stream(packet.getWorldNames()).map(Key::asString).toArray(String[]::new));
-        session.setGameMode(spawnInfo.getGameMode());
+        session.setWorldName(org.geysermc.geyser.util.MinecraftKey.key(spawnInfo.dimension().identifier().toString()));
+        session.setLevels(packet.levels().stream().map(key -> key.identifier().toString()).toArray(String[]::new));
+        session.setGameMode(spawnInfo.gameType());
 
         boolean needsSpawnPacket = !session.isSentSpawnPacket();
         if (needsSpawnPacket) {
@@ -103,22 +102,22 @@ public class JavaLoginTranslator extends PacketTranslator<ClientboundLoginPacket
             session.getUpstream().sendPostStartGamePackets();
         } else {
             SetPlayerGameTypePacket playerGameTypePacket = new SetPlayerGameTypePacket();
-            playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(spawnInfo.getGameMode()).ordinal());
+            playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(spawnInfo.gameType()).ordinal());
             session.sendUpstreamPacket(playerGameTypePacket);
         }
 
-        entity.setLastDeathPosition(spawnInfo.getLastDeathPos());
+        entity.setLastDeathPosition(spawnInfo.lastDeathLocation().orElse(null));
 
         entity.updateBedrockMetadata();
 
         // Send if client should show respawn screen
         GameRulesChangedPacket gamerulePacket = new GameRulesChangedPacket();
-        gamerulePacket.getGameRules().add(new GameRuleData<>("doimmediaterespawn", !packet.isEnableRespawnScreen()));
+        gamerulePacket.getGameRules().add(new GameRuleData<>("doimmediaterespawn", !packet.showDeathScreen()));
         session.sendUpstreamPacket(gamerulePacket);
 
-        session.setReducedDebugInfo(packet.isReducedDebugInfo());
+        session.setReducedDebugInfo(packet.reducedDebugInfo());
 
-        session.setServerRenderDistance(packet.getViewDistance());
+        session.setServerRenderDistance(packet.chunkRadius());
 
         // send this again now that we know the server render distance
         // as the bedrock client isn't required to send a render distance
@@ -126,9 +125,9 @@ public class JavaLoginTranslator extends PacketTranslator<ClientboundLoginPacket
 
         Key register = MinecraftKey.key("register");
         if (session.remoteServer().authType() == AuthType.FLOODGATE) {
-            session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(register, PluginMessageChannels.getFloodgateRegisterData()));
+            session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(new org.geysermc.geyser.vanilla.protocol.VanillaPayload(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(register), PluginMessageChannels.getFloodgateRegisterData())));
         }
-        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(register, Constants.PLUGIN_MESSAGE.getBytes(StandardCharsets.UTF_8)));
+        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(new org.geysermc.geyser.vanilla.protocol.VanillaPayload(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(register), Constants.PLUGIN_MESSAGE.getBytes(StandardCharsets.UTF_8))));
 
         if (session.getBedrockDimension().bedrockId() != newDimension.bedrockId()) {
             DimensionUtils.switchDimension(session, newDimension);
@@ -140,7 +139,7 @@ public class JavaLoginTranslator extends PacketTranslator<ClientboundLoginPacket
         ChunkUtils.loadDimension(session);
 
         if (!needsSpawnPacket) {
-            session.sendDownstreamGamePacket(ServerboundPlayerLoadedPacket.INSTANCE);
+            session.sendDownstreamGamePacket(new ServerboundPlayerLoadedPacket());
         }
     }
 }

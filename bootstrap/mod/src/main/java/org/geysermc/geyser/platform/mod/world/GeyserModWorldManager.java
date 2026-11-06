@@ -45,7 +45,7 @@ import org.cloudburstmc.math.vector.Vector3i;
 import org.geysermc.geyser.level.GeyserWorldManager;
 import org.geysermc.geyser.network.bedrock.GameProtocol;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import net.minecraft.world.level.GameType;
 
 import java.util.Map;
 import java.util.Optional;
@@ -102,8 +102,8 @@ public class GeyserModWorldManager extends GeyserWorldManager {
     }
 
     @Override
-    public GameMode getDefaultGameMode(GeyserSession session) {
-        return GameMode.byId(server.getDefaultGameType().getId());
+    public GameType getDefaultGameMode(GeyserSession session) {
+        return GameType.byId(server.getDefaultGameType().getId());
     }
 
     @Override

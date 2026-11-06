@@ -28,7 +28,7 @@ package org.geysermc.geyser.translator.protocol.java.dialogues;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundClearDialogPacket;
+import net.minecraft.network.protocol.common.ClientboundClearDialogPacket;
 
 @Translator(packet = ClientboundClearDialogPacket.class)
 public class JavaClearDialogTranslator extends PacketTranslator<ClientboundClearDialogPacket> {

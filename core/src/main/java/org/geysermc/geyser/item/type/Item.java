@@ -53,17 +53,14 @@ import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.geyser.util.EnvironmentUtils;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ItemEnchantments;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,11 +72,10 @@ public class Item {
     protected final Key javaIdentifier;
     private int javaId = -1;
     private final int attackDamage;
-    private DataComponents baseComponents; // unmodifiable
+    private GeyserDataComponents baseComponents; // unmodifiable
     @Getter
     @Accessors(fluent = true)
     private List<ResolvableComponent<?>> resolvableComponents; // unmodifiable
-    private List<? extends DataComponentType<?>> resolvableComponentTypes; // unmodifiable
 
     public Item(String javaIdentifier, Builder builder) {
         this.javaIdentifier = MinecraftKey.key(javaIdentifier);
@@ -101,9 +97,6 @@ public class Item {
         }
 
         this.resolvableComponents = resolvableComponents;
-        resolvableComponentTypes = resolvableComponents.stream()
-            .map(ResolvableComponent::type)
-            .toList();
     }
 
     /**
@@ -125,7 +118,7 @@ public class Item {
     }
 
     public int defaultMaxDamage() {
-        return baseComponents.getOrDefault(DataComponentTypes.MAX_DAMAGE, 0);
+        return baseComponents.getOrDefault(DataComponents.MAX_DAMAGE, 0);
     }
 
     public int defaultAttackDamage() {
@@ -133,46 +126,39 @@ public class Item {
     }
 
     public int defaultMaxStackSize() {
-        return baseComponents.getOrDefault(DataComponentTypes.MAX_STACK_SIZE, 1);
+        return baseComponents.getOrDefault(DataComponents.MAX_STACK_SIZE, 1);
     }
 
     public boolean is(GeyserSession session, Tag<Item> tag) {
         return session.javaRegistries().is(tag, javaId);
     }
 
-    public boolean is(GeyserSession session, HolderSet set) {
-        return session.javaRegistries().is(JavaRegistries.ITEM, set, javaId);
+    public boolean is(GeyserSession session, net.minecraft.core.HolderSet<net.minecraft.world.item.Item> set) {
+        return set != null && session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.ITEM)
+            .get(javaId).filter(set::contains).isPresent();
     }
 
+
+
     /**
-     * Returns an unmodifiable {@link DataComponents} view containing known data components.
+     * Returns an unmodifiable {@link GeyserDataComponents} view containing known data components.
      * Optionally, additional components can be provided to replace (or add to)
      * the items' base components.
      * To add data components, use {@link GeyserItemStack#getOrCreateComponents()}.
      */
     @NonNull
     @UnmodifiableView
-    public DataComponents gatherComponents(@NonNull ResolvableComponentGetter resolvableGetter, @Nullable DataComponents others) {
-        // Start with the base components that always exist
-        DataComponents base = baseComponents.clone();
-        // Add resolvable base components when possible
-        if (!resolvableComponents.isEmpty()) {
-            DataComponents resolvedComponents = resolvableGetter.getResolvedComponents(this);
-            // Can be null if for some reason components weren't resolved - usually when outside a session context
-            if (resolvedComponents != null) {
-                base.getDataComponents().putAll(resolvedComponents.getDataComponents());
-            } else {
-                GeyserImpl.getInstance().getLogger().debug("Unable to resolve components for item because resolvableGetter didn't have any for it");
-            }
-        }
+    public GeyserDataComponents gatherComponents(@NonNull ResolvableComponentGetter resolvableGetter, @Nullable GeyserDataComponents others) {
+        GeyserDataComponents resolved = resolvableGetter.getResolvedComponents(this);
+        GeyserDataComponents base = (resolved == null ? baseComponents : resolved).copy();
         if (others != null) {
             // Add all additional components; these can override base components!
             // e.g. custom stack size
-            base.getDataComponents().putAll(others.getDataComponents());
+            base.putAll(others);
         }
 
         // Return an unmodifiable map of the merged components
-        return new DataComponents(Collections.unmodifiableMap(base.getDataComponents()));
+        return base.immutableCopy();
     }
 
     /**
@@ -182,14 +168,9 @@ public class Item {
      */
     @Nullable
     public <T> T getComponent(@NonNull ResolvableComponentGetter resolvableGetter, @NonNull DataComponentType<T> type) {
-        if (resolvableComponentTypes.contains(type)) {
-            DataComponents resolvedComponents = resolvableGetter.getResolvedComponents(this);
-            // Can be null - same as above method
-            if (resolvedComponents == null) {
-                GeyserImpl.getInstance().getLogger().debug("Unable to resolve component " + type + " for item because resolvableGetter didn't have any for it");
-            } else {
-                return resolvedComponents.get(type);
-            }
+        GeyserDataComponents resolved = resolvableGetter.getResolvedComponents(this);
+        if (resolved != null) {
+            return resolved.get(type);
         }
         return baseComponents.get(type);
     }
@@ -200,7 +181,7 @@ public class Item {
 
     /* Translation methods to Bedrock and back */
 
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         if (this == Items.AIR || count <= 0) {
             // Return, essentially, air
             return ItemData.builder();
@@ -216,36 +197,36 @@ public class Item {
         return GeyserItemStack.of(session, javaId, itemData.getCount());
     }
 
-    public ItemMapping toBedrockDefinition(DataComponents components, ItemMappings mappings) {
+    public ItemMapping toBedrockDefinition(GeyserDataComponents components, ItemMappings mappings) {
         return mappings.getMapping(javaId);
     }
 
     /**
      * Takes components from Java Edition and map them into Bedrock.
      */
-    public void translateComponentsToBedrock(GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         if (session == null) {
             return;
         }
 
-        List<Component> loreComponents = components.get(DataComponentTypes.LORE);
-        if (loreComponents != null && tooltip.showInTooltip(DataComponentTypes.LORE)) {
+        var loreComponents = components.get(DataComponents.LORE);
+        if (loreComponents != null && tooltip.showInTooltip(DataComponents.LORE)) {
             List<String> lore = builder.getOrCreateLore();
-            for (Component loreComponent : loreComponents) {
+            for (var loreComponent : loreComponents.lines()) {
                 lore.add(MessageTranslator.convertMessageRaw(loreComponent, session.locale()));
             }
         }
 
-        Integer damage = components.get(DataComponentTypes.DAMAGE);
+        Integer damage = components.get(DataComponents.DAMAGE);
         if (damage != null) {
             builder.setDamage(damage);
         }
 
         List<NbtMap> enchantNbtList = new ArrayList<>();
-        ItemEnchantments enchantments = components.get(DataComponentTypes.ENCHANTMENTS);
+        ItemEnchantments enchantments = components.get(DataComponents.ENCHANTMENTS);
         if (enchantments != null) {
-            for (Map.Entry<Integer, Integer> enchantment : enchantments.getEnchantments().entrySet()) {
-                NbtMap enchantNbt = remapEnchantment(session, enchantment.getKey(), enchantment.getValue(), builder);
+            for (var enchantment : enchantments.entrySet()) {
+                NbtMap enchantNbt = remapEnchantment(session, session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getId(enchantment.getKey().value()), enchantment.getIntValue(), builder);
                 if (enchantNbt != null) {
                     enchantNbtList.add(enchantNbt);
                 }
@@ -256,7 +237,7 @@ public class Item {
             builder.putList("ench", NbtType.COMPOUND, enchantNbtList);
         }
 
-        Integer repairCost = components.get(DataComponentTypes.REPAIR_COST);
+        Integer repairCost = components.get(DataComponents.REPAIR_COST);
         // Java sets repair cost to 0 on all items via default components, that trips up Bedrock crafting.
         // See https://github.com/GeyserMC/Geyser/issues/5220 for more details
         if (repairCost != null && repairCost != 0) {
@@ -264,7 +245,7 @@ public class Item {
         }
 
         // If the tag exists, it's unbreakable; the value is just weather to show the tooltip. As of Java 1.21
-        if (components.getDataComponents().containsKey(DataComponentTypes.UNBREAKABLE)) {
+        if (components.contains(DataComponents.UNBREAKABLE)) {
             builder.putByte("Unbreakable", (byte) 1);
         }
 
@@ -290,7 +271,7 @@ public class Item {
      * </ul>
      * Therefore, if translation cannot be achieved for a certain item, it is not necessarily bad.
      */
-    public void translateNbtToJava(GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull DataComponents components, ItemMapping mapping) {
+    public void translateNbtToJava(GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull GeyserDataComponents components, ItemMapping mapping) {
         // TODO see if any items from the creative menu need this
 //        CompoundTag displayTag = tag.get("display");
 //        if (displayTag != null) {
@@ -338,10 +319,10 @@ public class Item {
         builder.getOrCreateLore().addFirst(enchantmentName + " " + lvlTranslation);
     }
 
-    protected final void translateDyedColor(DataComponents components, BedrockItemBuilder builder) {
-        Integer dyedItemColor = components.get(DataComponentTypes.DYED_COLOR);
+    protected final void translateDyedColor(GeyserDataComponents components, BedrockItemBuilder builder) {
+        var dyedItemColor = components.get(DataComponents.DYED_COLOR);
         if (dyedItemColor != null) {
-            builder.putInt("customColor", dyedItemColor);
+            builder.putInt("customColor", dyedItemColor.rgb());
         }
     }
 
@@ -355,7 +336,7 @@ public class Item {
 
     /* Translation methods end */
 
-    public GeyserItemStack newItemStack(GeyserSession session, int count, DataComponents components) {
+    public GeyserItemStack newItemStack(GeyserSession session, int count, GeyserDataComponents components) {
         return GeyserItemStack.of(session, this.javaId, count, components);
     }
 
@@ -365,14 +346,12 @@ public class Item {
         }
         this.javaId = javaId;
         if (this.baseComponents == null) {
-            this.baseComponents = Registries.DEFAULT_DATA_COMPONENTS.get(javaId);
-            // During unit tests, DEFAULT_DATA_COMPONENTS isn't loaded
-            if (this.baseComponents == null && !EnvironmentUtils.IS_UNIT_TESTING) {
-                throw new AssertionError("Item was loaded before default item data components were loaded!");
-            }
+            this.baseComponents = GeyserDataComponents.from(org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries()
+                .lookupOrThrow(net.minecraft.core.registries.Registries.ITEM)
+                .get(MinecraftKey.keyToVanilla(javaIdentifier)).orElseThrow().components()).immutableCopy();
         }
         if (this.resolvableComponents == null) {
-            loadResolvableComponents(Registries.RESOLVABLE_DEFAULT_DATA_COMPONENTS.get(javaId));
+            loadResolvableComponents(List.of());
         }
     }
 
@@ -401,7 +380,7 @@ public class Item {
     }
 
     public static final class Builder {
-        private DataComponents components;
+        private GeyserDataComponents components;
         private List<ResolvableComponent<?>> resolvableComponents;
         private int attackDamage;
 
@@ -411,7 +390,7 @@ public class Item {
             return this;
         }
 
-        public Builder components(DataComponents components) {
+        public Builder components(GeyserDataComponents components) {
             this.components = components;
             return this;
         }

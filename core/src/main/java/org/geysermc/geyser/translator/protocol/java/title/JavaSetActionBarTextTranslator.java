@@ -30,7 +30,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.title.ClientboundSetActionBarTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 
 @Translator(packet = ClientboundSetActionBarTextPacket.class)
 public class JavaSetActionBarTextTranslator extends PacketTranslator<ClientboundSetActionBarTextPacket> {
@@ -38,10 +38,10 @@ public class JavaSetActionBarTextTranslator extends PacketTranslator<Clientbound
     @Override
     public void translate(GeyserSession session, ClientboundSetActionBarTextPacket packet) {
         String text;
-        if (packet.getText() == null) { //TODO 1.17 can this happen?
+        if (packet.text() == null) { //TODO 1.17 can this happen?
             text = " ";
         } else {
-            text = MessageTranslator.convertMessage(packet.getText(), session.locale());
+            text = MessageTranslator.convertMessage(packet.text(), session.locale());
         }
 
         SetTitlePacket titlePacket = new SetTitlePacket();

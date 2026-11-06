@@ -41,11 +41,11 @@ import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.util.BlockEntityUtils;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.WritableBookContent;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.WrittenBookContent;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerButtonClickPacket;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.WritableBookContent;
+import net.minecraft.world.item.component.WrittenBookContent;
+import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -174,13 +174,13 @@ public class LecternInventoryTranslator extends AbstractBlockInventoryTranslator
             NbtMap blockEntityTag;
             if (book.hasNonBaseComponents()) {
                 int pages = 0;
-                WrittenBookContent writtenBookComponents = book.getComponent(DataComponentTypes.WRITTEN_BOOK_CONTENT);
+                WrittenBookContent writtenBookComponents = book.getComponent(DataComponents.WRITTEN_BOOK_CONTENT);
                 if (writtenBookComponents != null) {
-                    pages = writtenBookComponents.getPages().size();
+                    pages = writtenBookComponents.pages().size();
                 } else {
-                    WritableBookContent writableBookComponents = book.getComponent(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+                    WritableBookContent writableBookComponents = book.getComponent(DataComponents.WRITABLE_BOOK_CONTENT);
                     if (writableBookComponents != null) {
-                        pages = writableBookComponents.getPages().size();
+                        pages = writableBookComponents.pages().size();
                     }
                 }
 
@@ -204,7 +204,7 @@ public class LecternInventoryTranslator extends AbstractBlockInventoryTranslator
     }
 
     @Override
-    public LecternContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public LecternContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new LecternContainer(session, name, windowId, this.size, containerType);
     }
 }

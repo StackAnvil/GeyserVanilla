@@ -46,13 +46,9 @@ import net.minecraft.network.protocol.game.GamePacketTypes;
 import net.minecraft.network.protocol.game.GameProtocols;
 import net.minecraft.resources.Identifier;
 import org.geysermc.geyser.gametest.util.GeyserCodecs;
-import org.geysermc.geyser.gametest.util.NetworkUtil;
 import org.geysermc.geyser.registry.PacketTranslatorRegistry;
 import org.geysermc.geyser.registry.Registries;
-import org.geysermc.mcprotocollib.network.packet.Packet;
-import org.geysermc.mcprotocollib.network.packet.PacketRegistry;
-import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodec;
-import org.geysermc.mcprotocollib.protocol.data.ProtocolState;
+import net.minecraft.network.protocol.Packet;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,8 +60,8 @@ public class JavaPacketTranslatorExistenceTest extends GeyserTestInstance {
             .and(PacketInfo.MAP_CODEC.forGetter(test -> test.packet))
             .apply(instance, JavaPacketTranslatorExistenceTest::new)
     );
-    // List of packets handled by MCPL in ClientListener
-    private static final List<PacketType<?>> MCPL_HANDLED_PACKETS = List.of(
+    // Packets handled by the vanilla session state machine.
+    private static final List<PacketType<?>> VANILLA_HANDLED_PACKETS = List.of(
         CommonPacketTypes.CLIENTBOUND_DISCONNECT,
         GamePacketTypes.CLIENTBOUND_START_CONFIGURATION,
         CommonPacketTypes.CLIENTBOUND_TRANSFER,
@@ -85,7 +81,7 @@ public class JavaPacketTranslatorExistenceTest extends GeyserTestInstance {
         ProtocolInfo.Details details = protocol.details();
         List<JavaPacketTranslatorExistenceTest> tests = new ObjectArrayList<>();
         details.listPackets((packet, networkId) -> {
-            if (!MCPL_HANDLED_PACKETS.contains(packet)) {
+            if (!VANILLA_HANDLED_PACKETS.contains(packet)) {
                 tests.add(new JavaPacketTranslatorExistenceTest(testEnvironments, required, PacketInfo.create(details, packet.id(), networkId)));
             }
         });
@@ -98,26 +94,35 @@ public class JavaPacketTranslatorExistenceTest extends GeyserTestInstance {
 
     @Override
     public void run(GameTestHelper helper) {
-        PacketRegistry mcplPacketRegistry = MinecraftCodec.CODEC.getCodec(packet.protocolFlow.mcplState());
+        Class<? extends Packet> packetClass = packetClass(packet);
 
-        Class<? extends Packet> mcplPacketClass;
-        try {
-            mcplPacketClass = packet.protocolFlow.flow == PacketFlow.CLIENTBOUND
-                ? mcplPacketRegistry.getClientboundClass(packet.networkId)
-                : mcplPacketRegistry.getServerboundClass(packet.networkId);
-        } catch (IllegalArgumentException exception) {
-            helper.fail("MCPL must have a packet registered for " + packet);
-            return;
-        }
-
-        boolean hasTranslator = Registries.JAVA_PACKET_TRANSLATORS.get(mcplPacketClass) != null;
-        boolean isIgnored = PacketTranslatorRegistry.isIgnoredPacket(mcplPacketClass);
+        boolean hasTranslator = Registries.JAVA_PACKET_TRANSLATORS.get(packetClass) != null;
+        boolean isIgnored = PacketTranslatorRegistry.isIgnoredPacket(packetClass);
 
         helper.assertTrue(hasTranslator || isIgnored,
-            "Missing translator for " + packet.identifier + "/" + mcplPacketClass.getSimpleName() + " (or must explicitly be marked as ignored)");
+            "Missing translator for " + packet.identifier + "/" + packetClass.getSimpleName() + " (or must explicitly be marked as ignored)");
         helper.assertFalse(hasTranslator == isIgnored,
-            "Packet " + packet.identifier + "/" + mcplPacketClass.getSimpleName() + " must either have a translator or be marked as ignored, not both");
+            "Packet " + packet.identifier + "/" + packetClass.getSimpleName() + " must either have a translator or be marked as ignored, not both");
         helper.succeed();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Class<? extends Packet> packetClass(PacketInfo packet) {
+        for (var owner : List.of(CommonPacketTypes.class, ConfigurationPacketTypes.class, GamePacketTypes.class)) {
+            for (var field : owner.getFields()) {
+                if (field.getType() != PacketType.class) continue;
+                try {
+                    var type = (PacketType<?>) field.get(null);
+                    if (type.flow() == packet.protocolFlow.flow && type.id().equals(packet.identifier)) {
+                        var signature = (java.lang.reflect.ParameterizedType) field.getGenericType();
+                        return (Class<? extends Packet>) signature.getActualTypeArguments()[0];
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new IllegalStateException("Cannot inspect native packet type " + field, e);
+                }
+            }
+        }
+        throw new IllegalStateException("No native packet class for " + packet);
     }
 
     @Override
@@ -140,10 +145,6 @@ public class JavaPacketTranslatorExistenceTest extends GeyserTestInstance {
                 PACKET_FLOW_CODEC.fieldOf("flow").forGetter(ProtocolFlow::flow)
             ).apply(instance, ProtocolFlow::new)
         );
-
-        private ProtocolState mcplState() {
-            return NetworkUtil.mojangToGeyserProtocolState(protocol);
-        }
 
         private DataResult<ProtocolInfo.DetailsProvider> details() {
             return switch (protocol) {

@@ -33,7 +33,7 @@ import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 public class CartographyInventoryTranslator extends AbstractBlockInventoryTranslator<CartographyContainer> {
     public CartographyInventoryTranslator() {
@@ -86,7 +86,7 @@ public class CartographyInventoryTranslator extends AbstractBlockInventoryTransl
     }
 
     @Override
-    public CartographyContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public CartographyContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new CartographyContainer(session, name, windowId, this.size, containerType);
     }
 

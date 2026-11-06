@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector2f;
 import org.cloudburstmc.protocol.bedrock.data.MovementEffectType;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -33,10 +35,8 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.TooltipOptions;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.OptionalInt;
 
@@ -50,8 +50,8 @@ public class FireworkEntity extends ProjectileEntity {
         super(context);
     }
 
-    public void setShotAtAngle(BooleanEntityMetadata entityMetadata) {
-        this.shotAtAngle = entityMetadata.getPrimitiveValue();
+    public void setShotAtAngle(DataValue<Boolean> entityMetadata) {
+        this.shotAtAngle = entityMetadata.value();
     }
 
     @Override
@@ -74,12 +74,12 @@ public class FireworkEntity extends ProjectileEntity {
         moveAbsoluteImmediate(position.add(motion), yaw, pitch, yaw, false, false);
     }
 
-    public void setFireworkItem(EntityMetadata<ItemStack, ?> entityMetadata) {
-        ItemStack item = entityMetadata.getValue();
+    public void setFireworkItem(DataValue<ItemStack> entityMetadata) {
+        ItemStack item = entityMetadata.value();
         if (item == null) {
             return;
         }
-        DataComponents components = item.getDataComponentsPatch();
+        GeyserDataComponents components = org.geysermc.geyser.vanilla.protocol.GeyserDataComponents.from(item.getComponentsPatch());
         if (components == null) {
             return;
         }
@@ -93,10 +93,10 @@ public class FireworkEntity extends ProjectileEntity {
         metadata.put(EntityDataTypes.DISPLAY_FIREWORK, builder.build());
     }
 
-    public void setPlayerGliding(EntityMetadata<OptionalInt, ?> entityMetadata) {
+    public void setPlayerGliding(DataValue<OptionalInt> entityMetadata) {
         session.getAttachedFireworkRockets().remove(this.geyserId);
 
-        OptionalInt optional = entityMetadata.getValue();
+        OptionalInt optional = entityMetadata.value();
         this.attachedToEntity = optional.isPresent();
         if (optional.isPresent() && optional.getAsInt() == session.getPlayerEntity().getEntityId()) {
             // If we don't send this, the bedrock client will always stop boosting after 20 ticks

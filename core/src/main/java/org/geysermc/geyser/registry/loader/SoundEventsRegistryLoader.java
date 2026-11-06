@@ -34,43 +34,43 @@ import org.geysermc.geyser.translator.level.event.LevelEventTranslator;
 import org.geysermc.geyser.translator.level.event.PlaySoundEventTranslator;
 import org.geysermc.geyser.translator.level.event.SoundEventEventTranslator;
 import org.geysermc.geyser.translator.level.event.SoundLevelEventTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEvent;
+import net.minecraft.world.level.block.LevelEvent;
 
 import java.util.Map;
 
 /**
  * Loads sound effects from the given resource path.
  */
-public class SoundEventsRegistryLoader extends EffectRegistryLoader<Map<LevelEvent, LevelEventTranslator>> {
+public class SoundEventsRegistryLoader extends EffectRegistryLoader<Map<Integer, LevelEventTranslator>> {
 
     @Override
-    public Map<LevelEvent, LevelEventTranslator> load(String input) {
+    public Map<Integer, LevelEventTranslator> load(String input) {
         this.loadFile(input);
 
         JsonObject effectsJson = this.loadFile(input);
-        Map<LevelEvent, LevelEventTranslator> soundEffects = new Object2ObjectOpenHashMap<>();
+        Map<Integer, LevelEventTranslator> soundEffects = new Object2ObjectOpenHashMap<>();
         for (Map.Entry<String, JsonElement> entry : effectsJson.entrySet()) {
             JsonObject node = entry.getValue().getAsJsonObject();
             try {
                 String type = node.get("type").getAsString();
-                LevelEvent javaEffect = null;
+                Integer javaEffect = null;
                 LevelEventTranslator transformer = null;
                 switch (type) {
                     case "soundLevel" -> {
-                        javaEffect = org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEventType.valueOf(entry.getKey());
+                        javaEffect = LevelEvent.class.getField(entry.getKey()).getInt(null);
                         LevelEventType levelEventType = org.cloudburstmc.protocol.bedrock.data.LevelEvent.valueOf(node.get("name").getAsString());
                         int data = node.has("data") ? node.get("data").getAsInt() : 0;
                         transformer = new SoundLevelEventTranslator(levelEventType, data);
                     }
                     case "soundEvent" -> {
-                        javaEffect = org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEventType.valueOf(entry.getKey());
+                        javaEffect = LevelEvent.class.getField(entry.getKey()).getInt(null);
                         org.cloudburstmc.protocol.bedrock.data.SoundEvent soundEvent = org.cloudburstmc.protocol.bedrock.data.SoundEvent.valueOf(node.get("name").getAsString());
                         String identifier = node.has("identifier") ? node.get("identifier").getAsString() : "";
                         int extraData = node.has("extraData") ? node.get("extraData").getAsInt() : -1;
                         transformer = new SoundEventEventTranslator(soundEvent, identifier, extraData);
                     }
                     case "playSound" -> {
-                        javaEffect = org.geysermc.mcprotocollib.protocol.data.game.level.event.LevelEventType.valueOf(entry.getKey());
+                        javaEffect = LevelEvent.class.getField(entry.getKey()).getInt(null);
                         String name = node.get("name").getAsString();
                         float volume = node.has("volume") ? node.get("volume").getAsFloat() : 1.0f;
                         boolean pitchSub = node.has("pitch_sub") && node.get("pitch_sub").getAsBoolean();

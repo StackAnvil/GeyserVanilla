@@ -35,10 +35,9 @@ import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.ClientCommand;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundGameRuleValuesPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundSetGameRulePacket;
+import net.minecraft.network.protocol.game.ClientboundGameRuleValuesPacket;
+import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundSetGameRulePacket;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -64,7 +63,7 @@ public class GameRuleHandler {
                 showWaitingForm();
             }
         }, 500, TimeUnit.MILLISECONDS);
-        session.sendDownstreamGamePacket(new ServerboundClientCommandPacket(ClientCommand.REQUEST_GAMERULE_VALUES));
+        session.sendDownstreamGamePacket(new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.REQUEST_GAMERULE_VALUES));
     }
 
     public void onGamerulesReceived(ClientboundGameRuleValuesPacket packet) {
@@ -72,8 +71,8 @@ public class GameRuleHandler {
             state = State.SHOWN;
 
             Map<GameRuleCategory, Map<GameRule<?>, String>> values = new Object2ObjectArrayMap<>();
-            for (Map.Entry<Key, String> entry : packet.getValues().entrySet()) {
-                GameRule<?> gameRule = Registries.GAME_RULES.get(entry.getKey());
+            for (var entry : packet.values().entrySet()) {
+                GameRule<?> gameRule = Registries.GAME_RULES.get(org.geysermc.geyser.util.MinecraftKey.vanillaToKey(entry.getKey().identifier()));
                 if (gameRule == null) {
                     GeyserImpl.getInstance().getLogger().debug("Unknown gamerule: " + entry.getKey());
                     continue;
@@ -84,7 +83,7 @@ public class GameRuleHandler {
             CustomForm.Builder builder = CustomForm.builder();
             builder.title(MessageTranslator.convertMessage(EDIT_TITLE, session.locale()));
 
-            Map<GameRule<?>, String> ordered = new Object2ObjectArrayMap<>(packet.getValues().size());
+            Map<GameRule<?>, String> ordered = new Object2ObjectArrayMap<>(packet.values().size());
             values.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey(Comparator.comparing(GameRuleCategory::id)))
@@ -106,7 +105,9 @@ public class GameRuleHandler {
                     handleUpdate(entry.getKey(), entry.getValue(), result.next(), responses);
                 }
                 if (session.getOpPermissionLevel() >= 2 && !responses.isEmpty()) {
-                    session.sendDownstreamGamePacket(new ServerboundSetGameRulePacket(responses));
+                    session.sendDownstreamGamePacket(new ServerboundSetGameRulePacket(responses.entrySet().stream().map(entry -> new ServerboundSetGameRulePacket.Entry(
+                        net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.GAME_RULE,
+                            org.geysermc.geyser.util.MinecraftKey.keyToVanilla(entry.getKey())), entry.getValue())).toList()));
                 }
                 state = State.NOT_REQUESTED;
             });

@@ -65,6 +65,7 @@ public class GeyserMockContextScoreboard {
     private static void createSessionSpy(GeyserMockContext context) {
         // GeyserSession has so many dependencies, it's easier to just mock it
         var session = context.mock(GeyserSession.class);
+        when(session.vanillaRegistries()).thenReturn(org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries());
 
         when(session.getGeyser()).thenReturn(context.mockOrSpy(GeyserImpl.class));
 

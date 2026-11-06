@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -38,9 +40,7 @@ import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class PandaEntity extends AnimalEntity {
     private Gene mainGene = Gene.NORMAL;
@@ -50,8 +50,8 @@ public class PandaEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setEatingCounter(IntEntityMetadata entityMetadata) {
-        int count = entityMetadata.getPrimitiveValue();
+    public void setEatingCounter(DataValue<Integer> entityMetadata) {
+        int count = entityMetadata.value();
         setFlag(EntityFlag.EATING, count > 0);
         metadata.put(EntityDataTypes.EATING_COUNTER, count);
         if (count != 0) {
@@ -65,18 +65,18 @@ public class PandaEntity extends AnimalEntity {
         }
     }
 
-    public void setMainGene(ByteEntityMetadata entityMetadata) {
-        mainGene = Gene.fromId(entityMetadata.getPrimitiveValue());
+    public void setMainGene(DataValue<Byte> entityMetadata) {
+        mainGene = Gene.fromId(entityMetadata.value());
         updateAppearance();
     }
 
-    public void setHiddenGene(ByteEntityMetadata entityMetadata) {
-        hiddenGene = Gene.fromId(entityMetadata.getPrimitiveValue());
+    public void setHiddenGene(DataValue<Byte> entityMetadata) {
+        hiddenGene = Gene.fromId(entityMetadata.value());
         updateAppearance();
     }
 
-    public void setPandaFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setPandaFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.SNEEZING, (xd & 0x02) == 0x02);
         setFlag(EntityFlag.ROLLING, (xd & 0x04) == 0x04);
         setFlag(EntityFlag.SITTING, (xd & 0x08) == 0x08);
@@ -94,7 +94,7 @@ public class PandaEntity extends AnimalEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (mainGene == Gene.WORRIED && session.isThunder()) {
             return InteractiveTag.NONE;
         }
@@ -103,7 +103,7 @@ public class PandaEntity extends AnimalEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (mainGene == Gene.WORRIED && session.isThunder()) {
             // Huh!
             return InteractionResult.PASS;

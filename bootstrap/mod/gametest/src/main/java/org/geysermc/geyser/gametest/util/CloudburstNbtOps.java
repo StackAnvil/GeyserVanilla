@@ -34,7 +34,7 @@ import org.cloudburstmc.nbt.NbtList;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.nbt.NbtMapBuilder;
 import org.cloudburstmc.nbt.NbtType;
-import org.geysermc.adventure.text.serializer.nbt.HeterogeneousNbtList;
+import org.geysermc.geyser.util.MinecraftNbt;
 import org.jspecify.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -138,11 +138,10 @@ public class CloudburstNbtOps implements DynamicOps<Object> {
             return DataResult.success(new NbtList(type, value));
         }
         if (list instanceof NbtList<?> nbtList) {
-            List<Object> unwrapped = HeterogeneousNbtList.tryUnwrap(nbtList);
-            HeterogeneousNbtList newList = new HeterogeneousNbtList();
-            unwrapped.forEach(newList::add);
+            List<Object> unwrapped = MinecraftNbt.unwrapList(nbtList);
+            var newList = new java.util.ArrayList<>(unwrapped);
             newList.add(value);
-            return DataResult.success(newList.build());
+            return DataResult.success(MinecraftNbt.toCloudburst(MinecraftNbt.fromCloudburst(newList)));
         }
         return DataResult.error(() -> "mergeToList was not called with a list: " + list);
     }
@@ -156,7 +155,7 @@ public class CloudburstNbtOps implements DynamicOps<Object> {
             if (values.isEmpty()) {
                 return DataResult.success(emptyList());
             }
-            return DataResult.success(HeterogeneousNbtList.of(values.toArray(Object[]::new)));
+            return DataResult.success(MinecraftNbt.toCloudburst(MinecraftNbt.fromCloudburst(values)));
         }
         if (list instanceof NbtList<?> nbtList) {
             if (values.isEmpty()) {
@@ -165,11 +164,10 @@ public class CloudburstNbtOps implements DynamicOps<Object> {
             if (nbtList.isEmpty()) {
                 return DataResult.success(new NbtList(NbtType.byClass(values.getFirst().getClass()), values));
             }
-            List<Object> unwrapped = HeterogeneousNbtList.tryUnwrap(nbtList);
-            HeterogeneousNbtList newList = new HeterogeneousNbtList();
-            unwrapped.forEach(newList::add);
-            values.forEach(newList::add);
-            return DataResult.success(newList.build());
+            List<Object> unwrapped = MinecraftNbt.unwrapList(nbtList);
+            var newList = new java.util.ArrayList<>(unwrapped);
+            newList.addAll(values);
+            return DataResult.success(MinecraftNbt.toCloudburst(MinecraftNbt.fromCloudburst(newList)));
         }
         return DataResult.error(() -> "mergeToList was not called with a list: " + list);
     }
@@ -219,7 +217,7 @@ public class CloudburstNbtOps implements DynamicOps<Object> {
     @SuppressWarnings("rawtypes")
     public DataResult<Stream<Object>> getStream(Object input) {
         if (input instanceof NbtList<?> list) {
-            return DataResult.success(HeterogeneousNbtList.tryUnwrap(list).stream());
+            return DataResult.success(MinecraftNbt.unwrapList(list).stream());
         }
         if (input instanceof int[] ints) {
             return DataResult.success(Arrays.stream(ints).mapToObj(Integer::valueOf));
@@ -264,8 +262,7 @@ public class CloudburstNbtOps implements DynamicOps<Object> {
 
     @Override
     public Object createList(Stream<Object> input) {
-        return input.map(CloudburstNbtOps::replaceNullRepresentativeWithNull)
-            .collect(HeterogeneousNbtList.collector());
+        return MinecraftNbt.toCloudburst(MinecraftNbt.fromCloudburst(input.map(CloudburstNbtOps::replaceNullRepresentativeWithNull).toList()));
     }
 
     @Override

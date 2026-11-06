@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.session.cache;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Data;
 import lombok.Getter;
@@ -43,9 +45,7 @@ import org.geysermc.geyser.level.block.type.WallSkullBlock;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.registry.type.CustomSkull;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.auth.texture.Texture;
-import org.geysermc.mcprotocollib.auth.texture.TextureType;
+import com.mojang.authlib.GameProfile;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,15 +83,15 @@ public class SkullCache {
     }
 
     public @Nullable Skull putSkull(Vector3i position, GameProfile resolved, BlockState blockState) {
-        Texture texture;
+        MinecraftProfileTexture texture;
         try {
-            texture = resolved.getTexture(TextureType.SKIN, false);
+            texture = org.geysermc.geyser.vanilla.protocol.VanillaProfiles.textures(resolved).get(MinecraftProfileTexture.Type.SKIN);
         } catch (IllegalStateException e) {
-            session.getGeyser().getLogger().debug("Player skull with invalid skin found at " + position + " with texture payload " + resolved.getProperty("textures"));
+            session.getGeyser().getLogger().debug("Player skull with invalid skin found at " + position + " with texture payload " + resolved.properties().get("textures"));
             return null;
         }
         if (texture != null) {
-            return putSkull(position, resolved.getId(), texture.getURL(), texture.getHash(), blockState);
+            return putSkull(position, resolved.id(), texture.getUrl(), texture.getHash(), blockState);
         }
         return null;
     }

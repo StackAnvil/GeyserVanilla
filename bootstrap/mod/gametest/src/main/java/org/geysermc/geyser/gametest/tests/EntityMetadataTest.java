@@ -91,7 +91,7 @@ public class EntityMetadataTest extends GeyserTestInstance {
                     }
 
                     int expectedId = EntityDataSerializers.getSerializedId(dataItems[i].getAccessor().serializer());
-                    int geyserId = translator.acceptedType().getId();
+                    int geyserId = EntityDataSerializers.getSerializedId(translator.acceptedType());
                     helper.assertValueEqual(geyserId, expectedId, "serializer for " + entityType + " at metadata index " + i + " ("
                         + SynchedEntityDataDebugger.findNameOfSerializer(dataItems[i].getAccessor().serializer()) + ")");
                 }

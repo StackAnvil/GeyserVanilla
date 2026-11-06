@@ -25,16 +25,17 @@
 
 package org.geysermc.geyser.entity.type.living.monster.cubemob;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.AgeableEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class AbstractCubeEntity extends AgeableEntity {
     public AbstractCubeEntity(EntitySpawnContext context) {
         super(context);
     }
 
-    public void setCubeScale(IntEntityMetadata entityMetadata) {
-        setScale(0.10f + entityMetadata.getPrimitiveValue());
+    public void setCubeScale(DataValue<Integer> entityMetadata) {
+        setScale(0.10f + entityMetadata.value());
     }
 }

@@ -28,13 +28,13 @@ package org.geysermc.geyser.translator.protocol.java;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundServerLinksPacket;
+import net.minecraft.network.protocol.common.ClientboundServerLinksPacket;
 
 @Translator(packet = ClientboundServerLinksPacket.class)
 public class JavaServerLinksTranslator extends PacketTranslator<ClientboundServerLinksPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundServerLinksPacket packet) {
-        session.setServerLinks(packet.getLinks());
+        session.setServerLinks(packet.links());
     }
 }

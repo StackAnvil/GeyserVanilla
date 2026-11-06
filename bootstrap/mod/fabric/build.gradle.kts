@@ -36,7 +36,6 @@ dependencies {
     shadowBundle(libs.raknet)
     shadowBundle(libs.nethernet.transport)
     shadowBundle(libs.nethernet.signaling)
-    shadowBundle(libs.mcprotocollib)
 
     // Shade + relocate configurate as we're using a fork
     shadowBundle(libs.configurate.`interface`)

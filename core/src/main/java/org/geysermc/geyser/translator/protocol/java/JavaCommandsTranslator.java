@@ -55,17 +55,21 @@ import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.command.CommandNode;
-import org.geysermc.mcprotocollib.protocol.data.game.command.CommandParser;
-import org.geysermc.mcprotocollib.protocol.data.game.command.properties.ResourceProperties;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundCommandsPacket;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.network.protocol.game.ClientboundCommandsPacket;
+
+import com.mojang.brigadier.tree.CommandNode;
+import com.mojang.brigadier.tree.ArgumentCommandNode;
+import org.geysermc.geyser.vanilla.protocol.VanillaCommands;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Objects;
+import org.geysermc.geyser.util.MinecraftKey;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -82,7 +86,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
      */
     private static final Supplier<String[]> ALL_BLOCK_NAMES = Suppliers.memoize(() -> BuiltInJavaRegistries.BLOCK.keys().stream().map(Key::asString).toArray(String[]::new));
     private static final String[] ALL_EFFECT_IDENTIFIERS = EntityUtils.getAllEffectIdentifiers();
-    private static final String[] ATTRIBUTES = AttributeType.Builtin.BUILTIN.values().stream().map(type -> type.getIdentifier().asString()).toList().toArray(new String[0]);
+    private static final String[] ATTRIBUTES = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.keySet().stream().map(Object::toString).toArray(String[]::new);
     private static final String[] ENUM_BOOLEAN = {"true", "false"};
     private static final String[] VALID_COLORS;
     private static final String[] VALID_SCOREBOARD_SLOTS;
@@ -146,34 +150,21 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
         }
 
         CommandRegistry registry = session.getGeyser().commandRegistry();
-        CommandNode[] nodes = packet.getNodes();
+        CommandNode<?> rootNode = VanillaCommands.root(packet, session.vanillaRegistries(), session.getEnabledFeatures());
         List<CommandData> commandData = new ArrayList<>();
-        IntSet commandNodes = new IntOpenHashSet();
         Set<String> knownAliases = new HashSet<>();
         Map<BedrockCommandInfo, Set<String>> commands = new Object2ObjectOpenCustomHashMap<>(PARAM_STRATEGY);
-        Int2ObjectMap<List<CommandNode>> commandArgs = new Int2ObjectOpenHashMap<>();
 
-        // Get the first node, it should be a root node
-        CommandNode rootNode = nodes[packet.getFirstNodeIndex()];
 
         List<String> knownCommands = new ArrayList<>();
         List<String> restrictedCommands = new ArrayList<>();
         // Loop through the root nodes to get all commands
-        for (int nodeIndex : rootNode.getChildIndices()) {
-            CommandNode node = nodes[nodeIndex];
+        for (CommandNode<?> node : rootNode.getChildren()) {
 
             // Make sure we don't have duplicated commands (happens if there is more than 1 root node)
-            if (!commandNodes.add(nodeIndex) || !knownAliases.add(node.getName().toLowerCase(Locale.ROOT))) continue;
+            if (!knownAliases.add(node.getName().toLowerCase(Locale.ROOT))) continue;
 
-            // Get and update the commandArgs list with the found arguments
-            if (node.getChildIndices().length >= 1) {
-                for (int childIndex : node.getChildIndices()) {
-                    commandArgs.computeIfAbsent(nodeIndex, ($) -> new ArrayList<>()).add(nodes[childIndex]);
-                }
-            }
-
-            // Get and parse all params
-            CommandOverloadData[] params = getParams(session, nodes[nodeIndex], nodes);
+            CommandOverloadData[] params = getParams(session, node);
 
             // Insert the alias name into the command list
             String name = node.getName().toLowerCase(Locale.ROOT);
@@ -183,7 +174,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
 
             // Add the command to the command lists
             knownCommands.add(name);
-            if (node.isAllowsRestricted()) { // Name is a bit confusing - this is what we want
+            if (VanillaCommands.restricted(node)) { // Name is a bit confusing - this is what we want
                 restrictedCommands.add(name);
             }
         }
@@ -272,21 +263,19 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
      *
      * @param session the session
      * @param commandNode The command to build the parameters for
-     * @param allNodes    Every command node
      * @return An array of parameter option arrays
      */
-    private static CommandOverloadData[] getParams(GeyserSession session, CommandNode commandNode, CommandNode[] allNodes) {
+    private static CommandOverloadData[] getParams(GeyserSession session, CommandNode<?> commandNode) {
         // Check if the command is an alias and redirect it
-        if (commandNode.getRedirectIndex().isPresent()) {
-            int redirectIndex = commandNode.getRedirectIndex().getAsInt();
-            GeyserImpl.getInstance().getLogger().debug("Redirecting command " + commandNode.getName() + " to " + allNodes[redirectIndex].getName());
-            commandNode = allNodes[redirectIndex];
+        if (commandNode.getRedirect() != null) {
+            GeyserImpl.getInstance().getLogger().debug("Redirecting command " + commandNode.getName() + " to " + commandNode.getRedirect().getName());
+            commandNode = commandNode.getRedirect();
         }
 
-        if (commandNode.getChildIndices().length >= 1) {
+        if (!commandNode.getChildren().isEmpty()) {
             // Create the root param node and build all the children
             ParamInfo rootParam = new ParamInfo(commandNode, null);
-            rootParam.buildChildren(new CommandBuilderContext(session), allNodes);
+            rootParam.buildChildren(new CommandBuilderContext(session), Collections.newSetFromMap(new IdentityHashMap<>()));
 
             List<CommandOverloadData> treeData = rootParam.getTree();
 
@@ -303,31 +292,30 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
      * @param node Command type to convert
      * @return Bedrock parameter data type
      */
-    private static Object mapCommandType(CommandBuilderContext context, CommandNode node) {
-        CommandParser parser = node.getParser();
-        if (parser == null) {
+    private static Object mapCommandType(CommandBuilderContext context, CommandNode<?> node) {
+        if (!(node instanceof ArgumentCommandNode<?, ?> argumentNode)) {
             return CommandParam.STRING;
         }
-
-        return switch (parser) {
-            case FLOAT, ROTATION, DOUBLE -> CommandParam.FLOAT;
-            case INTEGER, LONG -> CommandParam.INT;
-            case ENTITY, GAME_PROFILE -> CommandParam.TARGET;
-            case BLOCK_POS -> CommandParam.BLOCK_POSITION;
-            case COLUMN_POS, VEC3 -> CommandParam.POSITION;
-            case MESSAGE -> CommandParam.MESSAGE;
-            case NBT_COMPOUND_TAG, NBT_TAG, NBT_PATH -> CommandParam.JSON; //TODO NBT was removed
-            case RESOURCE_LOCATION, FUNCTION -> CommandParam.FILE_PATH;
-            case BOOL -> ENUM_BOOLEAN;
-            case OPERATION -> CommandParam.OPERATOR; // ">=", "==", etc
-            case BLOCK_STATE -> ALL_BLOCK_NAMES.get();
-            case ITEM_STACK -> context.getItemNames();
-            case TEAM_COLOR -> VALID_COLORS;
-            case SCOREBOARD_SLOT -> VALID_SCOREBOARD_SLOTS;
-            case RESOURCE -> handleResource(context, ((ResourceProperties) node.getProperties()).getRegistryKey(), false);
-            case RESOURCE_OR_TAG -> handleResource(context, ((ResourceProperties) node.getProperties()).getRegistryKey(), true);
-            case DIMENSION -> context.session.getLevels();
-            case TEAM -> context.getTeams(); // Note: as of Java 1.19.3, objectives are currently parsed from the server
+        var argument = VanillaCommands.describe(argumentNode.getType());
+        return switch (argument.type().toString()) {
+            case "brigadier:float", "minecraft:rotation", "brigadier:double" -> CommandParam.FLOAT;
+            case "brigadier:integer", "brigadier:long" -> CommandParam.INT;
+            case "minecraft:entity", "minecraft:game_profile" -> CommandParam.TARGET;
+            case "minecraft:block_pos" -> CommandParam.BLOCK_POSITION;
+            case "minecraft:column_pos", "minecraft:vec3" -> CommandParam.POSITION;
+            case "minecraft:message" -> CommandParam.MESSAGE;
+            case "minecraft:nbt_compound_tag", "minecraft:nbt_tag", "minecraft:nbt_path" -> CommandParam.JSON;
+            case "minecraft:resource_location", "minecraft:function" -> CommandParam.FILE_PATH;
+            case "brigadier:bool" -> ENUM_BOOLEAN;
+            case "minecraft:operation" -> CommandParam.OPERATOR;
+            case "minecraft:block_state" -> ALL_BLOCK_NAMES.get();
+            case "minecraft:item_stack" -> context.getItemNames();
+            case "minecraft:team_color" -> VALID_COLORS;
+            case "minecraft:scoreboard_slot" -> VALID_SCOREBOARD_SLOTS;
+            case "minecraft:resource", "minecraft:resource_key" -> handleResource(context, MinecraftKey.key(argument.registry().orElseThrow().toString()), false);
+            case "minecraft:resource_or_tag", "minecraft:resource_or_tag_key" -> handleResource(context, MinecraftKey.key(argument.registry().orElseThrow().toString()), true);
+            case "minecraft:dimension" -> context.session.getLevels();
+            case "minecraft:team" -> context.getTeams();
             default -> CommandParam.STRING;
         };
     }
@@ -426,7 +414,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
     @Getter
     @ToString
     private static class ParamInfo {
-        private final CommandNode paramNode;
+        private final CommandNode<?> paramNode;
         private final CommandParamData paramData;
         private final List<ParamInfo> children;
 
@@ -436,7 +424,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
          * @param paramNode CommandNode the parameter is for
          * @param paramData The existing parameters for the command
          */
-        public ParamInfo(CommandNode paramNode, CommandParamData paramData) {
+        public ParamInfo(CommandNode<?> paramNode, CommandParamData paramData) {
             this.paramNode = paramNode;
             this.paramData = paramData;
             this.children = new ArrayList<>();
@@ -446,23 +434,23 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
          * Build the array of all the child parameters (recursive)
          *
          * @param context the session's command builder context
-         * @param allNodes Every command node
+         * @param path nodes already visited on this path
          */
-        public void buildChildren(CommandBuilderContext context, CommandNode[] allNodes) {
-            for (int paramID : paramNode.getChildIndices()) {
-                CommandNode paramNode = allNodes[paramID];
+        public void buildChildren(CommandBuilderContext context, Set<CommandNode<?>> path) {
+            path.add(paramNode);
+            for (CommandNode<?> paramNode : paramNode.getChildren()) {
 
-                if (paramNode == this.paramNode) {
+                if (path.contains(paramNode)) {
                     // Fixes a StackOverflowError when an argument has itself as a child
                     continue;
                 }
 
-                if (paramNode.getParser() == null) {
+                if (!(paramNode instanceof ArgumentCommandNode<?, ?>)) {
                     boolean foundCompatible = false;
                     for (int i = 0; i < children.size(); i++) {
                         ParamInfo enumParamInfo = children.get(i);
                         // Check to make sure all descending nodes of this command are compatible - otherwise, create a new overload
-                        if (isCompatible(allNodes, enumParamInfo.getParamNode(), paramNode)) {
+                        if (isCompatible(enumParamInfo.getParamNode(), paramNode, new IdentityHashMap<>())) {
                             foundCompatible = true;
                             // TODO: Check this
                             // Extend the current list of enum values
@@ -476,7 +464,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
                             CommandEnumData enumData = new CommandEnumData(enumParamInfo.getParamData().getEnumData().getName(), values, false);
                             CommandParamData commandParamData = new CommandParamData();
                             commandParamData.setName(enumParamInfo.getParamData().getName());
-                            commandParamData.setOptional(this.paramNode.isExecutable());
+                            commandParamData.setOptional((this.paramNode.getCommand() != null));
                             commandParamData.setEnumData(enumData);
 
                             children.set(i, new ParamInfo(enumParamInfo.getParamNode(), commandParamData));
@@ -495,7 +483,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
                         // Therefore, any children of the parameter must simply be optional.
                         CommandParamData commandParamData = new CommandParamData();
                         commandParamData.setName(paramNode.getName());
-                        commandParamData.setOptional(this.paramNode.isExecutable());
+                        commandParamData.setOptional((this.paramNode.getCommand() != null));
                         commandParamData.setEnumData(enumData);
 
                         children.add(new ParamInfo(paramNode, commandParamData));
@@ -505,7 +493,7 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
                     Object mappedType = mapCommandType(context, paramNode);
                     CommandEnumData enumData = null;
                     CommandParam type = null;
-                    boolean optional = this.paramNode.isExecutable();
+                    boolean optional = (this.paramNode.getCommand() != null);
                     if (mappedType instanceof CommandEnumData) {
                         // Likely to specify isSoft, to be possibly updated later.
                         enumData = (CommandEnumData) mappedType;
@@ -539,19 +527,17 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
 
             // Recursively build all child options
             for (ParamInfo child : children) {
-                child.buildChildren(context, allNodes);
+                child.buildChildren(context, path);
             }
+            path.remove(paramNode);
         }
 
         /**
          * Mitigates <a href="https://github.com/GeyserMC/Geyser/issues/3411">issue 3411</a>. Not a perfect solution.
          */
-        private static String getEnumDataName(CommandNode node) {
-            if (node.getProperties() instanceof ResourceProperties properties) {
-                Key registryKey = properties.getRegistryKey();
-                return registryKey.value();
-            }
-            return node.getParser().name();
+        private static String getEnumDataName(CommandNode<?> node) {
+            var argument = VanillaCommands.describe(((ArgumentCommandNode<?, ?>) node).getType());
+            return argument.registry().map(net.minecraft.resources.Identifier::getPath).orElse(argument.type().getPath());
         }
 
         /**
@@ -589,27 +575,30 @@ public class JavaCommandsTranslator extends PacketTranslator<ClientboundCommands
          *
          * @return if these two can be merged into one overload.
          */
-        private boolean isCompatible(CommandNode[] allNodes, CommandNode a, CommandNode b) {
+        private boolean isCompatible(CommandNode<?> a, CommandNode<?> b, Map<CommandNode<?>, Set<CommandNode<?>>> visited) {
             if (a == b) return true;
-            if (a.getParser() != b.getParser()) return false;
-            if (a.getChildIndices().length != b.getChildIndices().length) return false;
+            var aArgument = a instanceof ArgumentCommandNode<?, ?> argument ? VanillaCommands.describe(argument.getType()) : null;
+            var bArgument = b instanceof ArgumentCommandNode<?, ?> argument ? VanillaCommands.describe(argument.getType()) : null;
+            if (!Objects.equals(aArgument, bArgument)) return false;
+            if (a.getChildren().size() != b.getChildren().size()) return false;
+            if ((a.getCommand() != null) != (b.getCommand() != null)) return false;
+            if (!visited.computeIfAbsent(a, ignored -> Collections.newSetFromMap(new IdentityHashMap<>())).add(b)) return true;
 
-            for (int i = 0; i < a.getChildIndices().length; i++) {
-                boolean hasSimilarity = false;
-                CommandNode a1 = allNodes[a.getChildIndices()[i]];
-                // Search "b" until we find a child that matches this one
-                for (int j = 0; j < b.getChildIndices().length; j++) {
-                    if (isCompatible(allNodes, a1, allNodes[b.getChildIndices()[j]])) {
-                        hasSimilarity = true;
-                        break;
+            try {
+                for (CommandNode<?> aChild : a.getChildren()) {
+                    boolean hasSimilarity = false;
+                    for (CommandNode<?> bChild : b.getChildren()) {
+                        if (isCompatible(aChild, bChild, visited)) {
+                            hasSimilarity = true;
+                            break;
+                        }
                     }
+                    if (!hasSimilarity) return false;
                 }
-
-                if (!hasSimilarity) {
-                    return false;
-                }
+                return true;
+            } finally {
+                visited.get(a).remove(b);
             }
-            return true;
         }
 
         /**

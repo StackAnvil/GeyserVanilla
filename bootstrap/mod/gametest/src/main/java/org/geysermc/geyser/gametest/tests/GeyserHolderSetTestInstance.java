@@ -47,7 +47,7 @@ import org.geysermc.geyser.registry.java.JavaRegistryKey;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.cache.tags.GeyserHolderSet;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
+import org.geysermc.geyser.registry.java.JavaRegistryReference;
 
 import java.util.List;
 
@@ -94,15 +94,15 @@ public class GeyserHolderSetTestInstance extends GeyserTestInstance {
         helper.succeed();
     }
 
-    private <Geyser> void assertResolvedSetIsSame(GameTestHelper helper, RegistryAccess registries, List<Holder<Geyser>> geyserHolders) {
+    private <Geyser> void assertResolvedSetIsSame(GameTestHelper helper, RegistryAccess registries, List<JavaRegistryReference<Geyser>> geyserHolders) {
         helper.assertValueEqual(geyserHolders.size(), set.set.size(), "size of HolderSet");
 
         for (int i = 0; i < geyserHolders.size(); i++) {
-            Holder<Geyser> geyserHolder = geyserHolders.get(i);
+            JavaRegistryReference<Geyser> geyserHolder = geyserHolders.get(i);
             boolean mojangIsReference = set.set.get(i).unwrapKey().isPresent();
-            if (geyserHolder.isId()) {
+            if (geyserHolder instanceof JavaRegistryReference.ById<?>) {
                 helper.assertTrue(mojangIsReference, "Mojang Holder must be a reference if Geyser holder has an ID");
-                helper.assertValueEqual(geyserHolder.id(), set.id(registries, i), "network ID of holder " + i);
+                helper.assertValueEqual(geyserHolder.networkId(), set.id(registries, i), "network ID of holder " + i);
             } else {
                 // We can't match exact values here since they can be completely different, so just confirm they're both custom holders
                 helper.assertFalse(mojangIsReference, "Mojang Holder must not be a reference if Geyser holder is custom");

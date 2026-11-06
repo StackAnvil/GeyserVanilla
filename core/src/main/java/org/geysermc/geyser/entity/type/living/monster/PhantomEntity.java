@@ -25,17 +25,18 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.FlyingEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class PhantomEntity extends FlyingEntity {
     public PhantomEntity(EntitySpawnContext context) {
         super(context);
     }
 
-    public void setPhantomScale(IntEntityMetadata entityMetadata) {
-        int size = entityMetadata.getPrimitiveValue();
+    public void setPhantomScale(DataValue<Integer> entityMetadata) {
+        int size = entityMetadata.value();
         float modelScale = 1f + 0.15f * size;
         float boundsScale = (1f + (0.2f * size) / javaDefinition.width()) / modelScale;
 

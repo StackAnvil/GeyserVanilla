@@ -33,22 +33,20 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.DimensionUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Animation;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAnimatePacket;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 
 import java.util.Optional;
+
+import static net.minecraft.network.protocol.game.ClientboundAnimatePacket.*;
 
 @Translator(packet = ClientboundAnimatePacket.class)
 public class JavaAnimateTranslator extends PacketTranslator<ClientboundAnimatePacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundAnimatePacket packet) {
-        Animation animation = packet.getAnimation();
-        if (animation == null) {
-            return;
-        }
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        int animation = packet.getAction();
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getId());
         if (entity == null) {
             return;
         }

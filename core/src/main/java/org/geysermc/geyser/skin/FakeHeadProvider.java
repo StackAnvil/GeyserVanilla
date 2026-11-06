@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.skin;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -42,10 +44,8 @@ import org.geysermc.geyser.entity.type.LivingEntity;
 import org.geysermc.geyser.entity.type.player.AvatarEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.GeyserLocale;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.auth.texture.Texture;
-import org.geysermc.mcprotocollib.auth.texture.TextureType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -121,12 +121,12 @@ public class FakeHeadProvider {
     }
 
     private static void loadHeadFromProfile(GeyserSession session, AvatarEntity entity, ResolvableProfile original, GameProfile resolved) {
-        Texture skinTexture = SkinManager.getTextureDataFromProfile(resolved, TextureType.SKIN);
+        MinecraftProfileTexture skinTexture = SkinManager.getTextureDataFromProfile(resolved, MinecraftProfileTexture.Type.SKIN);
         if (skinTexture != null) {
             session.getPlayerWithCustomHeads().put(entity.uuid(), original);
             SkinProvider.getExecutorService().execute(() -> {
                 try {
-                    SkinData mergedSkinData = MERGED_SKINS_LOADING_CACHE.get(new FakeHeadEntry(entity.getSkinId(), skinTexture.getURL(), entity, session));
+                    SkinData mergedSkinData = MERGED_SKINS_LOADING_CACHE.get(new FakeHeadEntry(entity.getSkinId(), skinTexture.getUrl(), entity, session));
                     SkinManager.sendSkinPacket(session, entity, mergedSkinData);
                 } catch (ExecutionException e) {
                     GeyserImpl.getInstance().getLogger().error("Couldn't merge skin of " + entity.getUsername() + " with head skin " + resolved, e);

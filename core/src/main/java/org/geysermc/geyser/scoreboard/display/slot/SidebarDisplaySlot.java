@@ -39,7 +39,6 @@ import org.geysermc.geyser.scoreboard.UpdateType;
 import org.geysermc.geyser.scoreboard.display.score.SidebarDisplayScore;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
 
 public final class SidebarDisplaySlot extends DisplaySlot {
     private static final int SCORE_DISPLAY_LIMIT = 15;
@@ -55,7 +54,7 @@ public final class SidebarDisplaySlot extends DisplaySlot {
     /// list which could lead to bugs that are hard to reproduce.
     private final List<SidebarDisplayScore> displayScoresCopy = new ArrayList<>(SCORE_DISPLAY_LIMIT);
 
-    public SidebarDisplaySlot(GeyserSession session, Objective objective, ScoreboardPosition position) {
+    public SidebarDisplaySlot(GeyserSession session, Objective objective, net.minecraft.world.scores.DisplaySlot position) {
         super(session, objective, position);
     }
 

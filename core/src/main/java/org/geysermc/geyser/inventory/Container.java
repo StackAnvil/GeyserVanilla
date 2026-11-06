@@ -31,7 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.inventory.InventoryTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 import org.jetbrains.annotations.Range;
 
 /**
@@ -47,7 +47,7 @@ public class Container extends Inventory {
      */
     private boolean isUsingRealBlock = false;
 
-    public Container(GeyserSession session, String title, int id, int size, @Nullable ContainerType containerType) {
+    public Container(GeyserSession session, String title, int id, int size, @Nullable MenuType<?> containerType) {
         super(session, title, id, size, containerType);
         this.playerInventory = session.getPlayerInventory();
         this.containerSize = this.size + InventoryTranslator.PLAYER_INVENTORY_SIZE;
@@ -107,18 +107,18 @@ public class Container extends Inventory {
      * Color codes prevent the client from cropping the title text for being too long.
      * @return a prefix for the title
      */
-    public static String getIntegratedPackTitlePrefix(@Nullable ContainerType containerType) {
+    public static String getIntegratedPackTitlePrefix(@Nullable MenuType<?> containerType) {
         if (containerType == null) {
             return "";
         }
 
-        return switch (containerType) {
-            case GENERIC_9X1 -> "§z§1§r";
-            case GENERIC_9X2 -> "§z§2§r";
-            case GENERIC_9X3 -> "§z§3§r";
-            case GENERIC_9X4 -> "§z§4§r";
-            case GENERIC_9X5 -> "§z§5§r";
-            case GENERIC_9X6 -> "§z§6§r";
+        return switch (java.util.Objects.requireNonNull(net.minecraft.core.registries.BuiltInRegistries.MENU.getKey(containerType)).getPath()) {
+            case "generic_9x1" -> "§z§1§r";
+            case "generic_9x2" -> "§z§2§r";
+            case "generic_9x3" -> "§z§3§r";
+            case "generic_9x4" -> "§z§4§r";
+            case "generic_9x5" -> "§z§5§r";
+            case "generic_9x6" -> "§z§6§r";
             default -> "";
         };
     }

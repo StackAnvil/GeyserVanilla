@@ -25,21 +25,20 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
-import net.kyori.adventure.key.Key;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundUpdateEnabledFeaturesPacket;
+import net.minecraft.network.protocol.configuration.ClientboundUpdateEnabledFeaturesPacket;
 
-import java.util.Arrays;
 
 @Translator(packet = ClientboundUpdateEnabledFeaturesPacket.class)
 public class JavaUpdateEnabledFeaturesPacket extends PacketTranslator<ClientboundUpdateEnabledFeaturesPacket> {
 
-    private final static Key MINECART_EXPERIMENT = Key.key("minecart_improvements");
 
     @Override
     public void translate(GeyserSession session, ClientboundUpdateEnabledFeaturesPacket packet) {
-        session.setUsingExperimentalMinecartLogic(Arrays.asList(packet.getFeatures()).contains(MINECART_EXPERIMENT));
+        var features = net.minecraft.world.flag.FeatureFlags.REGISTRY.fromNames(packet.features());
+        session.setEnabledFeatures(features);
+        session.setUsingExperimentalMinecartLogic(features.contains(net.minecraft.world.flag.FeatureFlags.MINECART_IMPROVEMENTS));
     }
 }

@@ -50,7 +50,7 @@ import org.geysermc.geyser.api.bedrock.camera.CameraShake;
 import org.geysermc.geyser.api.bedrock.camera.GuiElement;
 import org.geysermc.geyser.input.InputLocksFlag;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import net.minecraft.world.level.GameType;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -316,10 +316,10 @@ public class GeyserCameraData implements CameraData {
      * Deals with hiding hud elements while in spectator.
      *
      * @param currentlySpectator whether the player is currently in spectator mode
-     * @param newGameMode the new GameMode to switch to
+     * @param newGameMode the new GameType to switch to
      */
-    public void handleGameModeChange(boolean currentlySpectator, GameMode newGameMode) {
-        if (newGameMode == GameMode.SPECTATOR) {
+    public void handleGameModeChange(boolean currentlySpectator, GameType newGameMode) {
+        if (newGameMode == GameType.SPECTATOR) {
             if (!currentlySpectator) {
                 hideElement(SPECTATOR_HIDDEN_ELEMENTS);
             }

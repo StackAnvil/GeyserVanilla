@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
@@ -36,8 +38,7 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.level.block.BlockStateValues;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -85,8 +86,8 @@ public class ItemEntity extends ProjectileEntity {
         }
     }
 
-    public void setItem(EntityMetadata<ItemStack, ?> entityMetadata) {
-        ItemData item = ItemTranslator.translateToBedrock(session, entityMetadata.getValue());
+    public void setItem(DataValue<ItemStack> entityMetadata) {
+        ItemData item = ItemTranslator.translateToBedrock(session, entityMetadata.value());
         if (this.item == null) {
             this.item = item;
             spawnEntity();

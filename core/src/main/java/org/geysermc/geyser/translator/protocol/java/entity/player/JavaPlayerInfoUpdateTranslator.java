@@ -36,10 +36,10 @@ import org.geysermc.geyser.skin.SkinManager;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.PlayerListUtils;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntry;
-import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntryAction;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,11 +50,11 @@ import java.util.UUID;
 public class JavaPlayerInfoUpdateTranslator extends PacketTranslator<ClientboundPlayerInfoUpdatePacket> {
     @Override
     public void translate(GeyserSession session, ClientboundPlayerInfoUpdatePacket packet) {
-        Set<PlayerListEntryAction> actions = packet.getActions();
+        Set<Action> actions = packet.actions();
 
-        if (actions.contains(PlayerListEntryAction.ADD_PLAYER)) {
-            for (PlayerListEntry entry : packet.getEntries()) {
-                GameProfile profile = entry.getProfile();
+        if (actions.contains(Action.ADD_PLAYER)) {
+            for (Entry entry : packet.entries()) {
+                GameProfile profile = entry.profile();
 
                 if (profile == null) {
                     // Should never be null for the ADD_PLAYER case
@@ -63,14 +63,14 @@ public class JavaPlayerInfoUpdateTranslator extends PacketTranslator<Clientbound
                     continue;
                 }
 
-                UUID id = entry.getProfileId();
+                UUID id = entry.profileId();
                 boolean self = id.equals(session.getPlayerEntity().uuid());
 
                 PlayerEntity playerEntity;
                 if (self) {
                     // Entity is ourself!
                     playerEntity = session.getPlayerEntity();
-                    playerEntity.setUsername(profile.getName());
+                    playerEntity.setUsername(profile.name());
                     playerEntity.setSkin(profile, () -> GeyserImpl.getInstance().getLogger().debug("Loaded Local Bedrock Java Skin Data for " + session.getClientData().getUsername()));
                 } else {
                     // It's a new player
@@ -80,19 +80,19 @@ public class JavaPlayerInfoUpdateTranslator extends PacketTranslator<Clientbound
             }
         }
 
-        if (actions.contains(PlayerListEntryAction.UPDATE_LISTED)) {
+        if (actions.contains(Action.UPDATE_LISTED)) {
             // TODO This could probably be optimised for 26.40, each entry has the action now, so we can send one packet!
             List<PlayerListPacket.Entry> toAdd = new ArrayList<>();
             List<PlayerListPacket.Entry> toRemove = new ArrayList<>();
 
-            for (PlayerListEntry entry : packet.getEntries()) {
-                PlayerEntity entity = session.getEntityCache().getPlayerEntity(entry.getProfileId());
+            for (Entry entry : packet.entries()) {
+                PlayerEntity entity = session.getEntityCache().getPlayerEntity(entry.profileId());
                 if (entity == null) {
-                    session.getGeyser().getLogger().debug("Ignoring player info update for " + entry.getProfileId());
+                    session.getGeyser().getLogger().debug("Ignoring player info update for " + entry.profileId());
                     continue;
                 }
 
-                if (entry.isListed()) {
+                if (entry.listed()) {
                     if (!PlayerListUtils.shouldLimitPlayerListEntries(session)) {
                         PlayerListPacket.Entry playerListEntry = SkinManager.buildEntryFromCachedSkin(session, entity);
                         playerListEntry.setAction(PlayerListPacket.Action.ADD);
@@ -106,7 +106,7 @@ public class JavaPlayerInfoUpdateTranslator extends PacketTranslator<Clientbound
                         toRemove.add(playerListEntry);
                     }
                 }
-                entity.setListed(entry.isListed());
+                entity.setListed(entry.listed());
             }
 
             if (!toAdd.isEmpty()) {

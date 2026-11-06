@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.inventory.item.Potion;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class ArrowEntity extends AbstractArrowEntity {
 
@@ -36,8 +37,8 @@ public class ArrowEntity extends AbstractArrowEntity {
         super(context);
     }
 
-    public void setPotionEffectColor(IntEntityMetadata entityMetadata) {
-        int potionColor = entityMetadata.getPrimitiveValue();
+    public void setPotionEffectColor(DataValue<Integer> entityMetadata) {
+        int potionColor = entityMetadata.value();
         // -1 means no color
         if (potionColor == -1) {
             metadata.put(EntityDataTypes.CUSTOM_DISPLAY, (byte) 0);

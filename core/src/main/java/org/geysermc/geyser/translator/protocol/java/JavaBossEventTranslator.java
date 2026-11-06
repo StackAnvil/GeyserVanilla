@@ -25,8 +25,12 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
-import org.geysermc.mcprotocollib.protocol.data.game.BossBarColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundBossEventPacket;
+import net.minecraft.world.BossEvent.BossBarColor;
+import net.minecraft.world.BossEvent.BossBarOverlay;
+import net.minecraft.network.chat.Component;
+import java.util.UUID;
+import org.geysermc.geyser.translator.text.MessageTranslator;
+import net.minecraft.network.protocol.game.ClientboundBossEventPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.BossBar;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -37,37 +41,54 @@ public class JavaBossEventTranslator extends PacketTranslator<ClientboundBossEve
 
     @Override
     public void translate(GeyserSession session, ClientboundBossEventPacket packet) {
-        BossBar bossBar = session.getEntityCache().getBossBar(packet.getUuid());
-        switch (packet.getAction()) {
-            case ADD:
+        packet.dispatch(new ClientboundBossEventPacket.Handler() {
+            @Override
+            public void add(UUID id, Component title, float progress, BossBarColor color, BossBarOverlay overlay,
+                            boolean darkenScreen, boolean playMusic, boolean createFog) {
                 long entityId = session.getEntityCache().nextEntityId();
-                bossBar = new BossBar(session, entityId, packet.getTitle(), packet.getHealth(), bedrockColor(packet.getColor()), 1, 0);
-                session.getEntityCache().addBossBar(packet.getUuid(), bossBar);
-                break;
-            case UPDATE_TITLE:
-                if (bossBar != null) bossBar.updateTitle(packet.getTitle());
-                break;
-            case UPDATE_HEALTH:
-                if (bossBar != null) bossBar.updateHealth(packet.getHealth());
-                break;
-            case REMOVE:
-                session.getEntityCache().removeBossBar(packet.getUuid());
-                break;
-            case UPDATE_STYLE:
-                if (bossBar != null) bossBar.updateColor(bedrockColor(packet.getColor()));
-                break;
-            case UPDATE_FLAGS:
-                //todo
-        }
+                var bossBar = new BossBar(session, entityId, MessageTranslator.fromVanilla(title, session.vanillaRegistries()),
+                    progress, bedrockColor(color), 1, 0);
+                session.getEntityCache().addBossBar(id, bossBar);
+            }
+
+            @Override
+            public void remove(UUID id) {
+                session.getEntityCache().removeBossBar(id);
+            }
+
+            @Override
+            public void updateProgress(UUID id, float progress) {
+                BossBar bossBar = session.getEntityCache().getBossBar(id);
+                if (bossBar != null) {
+                    bossBar.updateHealth(progress);
+                }
+            }
+
+            @Override
+            public void updateName(UUID id, Component title) {
+                BossBar bossBar = session.getEntityCache().getBossBar(id);
+                if (bossBar != null) {
+                    bossBar.updateTitle(MessageTranslator.fromVanilla(title, session.vanillaRegistries()));
+                }
+            }
+
+            @Override
+            public void updateStyle(UUID id, BossBarColor color, BossBarOverlay overlay) {
+                BossBar bossBar = session.getEntityCache().getBossBar(id);
+                if (bossBar != null) {
+                    bossBar.updateColor(bedrockColor(color));
+                }
+            }
+        });
     }
 
     /** Bedrock id 6 is REBECCA_PURPLE, which has no Java equivalent */
     private static int bedrockColor(BossBarColor color) {
         return switch (color) {
             case PINK -> 0;
-            case CYAN -> 1;
+            case BLUE -> 1;
             case RED -> 2;
-            case LIME -> 3;
+            case GREEN -> 3;
             case YELLOW -> 4;
             case PURPLE -> 5;
             case WHITE -> 7;

@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSetChunkCacheCenterPacket;
+import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -38,7 +38,7 @@ public class JavaSetChunkCacheCenterTranslator extends PacketTranslator<Clientbo
     @Override
     public void translate(GeyserSession session, ClientboundSetChunkCacheCenterPacket packet) {
         if (!session.isSpawned() && session.getLastChunkPosition() == null) {
-            ChunkUtils.updateChunkPosition(session, Vector3i.from(packet.getChunkX() << 4, 64, packet.getChunkZ() << 4));
+            ChunkUtils.updateChunkPosition(session, Vector3i.from(packet.getX() << 4, 64, packet.getZ() << 4));
         }
     }
 }

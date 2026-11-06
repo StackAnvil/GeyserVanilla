@@ -32,23 +32,18 @@ import org.geysermc.geyser.entity.vehicle.ClientVehicle;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundEntityPositionSyncPacket;
+import net.minecraft.network.protocol.game.ClientboundEntityPositionSyncPacket;
 
-import java.util.Objects;
 
 @Translator(packet = ClientboundEntityPositionSyncPacket.class)
 public class JavaEntityPositionSyncTranslator extends PacketTranslator<ClientboundEntityPositionSyncPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundEntityPositionSyncPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.id());
         if (entity == null) return;
 
-        Vector3d pos = packet.getEndPosition();
-        if (pos == null) {
-            // TODO lerp
-            pos = Objects.requireNonNull(packet.getSteps()).getLast().position();
-        }
+        Vector3d pos = org.geysermc.geyser.util.MathUtils.toVector3d(packet.position().endPosition());
         Vector3f target = pos.toFloat();
         // Compute before the cached position is overwritten. Java clients snap rather than
         // interpolate a sync farther than 64 blocks; Bedrock needs teleport semantics there too
@@ -63,6 +58,6 @@ public class JavaEntityPositionSyncTranslator extends PacketTranslator<Clientbou
         }
 
         // As in Entity#teleport, the head yaw follows the yaw
-        entity.moveAbsolute(target, packet.getYRot(), packet.getXRot(), packet.getYRot(), packet.isOnGround(), teleported);
+        entity.moveAbsolute(target, packet.yRot(), packet.xRot(), packet.yRot(), packet.onGround(), teleported);
     }
 }

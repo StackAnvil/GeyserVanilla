@@ -716,6 +716,9 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
         this.eventBus.fire(new GeyserShutdownEvent(this.extensionManager, this.eventBus));
         this.extensionManager.disableExtensions();
 
+        org.geysermc.geyser.network.java.LocalSession.shutdown();
+        org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.shutdown();
+
         bootstrap.getGeyserLogger().info(GeyserLocale.getLocaleStringLog("geyser.core.shutdown.done"));
     }
 

@@ -33,8 +33,8 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotionContents;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 public class ArrowItem extends Item {
     public ArrowItem(String javaIdentifier, Builder builder) {
@@ -47,8 +47,8 @@ public class ArrowItem extends Item {
         GeyserItemStack itemStack = super.translateToJava(session, itemData, mapping, mappings);
         if (potion != null) {
             itemStack = Items.TIPPED_ARROW.newItemStack(session, itemStack.getAmount(), itemStack.getComponents());
-            PotionContents contents = potion.toComponent();
-            itemStack.getOrCreateComponents().put(DataComponentTypes.POTION_CONTENTS, contents);
+            PotionContents contents = potion.toComponent(session);
+            itemStack.getOrCreateComponents().put(DataComponents.POTION_CONTENTS, contents);
         }
         return itemStack;
     }

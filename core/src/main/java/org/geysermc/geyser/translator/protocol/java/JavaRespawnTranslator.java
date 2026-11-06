@@ -37,9 +37,9 @@ import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.ChunkUtils;
 import org.geysermc.geyser.util.DimensionUtils;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerSpawnInfo;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundRespawnPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundPlayerLoadedPacket;
+import net.minecraft.network.protocol.game.CommonPlayerSpawnInfo;
+import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket;
 
 @Translator(packet = ClientboundRespawnPacket.class)
 public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPacket> {
@@ -47,13 +47,13 @@ public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPa
     @Override
     public void translate(GeyserSession session, ClientboundRespawnPacket packet) {
         SessionPlayerEntity entity = session.getPlayerEntity();
-        PlayerSpawnInfo spawnInfo = packet.getCommonPlayerSpawnInfo();
+        CommonPlayerSpawnInfo spawnInfo = packet.commonPlayerSpawnInfo();
 
-        if (!packet.isKeepMetadata()) {
+        if (!packet.shouldKeep(ClientboundRespawnPacket.KEEP_ENTITY_DATA)) {
             entity.resetMetadata();
         }
 
-        if (!packet.isKeepAttributeModifiers()) {
+        if (!packet.shouldKeep(ClientboundRespawnPacket.KEEP_ATTRIBUTE_MODIFIERS)) {
             entity.resetAttributes();
         }
 
@@ -67,13 +67,13 @@ public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPa
         session.setInventoryHolder(null);
         session.setClosingInventory(false);
 
-        entity.setLastDeathPosition(spawnInfo.getLastDeathPos());
+        entity.setLastDeathPosition(spawnInfo.lastDeathLocation().orElse(null));
         entity.updateBedrockMetadata();
 
         SetPlayerGameTypePacket playerGameTypePacket = new SetPlayerGameTypePacket();
-        playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(spawnInfo.getGameMode()).ordinal());
+        playerGameTypePacket.setGamemode(EntityUtils.toBedrockGamemode(spawnInfo.gameType()).ordinal());
         session.sendUpstreamPacket(playerGameTypePacket);
-        session.setGameMode(spawnInfo.getGameMode());
+        session.setGameMode(spawnInfo.gameType());
 
         if (session.isRaining()) {
             session.updateRain(0);
@@ -83,20 +83,20 @@ public class JavaRespawnTranslator extends PacketTranslator<ClientboundRespawnPa
             session.updateThunder(0);
         }
 
-        JavaDimension newDimension = JavaRegistries.DIMENSION_TYPE.getOrThrow(session.javaRegistries(), spawnInfo.getDimension());
-        if (session.getDimensionType() != newDimension || !spawnInfo.getWorldName().equals(session.getWorldName())) {
+        JavaDimension newDimension = JavaRegistries.DIMENSION_TYPE.getOrThrow(session.javaRegistries(), org.geysermc.geyser.util.MinecraftKey.key(spawnInfo.dimensionType().unwrapKey().orElseThrow().identifier().toString()));
+        if (session.getDimensionType() != newDimension || !org.geysermc.geyser.util.MinecraftKey.key(spawnInfo.dimension().identifier().toString()).equals(session.getWorldName())) {
             // Switching to a new world (based off the world name change or new dimension); send a fake dimension change
             if (session.getDimensionType().bedrockId() == newDimension.bedrockId()) {
                 int fakeDim = DimensionUtils.getTemporaryDimension(session.getDimensionType().bedrockId(), newDimension.bedrockId());
                 DimensionUtils.fastSwitchDimension(session, fakeDim);
             }
-            session.setWorldName(spawnInfo.getWorldName());
+            session.setWorldName(org.geysermc.geyser.util.MinecraftKey.key(spawnInfo.dimension().identifier().toString()));
             session.resetTimeParameters();
             DimensionUtils.switchDimension(session, newDimension);
 
             ChunkUtils.loadDimension(session);
         }
 
-        session.sendDownstreamGamePacket(ServerboundPlayerLoadedPacket.INSTANCE);
+        session.sendDownstreamGamePacket(new ServerboundPlayerLoadedPacket());
     }
 }

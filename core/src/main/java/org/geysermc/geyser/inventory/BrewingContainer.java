@@ -27,7 +27,7 @@ package org.geysermc.geyser.inventory;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 public class BrewingContainer extends Container {
     // On bedrock, it takes 400 ticks to brew anything. On Java, this can be customised, so we calculate the proper
@@ -37,7 +37,7 @@ public class BrewingContainer extends Container {
     private double brewTime = 0;
     private double totalBrewTime = DEFAULT_TOTAL_BREW_TIME;
 
-    public BrewingContainer(GeyserSession session, String title, int id, int size, @Nullable ContainerType containerType) {
+    public BrewingContainer(GeyserSession session, String title, int id, int size, @Nullable MenuType<?> containerType) {
         super(session, title, id, size, containerType);
     }
 

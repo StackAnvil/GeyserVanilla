@@ -29,7 +29,7 @@ import com.google.common.base.Charsets;
 import net.kyori.adventure.key.Key;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.packet.common.serverbound.ServerboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 
 import java.nio.ByteBuffer;
 
@@ -55,7 +55,7 @@ public class PluginMessageUtils {
     }
 
     public static void sendMessage(GeyserSession session, String channel, byte[] data) {
-        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(Key.key(channel), data));
+        session.sendDownstreamPacket(new ServerboundCustomPayloadPacket(new org.geysermc.geyser.vanilla.protocol.VanillaPayload(org.geysermc.geyser.util.MinecraftKey.keyToVanilla(Key.key(channel)), data)));
     }
 
     private static byte[] writeVarInt(int value) {

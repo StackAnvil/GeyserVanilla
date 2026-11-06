@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -34,8 +36,7 @@ import lombok.experimental.Accessors;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.translator.entity.EntityMetadataTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
+import net.minecraft.network.syncher.EntityDataSerializer;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -77,15 +78,15 @@ public class EntityTypeBase<T extends Entity> {
     }
 
     @SuppressWarnings("unchecked")
-    public <M> void translateMetadata(T entity, EntityMetadata<M, ? extends MetadataType<M>> metadata) {
-        EntityMetadataTranslator<? super T, M, EntityMetadata<M, ? extends MetadataType<M>>> translator = (EntityMetadataTranslator<? super T, M, EntityMetadata<M, ? extends MetadataType<M>>>) this.translators.get(metadata.getId());
+    public <M> void translateMetadata(T entity, DataValue<M> metadata) {
+        EntityMetadataTranslator<? super T, M, DataValue<M>> translator = (EntityMetadataTranslator<? super T, M, DataValue<M>>) this.translators.get(metadata.id());
         if (translator == null) {
             // This can safely happen; it means we don't translate this entity metadata
             return;
         }
 
-        if (translator.acceptedType() != metadata.getType()) {
-            GeyserImpl.getInstance().getLogger().warning("Metadata ID " + metadata.getId() + " was received with type " + metadata.getType() + " but we expected " + translator.acceptedType() + " for " + entity.getJavaDefinition().type());
+        if (translator.acceptedType() != metadata.serializer()) {
+            GeyserImpl.getInstance().getLogger().warning("Metadata ID " + metadata.id() + " was received with type " + metadata.serializer() + " but we expected " + translator.acceptedType() + " for " + entity.getJavaDefinition().type());
             if (GeyserImpl.getInstance().config().debugMode()) {
                 GeyserImpl.getInstance().getLogger().debug(metadata.toString());
             }
@@ -134,7 +135,7 @@ public class EntityTypeBase<T extends Entity> {
             return this;
         }
 
-        public <U, EM extends EntityMetadata<U, ? extends MetadataType<U>>> Builder<T> addTranslator(MetadataType<U> type, BiConsumer<T, EM> translateFunction) {
+        public <U, EM extends DataValue<U>> Builder<T> addTranslator(EntityDataSerializer<U> type, BiConsumer<T, EM> translateFunction) {
             translators.add(new EntityMetadataTranslator<>(type, translateFunction));
             return this;
         }

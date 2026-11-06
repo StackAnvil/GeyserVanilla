@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type.player;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import net.kyori.adventure.text.Component;
 import org.geysermc.geyser.api.entity.type.player.GeyserAvatarEntity;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
+import net.minecraft.world.item.component.ResolvableProfile;
 
 import java.util.Optional;
 
@@ -39,8 +40,8 @@ public class MannequinEntity extends AvatarEntity implements GeyserAvatarEntity 
         super(context, "");
     }
 
-    public void setProfile(EntityMetadata<ResolvableProfile, ?> entityMetadata) {
-        setSkin(entityMetadata.getValue());
+    public void setProfile(DataValue<ResolvableProfile> entityMetadata) {
+        setSkin(entityMetadata.value());
     }
 
     @Override
@@ -48,7 +49,7 @@ public class MannequinEntity extends AvatarEntity implements GeyserAvatarEntity 
         return false;
     }
 
-    public void setDescription(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setDescription(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         // TODO
     }
 }

@@ -33,8 +33,8 @@ import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.TeamColor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -48,7 +48,7 @@ public final class Team {
 
     private final Set<String> entities;
     private final Set<Entity> managedEntities;
-    private @NonNull NameTagVisibility nameTagVisibility = NameTagVisibility.ALWAYS;
+    private @NonNull Visibility nameTagVisibility = Visibility.ALWAYS;
     private @Nullable TeamColor color;
 
     private String prefix;
@@ -61,7 +61,7 @@ public final class Team {
         String[] players,
         Component prefix,
         Component suffix,
-        NameTagVisibility visibility,
+        Visibility visibility,
         @Nullable TeamColor color
     ) {
         this.scoreboard = scoreboard;
@@ -141,7 +141,7 @@ public final class Team {
         };
     }
 
-    public void updateProperties(Component prefix, Component suffix, NameTagVisibility visibility, @Nullable TeamColor color) {
+    public void updateProperties(Component prefix, Component suffix, Visibility visibility, @Nullable TeamColor color) {
         // this shouldn't happen but hey!
         if (lastUpdate == LAST_UPDATE_REMOVE) {
             return;

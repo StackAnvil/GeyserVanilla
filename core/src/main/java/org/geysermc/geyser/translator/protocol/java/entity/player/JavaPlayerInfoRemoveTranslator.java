@@ -31,7 +31,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.PlayerListUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoRemovePacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class JavaPlayerInfoRemoveTranslator extends PacketTranslator<Clientbound
     public void translate(GeyserSession session, ClientboundPlayerInfoRemovePacket packet) {
         List<PlayerListPacket.Entry> entries = new ArrayList<>();
 
-        for (UUID id : packet.getProfileIds()) {
+        for (UUID id : packet.profileIds()) {
             // As the player entity is no longer present, we can remove the entry
             PlayerEntity entity = session.getEntityCache().removePlayerEntity(id);
             if (entity != null) {

@@ -28,13 +28,13 @@ package org.geysermc.geyser.translator.protocol.java;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundTickingStatePacket;
+import net.minecraft.network.protocol.game.ClientboundTickingStatePacket;
 
 @Translator(packet = ClientboundTickingStatePacket.class)
 public class JavaTickingStateTranslator extends PacketTranslator<ClientboundTickingStatePacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundTickingStatePacket packet) {
-        session.updateTickingState(packet.getTickRate(), packet.isFrozen());
+        session.updateTickingState(packet.tickRate(), packet.isFrozen());
     }
 }

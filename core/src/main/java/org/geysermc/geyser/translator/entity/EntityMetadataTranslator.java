@@ -25,17 +25,18 @@
 
 package org.geysermc.geyser.translator.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.geysermc.geyser.entity.type.Entity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
+import net.minecraft.network.syncher.EntityDataSerializer;
 
 import java.util.function.BiConsumer;
 
 /**
- * Translates a given Java {@link EntityMetadata} into a similar/same construct for Bedrock
+ * Translates a given Java {@link DataValue} into a similar/same construct for Bedrock
  */
-public record EntityMetadataTranslator<E extends Entity, T, EM extends EntityMetadata<T, ? extends MetadataType<T>>>(
-        MetadataType<T> acceptedType,
+public record EntityMetadataTranslator<E extends Entity, T, EM extends DataValue<T>>(
+        EntityDataSerializer<T> acceptedType,
         BiConsumer<E, EM> translateFunction) {
 
     public void translate(E entity, EM metadata) {

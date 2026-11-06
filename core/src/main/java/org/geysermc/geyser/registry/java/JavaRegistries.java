@@ -48,9 +48,6 @@ import org.geysermc.geyser.registry.java.reader.JavaRegistryReaders;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.session.dialog.Dialog;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.ChatType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ArmorTrim;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
 
 import java.util.List;
 
@@ -62,7 +59,7 @@ import java.util.List;
  *
  * <ul>
  *     <li>Access the contents of a Java registry, which is networked or in some cases built-in,</li>
- *     <li>Access {@link HolderSet}s for a Java registry, be it built-in or networked, or,</li>
+ *     <li>Access {@link org.geysermc.geyser.session.cache.tags.GeyserHolderSet}s for a Java registry, be it built-in or networked, or,</li>
  *     <li>Access tags for a Java registry, be it built-in or networked.</li>
  * </ul>
  *
@@ -88,7 +85,6 @@ public final class JavaRegistries {
     public static final JavaRegistryKey<EntityTypeDefinition<?>> ENTITY_TYPE = create("entity_type");
 
     // Most networked registries
-    public static final JavaRegistryKey<ChatType> CHAT_TYPE = create("chat_type");
     public static final JavaRegistryKey<JavaDimension> DIMENSION_TYPE = create("dimension_type");
     public static final JavaRegistryKey<Integer> BIOME = create("worldgen/biome");
     public static final JavaRegistryKey<Enchantment> ENCHANTMENT = create("enchantment");
@@ -96,8 +92,8 @@ public final class JavaRegistries {
     public static final JavaRegistryKey<GeyserInstrument> INSTRUMENT = create("instrument");
     public static final JavaRegistryKey<JukeboxSong> JUKEBOX_SONG = create("jukebox_song");
     public static final JavaRegistryKey<PaintingType> PAINTING_VARIANT = create("painting_variant");
-    public static final JavaRegistryKey<ArmorTrim.TrimMaterial> TRIM_MATERIAL = create("trim_material");
-    public static final JavaRegistryKey<ArmorTrim.TrimPattern> TRIM_PATTERN = create("trim_pattern");
+    public static final JavaRegistryKey<net.minecraft.world.item.equipment.trim.TrimMaterial> TRIM_MATERIAL = create("trim_material");
+    public static final JavaRegistryKey<net.minecraft.world.item.equipment.trim.TrimPattern> TRIM_PATTERN = create("trim_pattern");
     public static final JavaRegistryKey<EntityDamageCause> DAMAGE_TYPE = create("damage_type");
     public static final JavaRegistryKey<Dialog> DIALOG = create("dialog");
     public static final JavaRegistryKey<RegistryUnit> WORLD_CLOCK = create("world_clock");

@@ -26,7 +26,7 @@
 package org.geysermc.geyser.inventory;
 
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.EnchantOptionData;
 import lombok.Getter;
 
@@ -41,7 +41,7 @@ public class EnchantingContainer extends Container {
      */
     private final GeyserEnchantOption[] geyserEnchantOptions;
 
-    public EnchantingContainer(GeyserSession session, String title, int id, int size, ContainerType containerType) {
+    public EnchantingContainer(GeyserSession session, String title, int id, int size, MenuType<?> containerType) {
         super(session, title, id, size, containerType);
 
         enchantOptions = new EnchantOptionData[3];

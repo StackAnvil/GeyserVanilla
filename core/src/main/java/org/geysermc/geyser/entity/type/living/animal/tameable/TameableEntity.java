@@ -25,14 +25,14 @@
 
 package org.geysermc.geyser.entity.type.living.animal.tameable;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.entity.type.living.animal.AnimalEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -48,18 +48,18 @@ public abstract class TameableEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setTameableFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setTameableFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.SITTING, (xd & 0x01) == 0x01);
         setFlag(EntityFlag.ANGRY, (xd & 0x02) == 0x02);
         setFlag(EntityFlag.TAMED, (xd & 0x04) == 0x04);
     }
 
-    public void setOwner(EntityMetadata<Optional<UUID>, ?> entityMetadata) {
+    public void setOwner(DataValue<Optional<net.minecraft.world.entity.EntityReference<net.minecraft.world.entity.LivingEntity>>> entityMetadata) {
         // Note: Must be set for wolf collar color to work
-        if (entityMetadata.getValue().isPresent()) {
+        if (entityMetadata.value().isPresent()) {
             // Owner UUID of entity
-            UUID uuid = entityMetadata.getValue().get();
+            UUID uuid = entityMetadata.value().get().getUUID();
             Entity entity;
             if (uuid.equals(session.getPlayerEntity().uuid())) {
                 entity = session.getPlayerEntity();

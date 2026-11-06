@@ -27,12 +27,16 @@ package org.geysermc.geyser.item.components.resolvable;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.item.type.Item;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 @FunctionalInterface
 public interface ResolvableComponentGetter {
 
     ResolvableComponentGetter EMPTY = item -> null;
 
-    @Nullable DataComponents getResolvedComponents(Item item);
+    @Nullable GeyserDataComponents getResolvedComponents(Item item);
+
+    default net.minecraft.core.RegistryAccess vanillaRegistries() {
+        return org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries();
+    }
 }

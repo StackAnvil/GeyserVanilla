@@ -31,8 +31,10 @@ import org.cloudburstmc.nbt.NbtMap;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.dialog.action.DialogAction;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.ServerLink;
-import org.geysermc.mcprotocollib.protocol.data.game.ServerLinkType;
+import net.minecraft.server.ServerLinks.UntrustedEntry;
+import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.translator.text.MessageTranslator;
+import net.minecraft.server.ServerLinks.KnownLinkType;
 
 import java.util.List;
 import java.util.Locale;
@@ -49,15 +51,14 @@ public class ServerLinksDialog extends DialogWithButtons {
     @Override
     protected List<DialogButton> buttons(DialogHolder holder) {
         return holder.session().getServerLinks().stream()
-            .map(link -> new DialogButton(linkDisplayName(link), Optional.of(new DialogAction.OpenUrl(link.link()))))
+            .map(link -> new DialogButton(linkDisplayName(holder.session(), link), Optional.of(new DialogAction.OpenUrl(link.link()))))
             .toList();
     }
 
-    private static Component linkDisplayName(ServerLink link) {
-        if (link.knownType() != null) {
-            String linkName = link.knownType() == ServerLinkType.BUG_REPORT ? "report_bug" : link.knownType().name().toLowerCase(Locale.ROOT);
+    private static Component linkDisplayName(GeyserSession session, UntrustedEntry link) {
+        return link.type().map(type -> {
+            String linkName = type == KnownLinkType.BUG_REPORT ? "report_bug" : type.name().toLowerCase(Locale.ROOT);
             return Component.translatable("known_server_link." + linkName);
-        }
-        return link.unknownType();
+        }, component -> MessageTranslator.fromVanilla(component, session.vanillaRegistries()));
     }
 }

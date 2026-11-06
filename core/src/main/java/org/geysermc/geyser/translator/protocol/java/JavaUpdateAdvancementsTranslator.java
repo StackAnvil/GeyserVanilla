@@ -25,8 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
-import org.geysermc.mcprotocollib.protocol.data.game.advancement.Advancement;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundUpdateAdvancementsPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
 import org.geysermc.geyser.level.GeyserAdvancement;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.AdvancementsCache;
@@ -43,31 +42,38 @@ public class JavaUpdateAdvancementsTranslator extends PacketTranslator<Clientbou
     @Override
     public void translate(GeyserSession session, ClientboundUpdateAdvancementsPacket packet) {
         AdvancementsCache advancementsCache = session.getAdvancementsCache();
-        if (packet.isReset()) {
+        if (packet.shouldReset()) {
             advancementsCache.getStoredAdvancements().clear();
             advancementsCache.getStoredAdvancementProgress().clear();
         }
 
-        // Removes removed advancements from player's stored advancements
-        for (String removedAdvancement : packet.getRemovedAdvancements()) {
-            advancementsCache.getStoredAdvancements().remove(removedAdvancement);
+        for (var removed : packet.removed()) {
+            advancementsCache.getStoredAdvancements().remove(removed.toString());
+            advancementsCache.getStoredAdvancementProgress().remove(removed.toString());
         }
 
-        advancementsCache.getStoredAdvancementProgress().putAll(packet.getProgress());
-
-        // Adds advancements to the player's stored advancements when advancements are sent
-        for (Advancement advancement : packet.getAdvancements()) {
-            // The Java server already evaluates visibility and only syncs advancements the client
-            // should see - a hidden advancement is only sent once it is completed. Filtering hidden
-            // ones out here made completed hidden advancements vanish from the list. Unearned hidden
-            // entries from legacy servers are filtered when the form is built instead.
-            if (advancement.getDisplayData() != null) {
-                GeyserAdvancement geyserAdvancement = GeyserAdvancement.from(advancement);
-                advancementsCache.getStoredAdvancements().put(advancement.getId(), geyserAdvancement);
+        for (var positioned : packet.added()) {
+            var holder = positioned.advancement();
+            String id = holder.id().toString();
+            // The server evaluates visibility, including completed hidden advancements.
+            if (holder.value().display().isPresent()) {
+                advancementsCache.getStoredAdvancements().put(id, GeyserAdvancement.from(holder));
+                var progress = advancementsCache.getStoredAdvancementProgress().get(id);
+                if (progress != null) {
+                    progress.update(holder.value().requirements());
+                }
             } else {
-                advancementsCache.getStoredAdvancements().remove(advancement.getId());
+                advancementsCache.getStoredAdvancements().remove(id);
             }
         }
+
+        packet.progress().forEach((id, progress) -> {
+            var advancement = advancementsCache.getStoredAdvancements().get(id.toString());
+            if (advancement != null) {
+                progress.update(advancement.getRequirements());
+            }
+            advancementsCache.getStoredAdvancementProgress().put(id.toString(), progress);
+        });
 
         sendAdvancementToasts(session, packet);
     }
@@ -76,17 +82,17 @@ public class JavaUpdateAdvancementsTranslator extends PacketTranslator<Clientbou
      * Handle all advancements progress updates
      */
     public void sendAdvancementToasts(GeyserSession session, ClientboundUpdateAdvancementsPacket packet) {
-        if (packet.isReset()) {
+        if (packet.shouldReset()) {
             // Advancements are being cleared, so they can't be granted
             return;
         }
-        for (String advancementId : packet.getProgress().keySet()) {
-            GeyserAdvancement advancement = session.getAdvancementsCache().getStoredAdvancements().get(advancementId);
+        for (var advancementId : packet.progress().keySet()) {
+            GeyserAdvancement advancement = session.getAdvancementsCache().getStoredAdvancements().get(advancementId.toString());
             if (advancement != null && advancement.getDisplayData() != null) {
-                if (advancement.getDisplayData().isShowToast() && session.getAdvancementsCache().isEarned(advancement)) {
-                    String frameType = advancement.getDisplayData().getAdvancementType().toString().toLowerCase(Locale.ROOT);
+                if (advancement.getDisplayData().showToast() && session.getAdvancementsCache().isEarned(advancement)) {
+                    String frameType = advancement.getDisplayData().type().toString().toLowerCase(Locale.ROOT);
                     String frameTitle = advancement.getDisplayColor() + MinecraftLocale.getLocaleString("advancements.toast." + frameType, session.locale());
-                    String advancementName = MessageTranslator.convertMessage(advancement.getDisplayData().getTitle(), session.locale());
+                    String advancementName = MessageTranslator.convertMessage(advancement.getDisplayData().title(), session.locale());
 
                     session.sendToast(frameTitle, advancementName);
                 }

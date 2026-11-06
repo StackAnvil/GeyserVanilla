@@ -10,7 +10,6 @@ dependencies {
 
 platformRelocate("net.kyori")
 platformRelocate("org.yaml")
-platformRelocate("it.unimi.dsi.fastutil")
 platformRelocate("org.cloudburstmc.netty")
 platformRelocate("org.bstats")
 platformRelocate("org.incendo")

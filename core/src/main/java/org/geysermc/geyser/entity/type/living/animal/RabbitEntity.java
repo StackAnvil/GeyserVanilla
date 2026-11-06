@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import net.kyori.adventure.key.Key;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -34,7 +36,6 @@ import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class RabbitEntity extends AnimalEntity {
     private boolean isKillerBunny;
@@ -43,8 +44,8 @@ public class RabbitEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setRabbitVariant(IntEntityMetadata entityMetadata) {
-        int variant = entityMetadata.getPrimitiveValue();
+    public void setRabbitVariant(DataValue<Integer> entityMetadata) {
+        int variant = entityMetadata.value();
 
         // Change the killer bunny to display as white since it only exists on Java Edition
         isKillerBunny = variant == 99;

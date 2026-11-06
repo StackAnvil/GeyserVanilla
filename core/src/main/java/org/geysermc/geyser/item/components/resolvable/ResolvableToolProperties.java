@@ -29,24 +29,24 @@ import org.geysermc.geyser.api.item.custom.v2.component.java.JavaTool;
 import org.geysermc.geyser.impl.HoldersImpl;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ToolData;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.Tool;
 
 import java.util.List;
 
-public record ResolvableToolProperties(JavaTool properties) implements ResolvableComponent<ToolData> {
+public record ResolvableToolProperties(JavaTool properties) implements ResolvableComponent<Tool> {
 
     @Override
-    public DataComponentType<ToolData> type() {
-        return DataComponentTypes.TOOL;
+    public DataComponentType<Tool> type() {
+        return DataComponents.TOOL;
     }
 
     @Override
-    public ToolData resolve(JavaRegistryProvider registries) {
-        List<ToolData.Rule> rules = properties.rules().stream()
-            .map(rule -> new ToolData.Rule(((HoldersImpl) rule.blocks()).toHolderSet(registries, JavaRegistries.BLOCK), rule.speed(), null))
+    public Tool resolve(net.minecraft.core.RegistryAccess registries) {
+        List<Tool.Rule> rules = properties.rules().stream()
+            .map(rule -> new Tool.Rule(((HoldersImpl) rule.blocks()).toVanilla(registries, net.minecraft.core.registries.Registries.BLOCK), java.util.Optional.ofNullable(rule.speed()), java.util.Optional.empty()))
             .toList();
-        return new ToolData(rules, properties.defaultMiningSpeed(), 0, properties.canDestroyBlocksInCreative());
+        return new Tool(rules, properties.defaultMiningSpeed(), 0, properties.canDestroyBlocksInCreative());
     }
 }

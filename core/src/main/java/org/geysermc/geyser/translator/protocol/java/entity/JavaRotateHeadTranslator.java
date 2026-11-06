@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.entity;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRotateHeadPacket;
+import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -36,9 +36,9 @@ public class JavaRotateHeadTranslator extends PacketTranslator<ClientboundRotate
 
     @Override
     public void translate(GeyserSession session, ClientboundRotateHeadPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.entityId(packet));
         if (entity == null) return;
 
-        entity.updateHeadLookRotation(packet.getHeadYaw());
+        entity.updateHeadLookRotation(packet.getYHeadRot());
     }
 }

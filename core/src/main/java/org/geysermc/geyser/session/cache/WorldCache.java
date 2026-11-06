@@ -43,9 +43,9 @@ import org.geysermc.geyser.scoreboard.Scoreboard;
 import org.geysermc.geyser.scoreboard.ScoreboardUpdater.ScoreboardSession;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.ChunkUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.UseCooldown;
-import org.geysermc.mcprotocollib.protocol.data.game.setting.Difficulty;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.UseCooldown;
+import net.minecraft.world.Difficulty;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -254,10 +254,10 @@ public final class WorldCache {
     }
 
     public boolean hasCooldown(GeyserItemStack item) {
-        UseCooldown cooldown = item.getComponent(DataComponentTypes.USE_COOLDOWN);
+        UseCooldown cooldown = item.getComponent(DataComponents.USE_COOLDOWN);
         Key cooldownGroup;
-        if (cooldown != null && cooldown.cooldownGroup() != null) {
-            cooldownGroup = cooldown.cooldownGroup();
+        if (cooldown != null && cooldown.cooldownGroup().isPresent()) {
+            cooldownGroup = org.geysermc.geyser.util.MinecraftKey.key(cooldown.cooldownGroup().get().toString());
         } else {
             cooldownGroup = item.asItem().javaKey();
         }

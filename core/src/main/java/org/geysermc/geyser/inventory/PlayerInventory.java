@@ -34,10 +34,10 @@ import org.geysermc.geyser.entity.type.player.PlayerEntity;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
 import org.jetbrains.annotations.Range;
 
 import java.util.List;
@@ -80,8 +80,8 @@ public class PlayerInventory extends Inventory {
         return getItemInHand().is(item) || getOffhand().is(item);
     }
 
-    public GeyserItemStack getItemInHand(@NonNull Hand hand) {
-        return hand == Hand.OFF_HAND ? getOffhand() : getItemInHand();
+    public GeyserItemStack getItemInHand(@NonNull InteractionHand hand) {
+        return hand == InteractionHand.OFF_HAND ? getOffhand() : getItemInHand();
     }
 
     public GeyserItemStack getItemInHand() {
@@ -95,12 +95,12 @@ public class PlayerInventory extends Inventory {
     // TODO other equipment slots
     public Map<EquipmentSlot, GeyserItemStack> getEquipment() {
         return Map.of(
-            EquipmentSlot.MAIN_HAND, getItemInHand(),
-            EquipmentSlot.OFF_HAND, items[45],
-            EquipmentSlot.BOOTS, items[8],
-            EquipmentSlot.LEGGINGS, items[7],
-            EquipmentSlot.CHESTPLATE, items[6],
-            EquipmentSlot.HELMET, items[5]
+            EquipmentSlot.MAINHAND, getItemInHand(),
+            EquipmentSlot.OFFHAND, items[45],
+            EquipmentSlot.FEET, items[8],
+            EquipmentSlot.LEGS, items[7],
+            EquipmentSlot.CHEST, items[6],
+            EquipmentSlot.HEAD, items[5]
         );
     }
 
@@ -116,7 +116,7 @@ public class PlayerInventory extends Inventory {
     public void setItem(int slot, @NonNull GeyserItemStack newItem, GeyserSession session) {
         final PlayerEntity entity = session.getPlayerEntity();
         if (slot == getOffsetForHotbar(heldItemSlot)  && entity.getFlag(EntityFlag.USING_ITEM) && newItem.is(Items.CROSSBOW)) {
-            List<ItemStack> chargedProjectiles = newItem.getComponent(DataComponentTypes.CHARGED_PROJECTILES);
+            var chargedProjectiles = newItem.getComponent(DataComponents.CHARGED_PROJECTILES);
 
             // On Java, when you finished charging a projectile into (a crossbow), the client can keep holding down
             // right click and keep using it, however and Bedrock if you do that and allow the client to keep using the item

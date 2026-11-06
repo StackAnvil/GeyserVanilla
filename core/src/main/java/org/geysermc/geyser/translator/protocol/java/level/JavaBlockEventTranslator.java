@@ -47,18 +47,19 @@ import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntity;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.BellValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.BlockValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.ChestValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.DecoratedPotValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.EndGatewayValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.MobSpawnerValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.NoteBlockValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValue;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValueType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockEventPacket;
+import org.geysermc.geyser.level.physics.PistonAction;
+import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 
 import java.util.List;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.EnderChestBlock;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
+import net.minecraft.world.level.block.EndGatewayBlock;
+import net.minecraft.world.level.block.NoteBlock;
+import net.minecraft.world.level.block.SpawnerBlock;
+import net.minecraft.world.level.block.BellBlock;
+import net.minecraft.world.level.block.DecoratedPotBlock;
+import net.minecraft.world.level.block.piston.PistonBaseBlock;
 import java.util.Map;
 
 @Translator(packet = ClientboundBlockEventPacket.class)
@@ -66,39 +67,42 @@ public class JavaBlockEventTranslator extends PacketTranslator<ClientboundBlockE
 
     @Override
     public void translate(GeyserSession session, ClientboundBlockEventPacket packet) {
-        Vector3i position = packet.getPosition();
-        BlockValue value = packet.getValue();
-
-        if (value == null) {
-            session.getGeyser().getLogger().debug("Unable to handle packet %s - null value! ".formatted(packet.toString()));
-            return;
-        }
+        Vector3i position = org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos());
+        var block = packet.getBlock();
 
         BlockEventPacket blockEventPacket = new BlockEventPacket();
         blockEventPacket.setBlockPosition(position);
 
-        if (value instanceof ChestValue chestValue) {
+        if (block instanceof ChestBlock || block instanceof EnderChestBlock || block instanceof ShulkerBoxBlock) {
             blockEventPacket.setEventType(1);
-            blockEventPacket.setEventData(chestValue.getViewers() > 0 ? 1 : 0);
+            blockEventPacket.setEventData(packet.getB1() > 0 ? 1 : 0);
             session.sendUpstreamPacket(blockEventPacket);
-        } else if (value instanceof EndGatewayValue) {
+        } else if (block instanceof EndGatewayBlock) {
             blockEventPacket.setEventType(1);
             session.sendUpstreamPacket(blockEventPacket);
-        } else if (value instanceof NoteBlockValue) {
+        } else if (block instanceof NoteBlock) {
             session.getGeyser().getWorldManager().getBlockAtAsync(session, position).thenAccept(blockState -> {
                 blockEventPacket.setEventData(BlockState.of(blockState).getValue(Properties.NOTE));
                 session.sendUpstreamPacket(blockEventPacket);
             });
-        } else if (value instanceof PistonValue pistonValue) {
-            PistonValueType action = (PistonValueType) packet.getType();
-            Direction direction = Direction.fromMCPL(pistonValue.getDirection());
+        } else if (block instanceof PistonBaseBlock) {
+            PistonAction action = switch (packet.getB0()) {
+                case PistonBaseBlock.TRIGGER_EXTEND -> PistonAction.EXTEND;
+                case PistonBaseBlock.TRIGGER_CONTRACT -> PistonAction.RETRACT;
+                case PistonBaseBlock.TRIGGER_DROP -> PistonAction.DROP;
+                default -> null;
+            };
+            if (action == null) {
+                return;
+            }
+            Direction direction = Direction.fromJava(net.minecraft.core.Direction.from3DDataValue(packet.getB1() & 7));
             PistonCache pistonCache = session.getPistonCache();
 
             if (session.getGeyser().getWorldManager().hasOwnChunkCache() || session.getErosionHandler().isActive()) {
                 // Mostly handled in the GeyserPistonEvents class (Spigot) / the PistonBlockBaseMixin (Mod platforms)
                 // However, the retracting event is not fully covered. (Spigot)
                 // Mod platforms only handle pistons moving blocks; not the retracting of pistons.
-                if (action == PistonValueType.PULLING || action == PistonValueType.CANCELLED_MID_PUSH) {
+                if (action == PistonAction.RETRACT || action == PistonAction.DROP) {
                     BlockState pistonBlock = session.getGeyser().getWorldManager().blockAt(session, position);
 
                     // Retracting sticky pistons is an exception, since the event is not called on Spigot from 1.13.2 - 1.17.1
@@ -109,7 +113,7 @@ public class JavaBlockEventTranslator extends PacketTranslator<ClientboundBlockE
                     }
 
                     // Only sticky pistons that don't pull any blocks are affected
-                    if (action != PistonValueType.CANCELLED_MID_PUSH && isSticky) {
+                    if (action != PistonAction.DROP && isSticky) {
                         Vector3i blockInFrontPos = position.add(direction.getUnitVector());
                         int blockInFront = session.getGeyser().getWorldManager().getBlockAt(session, blockInFrontPos);
                         if (blockInFront != Block.JAVA_AIR_ID) {
@@ -126,26 +130,26 @@ public class JavaBlockEventTranslator extends PacketTranslator<ClientboundBlockE
                 PistonBlockEntity blockEntity = pistonCache.getPistons().computeIfAbsent(position, pos -> {
                     BlockState state = session.getGeyser().getWorldManager().blockAt(session, position);
                     boolean sticky = isSticky(state);
-                    boolean extended = action != PistonValueType.PUSHING;
+                    boolean extended = action != PistonAction.EXTEND;
                     return new PistonBlockEntity(session, pos, direction, sticky, extended);
                 });
                 blockEntity.setAction(action);
             }
-        } else if (value instanceof MobSpawnerValue) {
+        } else if (block instanceof SpawnerBlock) {
             blockEventPacket.setEventType(1);
             session.sendUpstreamPacket(blockEventPacket);
-        } else if (value instanceof BellValue bellValue) {
+        } else if (block instanceof BellBlock) {
             // Bells - needed to show ring from other players
             BlockEntityDataPacket blockEntityPacket = new BlockEntityDataPacket();
             blockEntityPacket.setBlockPosition(position);
 
             NbtMapBuilder builder = BlockEntityTranslator.getConstantBedrockTag("Bell", position.getX(), position.getY(), position.getZ());
-            int bedrockRingDirection = switch (bellValue.getDirection()) {
+            int bedrockRingDirection = switch (net.minecraft.core.Direction.from3DDataValue(packet.getB1())) {
                 case SOUTH -> 0;
                 case WEST -> 1;
                 case NORTH -> 2;
                 case EAST -> 3;
-                default -> throw new IllegalStateException("Unexpected BellValue Direction: " + bellValue.getDirection());
+                default -> throw new IllegalStateException("Unexpected BellValue Direction: " + net.minecraft.core.Direction.from3DDataValue(packet.getB1()));
             };
             builder.putInt("Direction", bedrockRingDirection);
             builder.putByte("Ringing", (byte) 1);
@@ -153,7 +157,7 @@ public class JavaBlockEventTranslator extends PacketTranslator<ClientboundBlockE
             
             blockEntityPacket.setData(builder.build());
             session.sendUpstreamPacket(blockEntityPacket);
-        } else if (value instanceof DecoratedPotValue potValue) {
+        } else if (block instanceof DecoratedPotBlock) {
             // Decorated pots - wobble wobble
             // We need to send the sherd data with the client, but we don't really care about latency here so we
             // can safely get this from the server
@@ -163,10 +167,7 @@ public class JavaBlockEventTranslator extends PacketTranslator<ClientboundBlockE
 
                 NbtMapBuilder builder = BlockEntityTranslator.getConstantBedrockTag("DecoratedPot", position);
                 builder.putList("sherds", NbtType.STRING, javaSherdsToBedrock(sherds));
-                builder.putByte("animation", switch (potValue.getWobbleStyle()) {
-                    case POSITIVE -> (byte) 2;
-                    case NEGATIVE -> (byte) 1;
-                });
+                builder.putByte("animation", (byte) (packet.getB1() == net.minecraft.world.level.block.entity.DecoratedPotBlockEntity.WobbleStyle.POSITIVE.ordinal() ? 2 : 1));
 
                 blockEntityPacket.setData(builder.build());
                 session.sendUpstreamPacket(blockEntityPacket);

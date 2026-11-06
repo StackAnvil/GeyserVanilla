@@ -69,7 +69,7 @@ public class MinecraftVersionTestInstance extends GeyserTestInstance {
             helper.assertValueEqual(SharedConstants.getProtocolVersion(), GameProtocol.getJavaProtocolVersion(), "Java protocol version");
             helper.assertTrue(GameProtocol.getAllSupportedJavaVersions().contains(current), "GameProtocol must mark " + current + " as supported");
         } catch (GameTestAssertException exception) {
-            GeyserImpl.getInstance().getLogger().error("Please ensure MCPL is updated!");
+            GeyserImpl.getInstance().getLogger().error("Update the pinned vanilla runtime and regenerate its manifest.");
             throw exception;
         }
         helper.succeed();

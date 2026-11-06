@@ -25,33 +25,33 @@
 
 package org.geysermc.geyser.inventory.click;
 
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.*;
+import net.minecraft.world.inventory.ContainerInput;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public enum Click {
-    LEFT(ContainerActionType.CLICK_ITEM, ClickItemAction.LEFT_CLICK),
-    LEFT_BUNDLE(ContainerActionType.CLICK_ITEM, ClickItemAction.LEFT_CLICK),
-    LEFT_BUNDLE_FROM_CURSOR(ContainerActionType.CLICK_ITEM, ClickItemAction.LEFT_CLICK),
-    RIGHT(ContainerActionType.CLICK_ITEM, ClickItemAction.RIGHT_CLICK),
-    RIGHT_BUNDLE(ContainerActionType.CLICK_ITEM, ClickItemAction.RIGHT_CLICK),
-    LEFT_SHIFT(ContainerActionType.SHIFT_CLICK_ITEM, ShiftClickItemAction.LEFT_CLICK),
-    DROP_ONE(ContainerActionType.DROP_ITEM, DropItemAction.DROP_FROM_SELECTED),
-    DROP_ALL(ContainerActionType.DROP_ITEM, DropItemAction.DROP_SELECTED_STACK),
-    LEFT_OUTSIDE(ContainerActionType.CLICK_ITEM, ClickItemAction.LEFT_CLICK),
-    RIGHT_OUTSIDE(ContainerActionType.CLICK_ITEM, ClickItemAction.RIGHT_CLICK),
-    SWAP_TO_HOTBAR_1(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_1),
-    SWAP_TO_HOTBAR_2(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_2),
-    SWAP_TO_HOTBAR_3(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_3),
-    SWAP_TO_HOTBAR_4(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_4),
-    SWAP_TO_HOTBAR_5(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_5),
-    SWAP_TO_HOTBAR_6(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_6),
-    SWAP_TO_HOTBAR_7(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_7),
-    SWAP_TO_HOTBAR_8(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_8),
-    SWAP_TO_HOTBAR_9(ContainerActionType.MOVE_TO_HOTBAR_SLOT, MoveToHotbarAction.SLOT_9);
+    LEFT(ContainerInput.PICKUP, 0),
+    LEFT_BUNDLE(ContainerInput.PICKUP, 0),
+    LEFT_BUNDLE_FROM_CURSOR(ContainerInput.PICKUP, 0),
+    RIGHT(ContainerInput.PICKUP, 1),
+    RIGHT_BUNDLE(ContainerInput.PICKUP, 1),
+    LEFT_SHIFT(ContainerInput.QUICK_MOVE, 0),
+    DROP_ONE(ContainerInput.THROW, 0),
+    DROP_ALL(ContainerInput.THROW, 1),
+    LEFT_OUTSIDE(ContainerInput.PICKUP, 0),
+    RIGHT_OUTSIDE(ContainerInput.PICKUP, 1),
+    SWAP_TO_HOTBAR_1(ContainerInput.SWAP, 0),
+    SWAP_TO_HOTBAR_2(ContainerInput.SWAP, 1),
+    SWAP_TO_HOTBAR_3(ContainerInput.SWAP, 2),
+    SWAP_TO_HOTBAR_4(ContainerInput.SWAP, 3),
+    SWAP_TO_HOTBAR_5(ContainerInput.SWAP, 4),
+    SWAP_TO_HOTBAR_6(ContainerInput.SWAP, 5),
+    SWAP_TO_HOTBAR_7(ContainerInput.SWAP, 6),
+    SWAP_TO_HOTBAR_8(ContainerInput.SWAP, 7),
+    SWAP_TO_HOTBAR_9(ContainerInput.SWAP, 8);
 
     public static final int OUTSIDE_SLOT = -999;
 
-    public final ContainerActionType actionType;
-    public final ContainerAction action;
+    public final ContainerInput actionType;
+    public final int action;
 }

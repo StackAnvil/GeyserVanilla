@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.horse;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.AttributeData;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -40,12 +42,9 @@ import org.geysermc.geyser.entity.vehicle.VehicleComponent;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.LongEntityMetadata;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket.AttributeSnapshot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.Pose;
 
 public class CamelEntity extends AbstractHorseEntity implements ClientVehicle {
     public static final float SITTING_HEIGHT_DIFFERENCE = 1.43F;
@@ -61,8 +60,8 @@ public class CamelEntity extends AbstractHorseEntity implements ClientVehicle {
         setFlag(EntityFlag.TAMED, true);
     }
 
-    public void setHorseFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setHorseFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.EATING, (xd & 0x10) == 0x10);
         setFlag(EntityFlag.STANDING, (xd & 0x20) == 0x20);
 
@@ -115,11 +114,11 @@ public class CamelEntity extends AbstractHorseEntity implements ClientVehicle {
         }
     }
 
-    public void setDashing(BooleanEntityMetadata entityMetadata) {
+    public void setDashing(DataValue<Boolean> entityMetadata) {
         // Java sends true to show dash animation and start the dash cooldown,
         // false ends the dash animation, not the cooldown.
         // Bedrock shows dash animation if HAS_DASH_COOLDOWN is set and the camel is above ground
-        if (entityMetadata.getPrimitiveValue()) {
+        if (entityMetadata.value()) {
             setFlag(EntityFlag.HAS_DASH_COOLDOWN, true);
             vehicleComponent.startDashCooldown();
         } else if (!this.shouldSimulateMovement()) { // Don't remove dash cooldown prematurely if client is controlling
@@ -127,16 +126,16 @@ public class CamelEntity extends AbstractHorseEntity implements ClientVehicle {
         }
     }
 
-    public void setLastPoseTick(LongEntityMetadata entityMetadata) {
+    public void setLastPoseTick(DataValue<Long> entityMetadata) {
         // Tick is based on world time. If negative, the camel is sitting.
         // Must be compared to world time to know if the camel is fully standing/sitting or transitioning.
-        vehicleComponent.setLastPoseTick(entityMetadata.getPrimitiveValue());
+        vehicleComponent.setLastPoseTick(entityMetadata.value());
     }
 
     @Override
-    protected AttributeData calculateAttribute(Attribute javaAttribute, GeyserAttributeType type) {
+    protected AttributeData calculateAttribute(AttributeSnapshot javaAttribute, GeyserAttributeType type) {
         AttributeData attributeData = super.calculateAttribute(javaAttribute, type);
-        if (javaAttribute.getType() == AttributeType.Builtin.JUMP_STRENGTH) {
+        if (javaAttribute.attribute().value() == Attributes.JUMP_STRENGTH.value()) {
             vehicleComponent.setHorseJumpStrength(attributeData.getValue());
         }
         return attributeData;

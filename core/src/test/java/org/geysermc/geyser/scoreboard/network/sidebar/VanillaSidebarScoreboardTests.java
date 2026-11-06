@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network.sidebar;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
@@ -37,12 +39,10 @@ import org.cloudburstmc.protocol.bedrock.packet.SetScorePacket;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.Test;
 
 public class VanillaSidebarScoreboardTests {
@@ -55,19 +55,13 @@ public class VanillaSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -80,7 +74,7 @@ public class VanillaSidebarScoreboardTests {
             });
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("owner", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("owner", "objective", 1));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -99,20 +93,14 @@ public class VanillaSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("owner", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("owner", "objective", 1));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -131,7 +119,7 @@ public class VanillaSidebarScoreboardTests {
             });
             assertNoNextPacket(context);
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("owner", "objective", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("owner", "objective", 2));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -151,20 +139,14 @@ public class VanillaSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("owner", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("owner", "objective", 1));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -185,7 +167,7 @@ public class VanillaSidebarScoreboardTests {
 
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("owner", "objective", 1).withDisplay(Component.text("hi"))
+                VanillaScoreboardPackets.score("owner", "objective", 1, Component.text("hi"), null)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -212,20 +194,14 @@ public class VanillaSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("owner", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("owner", "objective", 1));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -246,7 +222,7 @@ public class VanillaSidebarScoreboardTests {
 
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("owner", "objective", 2).withDisplay(Component.text("hi"))
+                VanillaScoreboardPackets.score("owner", "objective", 2, Component.text("hi"), null)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();

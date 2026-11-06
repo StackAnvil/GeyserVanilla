@@ -30,7 +30,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetDataPacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetDataPacket;
 
 @Translator(packet = ClientboundContainerSetDataPacket.class)
 public class JavaContainerSetDataTranslator extends PacketTranslator<ClientboundContainerSetDataPacket> {
@@ -41,6 +41,6 @@ public class JavaContainerSetDataTranslator extends PacketTranslator<Clientbound
         if (inventory == null)
             return;
 
-        inventory.updateProperty(packet.getRawProperty(), packet.getValue());
+        inventory.updateProperty(packet.getId(), packet.getValue());
     }
 }

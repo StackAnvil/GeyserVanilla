@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.nautilus;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.TrigMath;
@@ -46,15 +48,14 @@ import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractiveTag;
 import org.geysermc.geyser.util.ItemUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.HolderSet;
 
 public abstract class AbstractNautilusEntity extends TameableEntity implements ClientVehicle {
-    private HolderSet repairableItems = null;
+    private HolderSet<net.minecraft.world.item.Item> repairableItems = null;
     private boolean isCurseOfBinding = false;
     private final NautilusVehicleComponent vehicleComponent;
 
@@ -75,12 +76,13 @@ public abstract class AbstractNautilusEntity extends TameableEntity implements C
     public void setBody(GeyserItemStack stack) {
         super.setBody(stack);
         isCurseOfBinding = ItemUtils.hasEffect(session.javaRegistries(), stack, EnchantmentComponent.PREVENT_ARMOR_CHANGE);
-        repairableItems = stack.getComponent(DataComponentTypes.REPAIRABLE);
+        var repairable = stack.getComponent(DataComponents.REPAIRABLE);
+        repairableItems = repairable == null ? null : repairable.items();
     }
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (getFlag(EntityFlag.ANGRY)) {
             return InteractiveTag.NONE;
         }
@@ -90,7 +92,7 @@ public abstract class AbstractNautilusEntity extends TameableEntity implements C
                 return InteractiveTag.EQUIP_NAUTILUS_ARMOR;
             }
             if (itemInHand.is(Items.SHEARS) && !getItemInSlot(EquipmentSlot.BODY).isEmpty()
-                    && (!isCurseOfBinding || session.getGameMode().equals(GameMode.CREATIVE))) {
+                    && (!isCurseOfBinding || session.getGameMode().equals(GameType.CREATIVE))) {
                 return InteractiveTag.REMOVE_NAUTILUS_ARMOR;
             }
             if (itemInHand.is(session, repairableItems) &&
@@ -131,8 +133,8 @@ public abstract class AbstractNautilusEntity extends TameableEntity implements C
         return !this.getFlag(EntityFlag.SADDLED);
     }
 
-    public void setDashing(BooleanEntityMetadata entityMetadata) {
-        if (entityMetadata.getPrimitiveValue()) {
+    public void setDashing(DataValue<Boolean> entityMetadata) {
+        if (entityMetadata.value()) {
             vehicleComponent.setDashCooldown(40);
         }
     }

@@ -38,7 +38,7 @@ import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.updater.AnvilInventoryUpdater;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 import java.util.Objects;
 
@@ -100,7 +100,7 @@ public class AnvilInventoryTranslator extends AbstractBlockInventoryTranslator<A
     }
 
     @Override
-    public AnvilContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public AnvilContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new AnvilContainer(session, name, windowId, this.size, containerType);
     }
 

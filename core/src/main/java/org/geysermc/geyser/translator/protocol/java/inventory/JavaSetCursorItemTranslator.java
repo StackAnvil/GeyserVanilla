@@ -30,14 +30,14 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundSetCursorItemPacket;
+import net.minecraft.network.protocol.game.ClientboundSetCursorItemPacket;
 
 @Translator(packet = ClientboundSetCursorItemPacket.class)
 public class JavaSetCursorItemTranslator extends PacketTranslator<ClientboundSetCursorItemPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSetCursorItemPacket packet) {
-        GeyserItemStack newItem = GeyserItemStack.from(session, packet.getContents());
+        GeyserItemStack newItem = GeyserItemStack.from(session, packet.contents());
         session.getBundleCache().initialize(newItem);
         session.getPlayerInventory().setCursor(newItem, session);
         InventoryUtils.updateCursor(session);

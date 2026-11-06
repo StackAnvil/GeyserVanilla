@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.scoreboard.network.sidebar;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.AssertUtils.assertNoNextPacket;
 import static org.geysermc.geyser.scoreboard.network.util.GeyserMockContextScoreboard.mockContextScoreboard;
@@ -42,17 +44,15 @@ import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObj
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.FixedFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import net.minecraft.network.chat.numbers.FixedFormat;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.Test;
 
 /*
@@ -67,19 +67,13 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -93,7 +87,7 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "")
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -111,19 +105,13 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective", NamedTextColor.AQUA, TextDecoration.BOLD),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective", NamedTextColor.AQUA, TextDecoration.BOLD), RenderType.INTEGER, null)
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -146,19 +134,13 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective", NamedTextColor.AQUA, TextDecoration.BOLD),
-                    ScoreType.INTEGER,
-                    new FixedFormat(Component.text("format", NamedTextColor.AQUA))
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective", NamedTextColor.AQUA, TextDecoration.BOLD), RenderType.INTEGER, VanillaScoreboardPackets.fixed(Component.text("format", NamedTextColor.AQUA)))
             );
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -170,7 +152,7 @@ public class BasicSidebarScoreboardTests {
                 return packet;
             });
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective", 3));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective", 3));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -189,34 +171,22 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.ADD,
-                    Component.text("objective1"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective1"), RenderType.INTEGER, null)
             );
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective2",
-                    ObjectiveAction.ADD,
-                    Component.text("objective2"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective2", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective2"), RenderType.INTEGER, null)
             );
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective1", 1));
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("Tim203", "objective2", 2));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective1", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("Tim203", "objective2", 2));
             assertNoNextPacket(context);
 
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective2")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective2")
             );
 
             assertNextPacket(context, () -> {
@@ -239,7 +209,7 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective1")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective1")
             );
 
             assertNextPacket(context, () -> {
@@ -275,20 +245,14 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective",
-                    ObjectiveAction.ADD,
-                    Component.text("objective"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("team-player", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("team-player", "objective", 1));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -309,18 +273,7 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    null,
-                    new String[] {"team-player"}
-                )
+                VanillaScoreboardPackets.createTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, null, new String[] {"team-player"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -338,17 +291,7 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.BLACK
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.BLACK)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -366,17 +309,7 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team",
-                    Component.empty(),
-                    Component.text("hi"),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.BLACK
-                )
+                VanillaScoreboardPackets.updateTeam("team", Component.empty(), Component.text("hi"), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.BLACK)
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -405,20 +338,14 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.ADD,
-                    Component.text("objective1"),
-                    ScoreType.INTEGER,
-                    null
-                )
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective1"), RenderType.INTEGER, null)
             );
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("player1", "objective1", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("player1", "objective1", 1));
             assertNoNextPacket(context);
 
             context.translate(
                 setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective1")
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective1")
             );
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
@@ -439,7 +366,7 @@ public class BasicSidebarScoreboardTests {
 
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("player2", "objective1", 2).withNumberFormat(new FixedFormat(Component.text("abc")))
+                VanillaScoreboardPackets.score("player2", "objective1", 2, null, VanillaScoreboardPackets.fixed(Component.text("abc")))
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -453,12 +380,7 @@ public class BasicSidebarScoreboardTests {
             // First check just updating the number format
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.UPDATE,
-                    Component.text("objective1"),
-                    ScoreType.INTEGER,
-                    new FixedFormat(Component.text("hi")))
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_CHANGE, Component.text("objective1"), RenderType.INTEGER, VanillaScoreboardPackets.fixed(Component.text("hi")))
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -477,7 +399,7 @@ public class BasicSidebarScoreboardTests {
             // Ensure state is cleanly reset for the propagated number format score, by updating a score that has its own number format
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("player2", "objective1", 3).withNumberFormat(new FixedFormat(Component.text("abc")))
+                VanillaScoreboardPackets.score("player2", "objective1", 3, null, VanillaScoreboardPackets.fixed(Component.text("abc")))
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
@@ -490,12 +412,7 @@ public class BasicSidebarScoreboardTests {
             // But also check updating both the objective name and format
             context.translate(
                 setObjectiveTranslator,
-                new ClientboundSetObjectivePacket(
-                    "objective1",
-                    ObjectiveAction.UPDATE,
-                    Component.text("obj"),
-                    ScoreType.INTEGER,
-                    new FixedFormat(Component.text("hello")))
+                VanillaScoreboardPackets.objective("objective1", ClientboundSetObjectivePacket.METHOD_CHANGE, Component.text("obj"), RenderType.INTEGER, VanillaScoreboardPackets.fixed(Component.text("hello")))
             );
             assertNextPacket(context, () -> {
                 var packet = new RemoveObjectivePacket();
@@ -525,7 +442,7 @@ public class BasicSidebarScoreboardTests {
             // Ensure state is cleanly reset for the propagated number format score, by updating a score that has its own number format
             context.translate(
                 setScoreTranslator,
-                new ClientboundSetScorePacket("player2", "objective1", 4).withNumberFormat(new FixedFormat(Component.text("abc")))
+                VanillaScoreboardPackets.score("player2", "objective1", 4, null, VanillaScoreboardPackets.fixed(Component.text("abc")))
             );
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();

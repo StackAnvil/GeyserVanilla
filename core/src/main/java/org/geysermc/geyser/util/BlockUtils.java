@@ -42,9 +42,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.EntityEffectCache;
 import org.geysermc.geyser.session.cache.SkullCache;
 import org.geysermc.geyser.translator.collision.BlockCollision;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.AdventureModePredicate;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ToolData;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.Tool;
 
 import java.util.List;
 import java.util.Optional;
@@ -72,15 +71,16 @@ public final class BlockUtils {
     }
 
     private static boolean isCorrectItemForDrops(GeyserSession session, Block block, GeyserItemStack stack) {
-        ToolData tool = stack.getComponent(DataComponentTypes.TOOL);
+        Tool tool = stack.getComponent(DataComponents.TOOL);
         if (tool == null) {
             return false;
         }
 
-        for (ToolData.Rule rule : tool.getRules()) {
-            if (rule.getCorrectForDrops() != null) {
-                if (block.is(session, rule.getBlocks())) {
-                    return rule.getCorrectForDrops();
+        for (Tool.Rule rule : tool.rules()) {
+            if (rule.correctForDrops().isPresent()) {
+                if (rule.blocks().contains(session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK)
+                    .get(block.javaId()).orElseThrow())) {
+                    return rule.correctForDrops().orElseThrow();
                 }
             }
         }
@@ -89,20 +89,21 @@ public final class BlockUtils {
     }
 
     private static float getItemDestroySpeed(GeyserSession session, Block block, GeyserItemStack stack) {
-        ToolData tool = stack.getComponent(DataComponentTypes.TOOL);
+        Tool tool = stack.getComponent(DataComponents.TOOL);
         if (tool == null) {
             return 1.0F;
         }
 
-        for (ToolData.Rule rule : tool.getRules()) {
-            if (rule.getSpeed() != null) {
-                if (block.is(session, rule.getBlocks())) {
-                    return rule.getSpeed();
+        for (Tool.Rule rule : tool.rules()) {
+            if (rule.speed().isPresent()) {
+                if (rule.blocks().contains(session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.BLOCK)
+                    .get(block.javaId()).orElseThrow())) {
+                    return rule.speed().orElseThrow();
                 }
             }
         }
 
-        return tool.getDefaultMiningSpeed();
+        return tool.defaultMiningSpeed();
     }
 
     private static float getPlayerDestroySpeed(GeyserSession session, Block block, GeyserItemStack itemInHand) {
@@ -151,7 +152,7 @@ public final class BlockUtils {
     /**
      * Given a position, return the position if a block were located on the specified block face.
      * @param blockPos the block position
-     * @param face the face of the block - see {@link org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction}
+     * @param face the face of the block - see {@link net.minecraft.core.Direction}
      * @return the block position with the block face accounted for
      */
     public static Vector3i getBlockPosition(Vector3i blockPos, Direction face) {
@@ -261,48 +262,10 @@ public final class BlockUtils {
         restoreCorrectBlock(session, vector, blockState);
     }
 
-    public static boolean blockMatchesPredicate(GeyserSession session, BlockState state, AdventureModePredicate.BlockPredicate predicate) {
-        if (predicate.getBlocks() != null && !state.block().is(session, predicate.getBlocks())) {
-            return false;
-        } else if (predicate.getProperties() != null) {
-            List<AdventureModePredicate.PropertyMatcher> matchers = predicate.getProperties();
-            if (!matchers.isEmpty()) {
-                for (AdventureModePredicate.PropertyMatcher matcher : matchers) {
-                    for (Property<?> property : state.block().propertyKeys()) {
-                        if (matcher.getName().equals(property.name())) {
-                            if (!propertyMatchesPredicate(state, property, matcher)) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // Not checking NBT or data components - assume the predicate matches
-        return true;
-    }
-
-    private static <T extends Comparable<T>> boolean propertyMatchesPredicate(BlockState state, Property<T> property, AdventureModePredicate.PropertyMatcher matcher) {
-        T stateValue = state.getValue(property);
-        if (matcher.getValue() != null) {
-            Optional<T> value = property.valueOf(matcher.getValue());
-            return value.isPresent() && stateValue.equals(value.get());
-        } else {
-            if (matcher.getMinValue() != null) {
-                Optional<T> min = property.valueOf(matcher.getMinValue());
-                if (min.isEmpty() || stateValue.compareTo(min.get()) < 0) {
-                    return false;
-                }
-            }
-            if (matcher.getMaxValue() != null) {
-                Optional<T> max = property.valueOf(matcher.getMaxValue());
-                if (max.isEmpty() || stateValue.compareTo(max.get()) > 0) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
+    public static boolean blockMatchesPredicate(GeyserSession session, BlockState state,
+                                                net.minecraft.advancements.predicates.BlockPredicate predicate) {
+        return org.geysermc.geyser.vanilla.protocol.VanillaAdventurePredicates.matchesState(predicate,
+            net.minecraft.world.level.block.Block.stateById(state.javaId()), session.vanillaRegistries());
     }
 
     private BlockUtils() {

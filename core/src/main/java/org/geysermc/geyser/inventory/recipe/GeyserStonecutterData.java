@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.inventory.recipe;
 
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -36,9 +38,8 @@ import org.geysermc.geyser.entity.properties.GeyserEntityProperties;
 import org.geysermc.geyser.entity.properties.type.PropertyType;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.translator.entity.EntityMetadataTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import net.minecraft.network.syncher.EntityDataSerializer;
+import net.minecraft.world.entity.EntityType;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -107,7 +108,7 @@ public abstract class EntityTypeDefinition<T extends Entity> extends EntityTypeB
         }
 
         @Override
-        public <U, EM extends EntityMetadata<U, ? extends MetadataType<U>>> Builder<T> addTranslator(MetadataType<U> type, BiConsumer<T, EM> translateFunction) {
+        public <U, EM extends DataValue<U>> Builder<T> addTranslator(EntityDataSerializer<U> type, BiConsumer<T, EM> translateFunction) {
             return (Builder<T>) super.addTranslator(type, translateFunction);
         }
 

@@ -49,20 +49,16 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.session.cache.tags.GeyserHolderSet;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.CompositeSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.DyedSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.EmptySlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemStackSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.OnlyWithComponentSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.TagSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.WithAnyPotionSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.WithRemainderSlotDisplay;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.display.SlotDisplay.Composite;
+import net.minecraft.world.item.crafting.display.SlotDisplay.DyedSlotDemo;
+import net.minecraft.world.item.crafting.display.SlotDisplay.Empty;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemSlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.OnlyWithComponent;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.TagSlotDisplay;
+import net.minecraft.world.item.crafting.display.SlotDisplay.WithRemainder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,134 +86,64 @@ public class RecipeUtil {
             MultiRecipeData.of(UUID.fromString("602234e4-cac1-4353-8bb7-b1ebff70024b"), ++LAST_RECIPE_NET_ID) // Map locking
     );
 
-    // Arrays are usually an issue in maps, but because it's referencing the tag array that is unchanged, it actually works out for us.
-    private static final ThreadLocal<IntObjectPair<Map<int[], List<ItemDescriptorWithCount>>>> TAG_TO_ITEM_DESCRIPTOR_CACHE = ThreadLocal.withInitial(() -> IntObjectMutablePair.of(0, new Object2ObjectOpenHashMap<>()));
-
     public static List<ItemDescriptorWithCount> translateToInput(GeyserSession session, SlotDisplay slotDisplay) {
-        // TODO possible code duplication with InventoryUtils#acceptsAsInput?
-        if (slotDisplay instanceof EmptySlotDisplay) {
-            return Collections.singletonList(ItemDescriptorWithCount.EMPTY);
+        if (slotDisplay instanceof Empty) {
+            return List.of(ItemDescriptorWithCount.EMPTY);
         }
-        if (slotDisplay instanceof CompositeSlotDisplay composite) {
+        if (slotDisplay instanceof WithRemainder remainder) {
+            return translateToInput(session, remainder.input());
+        }
+        if (slotDisplay instanceof OnlyWithComponent filtered) {
+            // Bedrock descriptors cannot require a Java data component.
+            return translateToInput(session, filtered.source());
+        }
+        if (slotDisplay instanceof DyedSlotDemo dyed) {
+            return translateToInput(session, dyed.target());
+        }
+        if (slotDisplay instanceof ItemSlotDisplay item) {
+            return List.of(fromItem(session, net.minecraft.core.registries.BuiltInRegistries.ITEM.getId(item.item().value())));
+        }
+        if (slotDisplay instanceof Composite composite) {
             if (composite.contents().size() == 1) {
                 return translateToInput(session, composite.contents().getFirst());
             }
-
-            // Try and see if the contents match a tag.
-            // ViaVersion maps pre-1.21.2 ingredient lists to CompositeSlotDisplays.
-            int[] items = new int[composite.contents().size()];
-            List<SlotDisplay> contents = composite.contents();
-            for (int i = 0; i < contents.size(); i++) {
-                SlotDisplay subDisplay = contents.get(i);
-                int id;
-                if (subDisplay instanceof ItemSlotDisplay(int itemSlotId)) {
-                    id = itemSlotId;
-                } else if (!(subDisplay instanceof ItemStackSlotDisplay(ItemStack itemStack))) {
-                    id = -1;
-                } else if (itemStack.getAmount() == 1 && itemStack.getDataComponentsPatch() == null) {
-                    id = itemStack.getId();
-                } else {
-                    id = -1;
+            int[] ids = composite.contents().stream().mapToInt(RecipeUtil::plainItemId).sorted().toArray();
+            if (ids.length > 0 && ids[0] >= 0) {
+                var descriptor = lookupBedrockTag(session, ids);
+                if (descriptor != null) {
+                    return descriptor;
                 }
-                if (id == -1) {
-                    // We couldn't guarantee a "normal" item from this stack.
-                    return fallbackCompositeMapping(session, composite);
-                }
-                items[i] = id;
             }
-            // For searching in the tag map.
-            Arrays.sort(items);
-
-            List<ItemDescriptorWithCount> tagDescriptor = lookupBedrockTag(session, items);
-            if (tagDescriptor != null) {
-                return tagDescriptor;
-            }
-
             return fallbackCompositeMapping(session, composite);
         }
-        if (slotDisplay instanceof WithRemainderSlotDisplay remainder) {
-            // Don't need to worry about what will stay in the crafting table after crafting for the purposes of sending recipes to Bedrock
-            return translateToInput(session, remainder.input());
-        }
-        if (slotDisplay instanceof ItemSlotDisplay(int itemId)) {
-            return Collections.singletonList(fromItem(session, itemId));
-        }
-        if (slotDisplay instanceof ItemStackSlotDisplay(ItemStack itemStack)) {
-            ItemData item = ItemTranslator.translateToBedrock(session, itemStack);
-            return Collections.singletonList(ItemDescriptorWithCount.fromItem(item));
-        }
-        if (slotDisplay instanceof TagSlotDisplay(HolderSet set)) {
-            int[] items = GeyserHolderSet.fromMCPL(JavaRegistries.ITEM, set).resolveRawHolders(session.javaRegistries()); // I don't like this...
-            if (items == null || items.length == 0) {
-                return Collections.singletonList(ItemDescriptorWithCount.EMPTY);
-            } else if (items.length == 1) {
-                return Collections.singletonList(fromItem(session, items[0]));
-            } else {
-                // Cache is implemented as, presumably, an item tag will be used multiple times in succession
-                // (E.G. a chest with planks tags)
-                if (TAG_TO_ITEM_DESCRIPTOR_CACHE.get().firstInt() != session.protocolVersion()) {
-                    TAG_TO_ITEM_DESCRIPTOR_CACHE.get().first(session.protocolVersion()).second().clear();
-                }
-                return TAG_TO_ITEM_DESCRIPTOR_CACHE.get().second().computeIfAbsent(items, key -> {
-                    List<ItemDescriptorWithCount> tagDescriptor = lookupBedrockTag(session, key);
-                    if (tagDescriptor != null) {
-                        return tagDescriptor;
-                    }
-
-                    // In the future, we can probably search through and use subsets of tags as well.
-                    // I.E. if a Bedrock tag contains [stone stone_brick] and the Java tag uses [stone stone_brick bricks]
-                    // we can still use that Bedrock tag alongside plain item descriptors for "bricks".
-
-                    Set<ItemDescriptorWithCount> itemDescriptors = new HashSet<>();
-                    for (int item : key) {
-                        itemDescriptors.add(fromItem(session, item));
-                    }
-                    return List.copyOf(itemDescriptors); // This, or a list from the start with contains -> add?
-                });
+        if (slotDisplay instanceof TagSlotDisplay tag) {
+            int[] ids = tag.tag().stream().mapToInt(holder ->
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.getId(holder.value())).sorted().toArray();
+            if (ids.length == 0) {
+                return List.of(ItemDescriptorWithCount.EMPTY);
             }
+            var descriptor = lookupBedrockTag(session, ids);
+            return descriptor != null ? descriptor : Arrays.stream(ids).mapToObj(id -> fromItem(session, id)).distinct().toList();
         }
-        if (slotDisplay instanceof OnlyWithComponentSlotDisplay(SlotDisplay source, DataComponentType<?> ignored)) {
-            // FIXME I don't think there's a proper way to do this? How do we tell bedrock that the item has to have a certain component?
-            return translateToInput(session, source);
+        return org.geysermc.geyser.vanilla.protocol.VanillaRecipeDisplays.stacks(session.vanillaRegistries(), slotDisplay)
+            .map(stack -> ItemDescriptorWithCount.fromItem(ItemTranslator.translateToBedrock(session, stack)))
+            .distinct().toList();
+    }
+
+    private static int plainItemId(SlotDisplay display) {
+        if (display instanceof ItemSlotDisplay item) {
+            return net.minecraft.core.registries.BuiltInRegistries.ITEM.getId(item.item().value());
         }
-        if (slotDisplay instanceof DyedSlotDisplay(SlotDisplay ignored, SlotDisplay target)) {
-            return translateToInput(session, target);
+        if (display instanceof ItemStackSlotDisplay item && item.stack().count() == 1 && item.stack().components().isEmpty()) {
+            return net.minecraft.core.registries.BuiltInRegistries.ITEM.getId(item.stack().item().value());
         }
-        if (slotDisplay instanceof WithAnyPotionSlotDisplay(SlotDisplay display)) {
-            // Not sure how I feel about this...
-            GeyserItemStack stack = GeyserItemStack.from(session, display);
-            List<ItemDescriptorWithCount> itemDescriptors = new ArrayList<>();
-            for (Potion potion : Potion.VALUES) {
-                stack.getOrCreateComponents().put(DataComponentTypes.POTION_CONTENTS, potion.toComponent());
-                itemDescriptors.add(ItemDescriptorWithCount.fromItem(ItemTranslator.translateToBedrock(session, stack)));
-            }
-            return Collections.unmodifiableList(itemDescriptors);
-        }
-        session.getGeyser().getLogger().warning("Unimplemented slot display type for input: " + slotDisplay);
-        return null;
+        return -1;
     }
 
     public static @Nullable Pair<Item, ItemData> translateToOutput(GeyserSession session, SlotDisplay slotDisplay) {
-        // TODO possible code duplication with GeyserItemStack#from?
-        if (slotDisplay instanceof EmptySlotDisplay) {
-            return null;
-        }
-        if (slotDisplay instanceof ItemSlotDisplay(int item)) {
-            return Pair.of(BuiltInJavaRegistries.ITEM.getOrThrow(item), ItemTranslator.translateToBedrock(session, new ItemStack(item)));
-        }
-        if (slotDisplay instanceof ItemStackSlotDisplay(ItemStack stack)) {
-            return Pair.of(BuiltInJavaRegistries.ITEM.getOrThrow(stack.getId()), ItemTranslator.translateToBedrock(session, stack));
-        }
-        if (slotDisplay instanceof CompositeSlotDisplay(List<SlotDisplay> contents)) {
-            // Just create the first display
-            return translateToOutput(session, contents.getFirst());
-        }
-        if (slotDisplay instanceof DyedSlotDisplay || slotDisplay instanceof OnlyWithComponentSlotDisplay || slotDisplay instanceof WithAnyPotionSlotDisplay) {
-            GeyserItemStack stack = GeyserItemStack.from(session, slotDisplay);
-            return stack.isEmpty() ? null : Pair.of(stack.asItem(), ItemTranslator.translateToBedrock(session, stack));
-        }
-        session.getGeyser().getLogger().warning("Unimplemented slot display type for output: " + slotDisplay);
-        return null;
+        ItemStack stack = org.geysermc.geyser.vanilla.protocol.VanillaRecipeDisplays.firstStack(session.vanillaRegistries(), slotDisplay);
+        return stack.isEmpty() ? null : Pair.of(BuiltInJavaRegistries.ITEM.getOrThrow(
+            org.geysermc.geyser.vanilla.protocol.VanillaItems.id(stack)), ItemTranslator.translateToBedrock(session, stack));
     }
 
     private static ItemDescriptorWithCount fromItem(GeyserSession session, int item) {
@@ -245,9 +171,9 @@ public class RecipeUtil {
     }
 
     /**
-     * Converts CompositeSlotDisplay contents to a list of basic ItemDescriptorWithCounts.
+     * Converts Composite contents to a list of basic ItemDescriptorWithCounts.
      */
-    private static List<ItemDescriptorWithCount> fallbackCompositeMapping(GeyserSession session, CompositeSlotDisplay composite) {
+    private static List<ItemDescriptorWithCount> fallbackCompositeMapping(GeyserSession session, Composite composite) {
         return composite.contents().stream()
                 .map(subDisplay -> translateToInput(session, subDisplay))
                 .filter(Objects::nonNull)

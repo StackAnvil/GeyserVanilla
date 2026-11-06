@@ -42,18 +42,10 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.ItemTranslator;
 import org.geysermc.geyser.util.DimensionUtils;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.BlockParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ColorParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.DustParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.GeyserBaseParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.GeyserParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ItemParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.ParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.SpellParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.TrailParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.VibrationParticleData;
-import org.geysermc.mcprotocollib.protocol.data.game.level.particle.positionsource.BlockPositionSource;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.particles.*;
+import net.minecraft.world.level.gameevent.BlockPositionSource;
+import org.geysermc.geyser.vanilla.protocol.VanillaParticles;
 
 import java.util.List;
 import java.util.Locale;
@@ -65,7 +57,7 @@ public sealed interface ParticleMapping {
 
     Optional<ParticleType> particleType();
 
-    Function<Vector3f, BedrockPacket> mapParticle(GeyserSession session, @Nullable ParticleData particleData);
+    Function<Vector3f, BedrockPacket> mapParticle(GeyserSession session, @Nullable ParticleOptions particleData);
 
     record IdentifierBased(Key identifier) implements ParticleMapping {
 
@@ -80,7 +72,7 @@ public sealed interface ParticleMapping {
         }
 
         @Override
-        public Function<Vector3f, BedrockPacket> mapParticle(GeyserSession session, @Nullable ParticleData particleData) {
+        public Function<Vector3f, BedrockPacket> mapParticle(GeyserSession session, @Nullable ParticleOptions particleData) {
             return position -> ParticleMapping.createParticleEffectPacket(session, identifier.toString(), position);
         }
     }
@@ -96,7 +88,7 @@ public sealed interface ParticleMapping {
         }
 
         @Override
-        public Function<Vector3f, BedrockPacket> mapParticle(GeyserSession session, @Nullable ParticleData particleData) {
+        public Function<Vector3f, BedrockPacket> mapParticle(GeyserSession session, @Nullable ParticleOptions particleData) {
             return position -> {
                 LevelEventPacket packet = new LevelEventPacket();
                 packet.setType(event);
@@ -123,10 +115,10 @@ public sealed interface ParticleMapping {
         return new LevelEventTypeBased(event);
     }
 
-    static BuiltIn builtIn(org.geysermc.mcprotocollib.protocol.data.game.level.particle.ParticleType type) {
-        return switch (type) {
-            case BLOCK -> (session, data) -> {
-                int blockState = session.getBlockMappings().getBedrockBlockId(((BlockParticleData) data).getBlockState());
+    static BuiltIn builtIn(net.minecraft.core.particles.ParticleType<?> type) {
+        return switch (java.util.Objects.requireNonNull(net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(type)).getPath()) {
+            case "block" -> (session, data) -> {
+                int blockState = session.getBlockMappings().getBedrockBlockId(net.minecraft.world.level.block.Block.getId(((BlockParticleOption) data).getState()));
 
                 return position -> {
                     LevelEventPacket packet = new LevelEventPacket();
@@ -136,13 +128,13 @@ public sealed interface ParticleMapping {
                     return packet;
                 };
             };
-            case GEYSER, GEYSER_BASE, GEYSER_PLUME, GEYSER_POOF -> (session, particleData) -> {
+            case "geyser", "geyser_base", "geyser_plume", "geyser_poof" -> (session, particleData) -> {
                 // This isn't a perfect translation - GEYSER_PLUME only displays the plume on Java, but does the full Geyser on bedrock, for example
 
                 float waterBlocks = 0.0F;
-                if (particleData instanceof GeyserBaseParticleData geyserParticleData) { // GEYSER_BASE, GEYSER_POOF
+                if (particleData instanceof GeyserBaseParticleOptions geyserParticleData) { // GEYSER_BASE, GEYSER_POOF
                     waterBlocks = geyserParticleData.waterBlocks();
-                } else if (particleData instanceof GeyserParticleData(int blocks)) { // GEYSER, GEYSER_PLUME
+                } else if (particleData instanceof GeyserParticleOptions(var ignoredType, int blocks)) { // GEYSER, GEYSER_PLUME
                     waterBlocks = blocks;
                 }
 
@@ -157,8 +149,8 @@ public sealed interface ParticleMapping {
                 )));
             };
             // FIXME broken - uses the wrong colours, see https://github.com/GeyserMC/Geyser/issues/4803
-            case FALLING_DUST -> (session, data) -> {
-                int blockState = session.getBlockMappings().getBedrockBlockId(((BlockParticleData) data).getBlockState());
+            case "falling_dust" -> (session, data) -> {
+                int blockState = session.getBlockMappings().getBedrockBlockId(net.minecraft.world.level.block.Block.getId(((BlockParticleOption) data).getState()));
 
                 return position -> {
                     LevelEventPacket packet = new LevelEventPacket();
@@ -168,8 +160,8 @@ public sealed interface ParticleMapping {
                     return packet;
                 };
             };
-            case ITEM -> (session, particleData) -> {
-                ItemStack javaItem = ((ItemParticleData) particleData).getItemStack();
+            case "item" -> (session, particleData) -> {
+                ItemStack javaItem = ((ItemParticleOption) particleData).getItem().create();
                 ItemData bedrockItem = ItemTranslator.translateToBedrock(session, javaItem);
                 int data = bedrockItem.getDefinition().getRuntimeId() << 16 | bedrockItem.getDamage();
 
@@ -182,8 +174,8 @@ public sealed interface ParticleMapping {
                 };
             };
             // TODO transition particle, might not be possible on bedrock
-            case DUST, DUST_COLOR_TRANSITION -> (session, data) -> {
-                int rgbData = ((DustParticleData) data).getColor();
+            case "dust", "dust_color_transition" -> (session, data) -> {
+                int rgbData = VanillaParticles.rgb(data instanceof DustParticleOptions dust ? dust.getColor() : ((DustColorTransitionOptions) data).getFromColor());
 
                 return position -> {
                     LevelEventPacket packet = new LevelEventPacket();
@@ -195,18 +187,18 @@ public sealed interface ParticleMapping {
             };
             // power option might not be possible?
             // INSTANT_EFFECT doesn't exist on bedrock, EFFECT comes closest
-            case EFFECT, INSTANT_EFFECT -> (session, data) -> position
-                -> createParticleEffectPacket(session, "minecraft:mobspell_emitter", position, ParticleHelper.serializeColor(((SpellParticleData) data).getColor()));
-            case VIBRATION -> (session, particleData) -> {
-                VibrationParticleData data = (VibrationParticleData) particleData;
+            case "effect", "instant_effect" -> (session, data) -> position
+                -> createParticleEffectPacket(session, "minecraft:mobspell_emitter", position, ParticleHelper.serializeColor(VanillaParticles.color((SpellParticleOption) data)));
+            case "vibration" -> (session, particleData) -> {
+                VibrationParticleOption data = (VibrationParticleOption) particleData;
 
                 Vector3f target;
                 // As of Java 26.3, there are only 2 position sources: block and entity.
                 // Entity is not allowed, see https://mcsrc.dev/2/26.3/net/minecraft/core/particles/VibrationParticleOption#L14-15
-                if (data.getPositionSource() instanceof BlockPositionSource blockPositionSource) {
-                    target = blockPositionSource.getPosition().toFloat().add(0.5f, 0.5f, 0.5f);
+                if (data.getDestination() instanceof BlockPositionSource blockPositionSource) {
+                    target = org.geysermc.geyser.util.MathUtils.toVector3i(blockPositionSource.pos()).toFloat().add(0.5f, 0.5f, 0.5f);
                 } else {
-                    throw new IllegalStateException("Received invalid position source for VIBRATION particle: " + data.getPositionSource().getType());
+                    throw new IllegalStateException("Received invalid position source for VIBRATION particle: " + data.getDestination().getType());
                 }
 
                 return position -> {
@@ -217,36 +209,36 @@ public sealed interface ParticleMapping {
                             .putCompound("origin", buildVec3PositionTag(position))
                             .putCompound("target", buildVec3PositionTag(target)) // There is a way to target an entity but that takes an attachPos instead of a y offset
                             .putFloat("speed", 20f)
-                            .putFloat("timeToLive", data.getArrivalTicks() / 20f)
+                            .putFloat("timeToLive", data.getArrivalInTicks() / 20f)
                             .build()
                     );
                     return packet;
                 };
             };
-            case FIREWORK -> (session, data) -> position
+            case "firework" -> (session, data) -> position
                 -> createParticleEffectPacket(session, "minecraft:sparkler_emitter", position, ParticleHelper.serializeColor(0xFFFFFF));
-            case TINTED_LEAVES -> (session, data) -> position
-                -> createParticleEffectPacket(session, "minecraft:biome_tinted_leaves_particle", position, ParticleHelper.serializeColor(((ColorParticleData) data).getColor()));
-            case GLOW -> (session, data) -> {
+            case "tinted_leaves" -> (session, data) -> position
+                -> createParticleEffectPacket(session, "minecraft:biome_tinted_leaves_particle", position, ParticleHelper.serializeColor(VanillaParticles.color((ColorParticleOption) data)));
+            case "glow" -> (session, data) -> {
                 // See https://mcsrc.dev/2/26.3/net/minecraft/client/particle/GlowParticle#L88-92
                 // TODO bedrock reports it wants xyz vars, but the particle shows anyways
                 int colour = ThreadLocalRandom.current().nextBoolean() ? 0x99FFCC : 0x146666;
                 return position -> createParticleEffectPacket(session, "minecraft:glow_particle", position, ParticleHelper.serializeColor(colour));
             };
             // See https://mcsrc.dev/2/26.3/net/minecraft/client/particle/GlowParticle#L188
-            case WAX_ON -> (session, data) -> position
+            case "wax_on" -> (session, data) -> position
                 -> createParticleEffectPacket(session, "minecraft:wax_particle", position, ParticleHelper.serializeColor(0xE88C14));
             // See https://mcsrc.dev/2/26.3/net/minecraft/client/particle/GlowParticle#L159
-            case WAX_OFF -> (session, data) -> position
+            case "wax_off" -> (session, data) -> position
                 -> createParticleEffectPacket(session, "minecraft:wax_particle", position, ParticleHelper.serializeColor(0xFFE5FF));
-            case SCRAPE -> (session, data) -> {
+            case "scrape" -> (session, data) -> {
                 // See https://mcsrc.dev/2/26.3/net/minecraft/client/particle/GlowParticle#L125-129
                 int colour = ThreadLocalRandom.current().nextBoolean() ? 0x499382 : 0x6DC49E;
                 return position -> createParticleEffectPacket(session, "minecraft:wax_particle", position, ParticleHelper.serializeColor(colour));
             };
-            case TRAIL -> (session, particleData) -> {
-                TrailParticleData data = (TrailParticleData) particleData;
-                Vector3f target = data.target().toFloat();
+            case "trail" -> (session, particleData) -> {
+                TrailParticleOption data = (TrailParticleOption) particleData;
+                Vector3f target = org.geysermc.geyser.util.MathUtils.toVector3f(data.target());
                 int rgb = data.color();
                 float lifetime = Math.max(data.duration(), 1) / 20f;
 
@@ -290,11 +282,11 @@ public sealed interface ParticleMapping {
         return packet;
     }
 
-    private static String geyserParticle(org.geysermc.mcprotocollib.protocol.data.game.level.particle.ParticleType type) {
-        return switch (type) {
-            case GEYSER_BASE -> "minecraft:geyser_base";
-            case GEYSER, GEYSER_PLUME -> "minecraft:geyser_plume";
-            case GEYSER_POOF -> "minecraft:geyser_poof";
+    private static String geyserParticle(net.minecraft.core.particles.ParticleType<?> type) {
+        return switch (java.util.Objects.requireNonNull(net.minecraft.core.registries.BuiltInRegistries.PARTICLE_TYPE.getKey(type)).getPath()) {
+            case "geyser_base" -> "minecraft:geyser_base";
+            case "geyser", "geyser_plume" -> "minecraft:geyser_plume";
+            case "geyser_poof" -> "minecraft:geyser_poof";
             default -> throw new AssertionError(type + " is not a geyser particle");
         };
     }

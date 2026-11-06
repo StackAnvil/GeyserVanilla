@@ -28,7 +28,7 @@ package org.geysermc.geyser.inventory;
 import lombok.Getter;
 import lombok.Setter;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 @Getter
 @Setter
@@ -37,7 +37,7 @@ public class BeaconContainer extends Container {
     private int secondaryId;
     private int levels;
 
-    public BeaconContainer(GeyserSession session, String title, int id, int size, ContainerType containerType) {
+    public BeaconContainer(GeyserSession session, String title, int id, int size, MenuType<?> containerType) {
         super(session, title, id, size, containerType);
     }
 }

@@ -53,7 +53,7 @@ import org.geysermc.geyser.network.bedrock.raknet.RakConnectionRequestHandler;
 import org.geysermc.geyser.network.bedrock.raknet.RakPingHandler;
 import org.geysermc.geyser.network.bedrock.raknet.RakServerInitializer;
 import org.geysermc.geyser.text.GeyserLocale;
-import org.geysermc.mcprotocollib.network.helper.TransportHelper;
+import org.geysermc.geyser.network.bedrock.BedrockTransport;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -66,8 +66,7 @@ import static org.cloudburstmc.netty.channel.raknet.RakConstants.DEFAULT_GLOBAL_
 import static org.cloudburstmc.netty.channel.raknet.RakConstants.DEFAULT_PACKET_LIMIT;
 
 public final class RaknetServer {
-    // Let MCPL determine the transport type -> less code duplication and risk of ending up with 2 different types
-    private static final TransportHelper.TransportType TRANSPORT = TransportHelper.TRANSPORT_TYPE;
+    private static final BedrockTransport TRANSPORT = BedrockTransport.PREFERRED;
 
     /**
      * See {@link EventLoopGroup#shutdownGracefully(long, long, TimeUnit)}
@@ -169,7 +168,7 @@ public final class RaknetServer {
     @SuppressWarnings("Convert2MethodRef")
     private ServerBootstrap createBootstrap() {
         if (this.geyser.config().debugMode()) {
-            this.geyser.getLogger().debug("Transport type: " + TRANSPORT.method().name());
+            this.geyser.getLogger().debug("Transport type: " + TRANSPORT.name());
             if (TRANSPORT.datagramChannelClass() == NioDatagramChannel.class) {
                 if (System.getProperties().contains("disableNativeEventLoop")) {
                     this.geyser.getLogger().debug("EventLoop type is NIO because native event loops are disabled.");

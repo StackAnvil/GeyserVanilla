@@ -38,8 +38,8 @@ import org.geysermc.geyser.item.GeyserCustomMappingData;
 import org.geysermc.geyser.item.custom.GeyserItemPredicateContext;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.Collection;
 
@@ -57,7 +57,7 @@ public final class CustomItemTranslator {
      * @return the custom item definition, or null
      */
     @Nullable
-    public static ItemDefinition getCustomItem(GeyserSession session, int stackSize, DataComponents components, ItemMapping mapping) {
+    public static ItemDefinition getCustomItem(GeyserSession session, int stackSize, GeyserDataComponents components, ItemMapping mapping) {
         if (components == null) {
             return null;
         }
@@ -67,15 +67,18 @@ public final class CustomItemTranslator {
             return null;
         }
 
-        Key itemModel = components.get(DataComponentTypes.ITEM_MODEL);
+        var itemModel = components.get(DataComponents.ITEM_MODEL);
         if (itemModel == null) {
             return null;
         }
-        Collection<GeyserCustomMappingData> customItems = allCustomItems.get(itemModel);
+        Collection<GeyserCustomMappingData> customItems = allCustomItems.get(org.geysermc.geyser.util.MinecraftKey.key(itemModel.toString()));
 
         if (mapping.isContainsV1Mappings() && customItems.isEmpty()) {
             // Try looking up vanilla model mappings too, as that's what v1 mappings target
-            customItems = allCustomItems.get(mapping.getJavaItem().getComponent(session.getComponentCache(), DataComponentTypes.ITEM_MODEL));
+            var defaultModel = mapping.getJavaItem().getComponent(session.getComponentCache(), DataComponents.ITEM_MODEL);
+            if (defaultModel != null) {
+                customItems = allCustomItems.get(org.geysermc.geyser.util.MinecraftKey.key(defaultModel.toString()));
+            }
         }
 
         if (customItems.isEmpty()) {

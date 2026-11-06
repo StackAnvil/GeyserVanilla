@@ -30,9 +30,9 @@ import org.cloudburstmc.nbt.NbtMapBuilder;
 import org.geysermc.geyser.level.block.property.Properties;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
-@BlockEntity(type = BlockEntityType.COPPER_GOLEM_STATUE)
+@BlockEntity(type = "minecraft:copper_golem_statue")
 public class CopperBlockEntityTranslator extends BlockEntityTranslator implements RequiresBlockState {
 
     @Override

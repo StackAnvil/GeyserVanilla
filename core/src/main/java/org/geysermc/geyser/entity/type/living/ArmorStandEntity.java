@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -40,11 +42,8 @@ import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.scoreboard.Team;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.InteractionHand;
 
 import java.util.Optional;
 
@@ -125,13 +124,13 @@ public class ArmorStandEntity extends LivingEntity {
     }
 
     @Override
-    public void setCustomName(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setCustomName(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         super.setCustomName(entityMetadata);
         updateSecondEntityStatus(false);
     }
 
-    public void setArmorStandFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setArmorStandFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         boolean offsetChanged = false;
         // isSmall
         boolean newIsSmall = (xd & 0x01) == 0x01;
@@ -174,28 +173,28 @@ public class ArmorStandEntity extends LivingEntity {
         setFlag(EntityFlag.BABY, isSmall); // Is small (for setting head scale)
     }
 
-    public void setHeadRotation(EntityMetadata<Vector3f, ?> entityMetadata) {
-        onRotationUpdate(EntityDataTypes.MARK_VARIANT, EntityFlag.INTERESTED, EntityFlag.CHARGED, EntityFlag.POWERED, entityMetadata.getValue());
+    public void setHeadRotation(DataValue<net.minecraft.core.Rotations> entityMetadata) {
+        onRotationUpdate(EntityDataTypes.MARK_VARIANT, EntityFlag.INTERESTED, EntityFlag.CHARGED, EntityFlag.POWERED, org.geysermc.geyser.util.MathUtils.toVector3f(entityMetadata.value()));
     }
 
-    public void setBodyRotation(EntityMetadata<Vector3f, ?> entityMetadata) {
-        onRotationUpdate(EntityDataTypes.VARIANT, EntityFlag.IN_LOVE, EntityFlag.CELEBRATING, EntityFlag.CELEBRATING_SPECIAL, entityMetadata.getValue());
+    public void setBodyRotation(DataValue<net.minecraft.core.Rotations> entityMetadata) {
+        onRotationUpdate(EntityDataTypes.VARIANT, EntityFlag.IN_LOVE, EntityFlag.CELEBRATING, EntityFlag.CELEBRATING_SPECIAL, org.geysermc.geyser.util.MathUtils.toVector3f(entityMetadata.value()));
     }
 
-    public void setLeftArmRotation(EntityMetadata<Vector3f, ?> entityMetadata) {
-        onRotationUpdate(EntityDataTypes.TRADE_TIER, EntityFlag.CHARGING, EntityFlag.CRITICAL, EntityFlag.DANCING, entityMetadata.getValue());
+    public void setLeftArmRotation(DataValue<net.minecraft.core.Rotations> entityMetadata) {
+        onRotationUpdate(EntityDataTypes.TRADE_TIER, EntityFlag.CHARGING, EntityFlag.CRITICAL, EntityFlag.DANCING, org.geysermc.geyser.util.MathUtils.toVector3f(entityMetadata.value()));
     }
 
-    public void setRightArmRotation(EntityMetadata<Vector3f, ?> entityMetadata) {
-        onRotationUpdate(EntityDataTypes.MAX_TRADE_TIER, EntityFlag.ELDER, EntityFlag.EMOTING, EntityFlag.IDLING, entityMetadata.getValue());
+    public void setRightArmRotation(DataValue<net.minecraft.core.Rotations> entityMetadata) {
+        onRotationUpdate(EntityDataTypes.MAX_TRADE_TIER, EntityFlag.ELDER, EntityFlag.EMOTING, EntityFlag.IDLING, org.geysermc.geyser.util.MathUtils.toVector3f(entityMetadata.value()));
     }
 
-    public void setLeftLegRotation(EntityMetadata<Vector3f, ?> entityMetadata) {
-        onRotationUpdate(EntityDataTypes.SKIN_ID, EntityFlag.IS_ILLAGER_CAPTAIN, EntityFlag.IS_IN_UI, EntityFlag.LINGERING, entityMetadata.getValue());
+    public void setLeftLegRotation(DataValue<net.minecraft.core.Rotations> entityMetadata) {
+        onRotationUpdate(EntityDataTypes.SKIN_ID, EntityFlag.IS_ILLAGER_CAPTAIN, EntityFlag.IS_IN_UI, EntityFlag.LINGERING, org.geysermc.geyser.util.MathUtils.toVector3f(entityMetadata.value()));
     }
 
-    public void setRightLegRotation(EntityMetadata<Vector3f, ?> entityMetadata) {
-        onRotationUpdate(EntityDataTypes.HURT_DIRECTION, EntityFlag.IS_PREGNANT, EntityFlag.SHEARED, EntityFlag.STALKING, entityMetadata.getValue());
+    public void setRightLegRotation(DataValue<net.minecraft.core.Rotations> entityMetadata) {
+        onRotationUpdate(EntityDataTypes.HURT_DIRECTION, EntityFlag.IS_PREGNANT, EntityFlag.SHEARED, EntityFlag.STALKING, org.geysermc.geyser.util.MathUtils.toVector3f(entityMetadata.value()));
     }
 
     /**
@@ -249,7 +248,7 @@ public class ArmorStandEntity extends LivingEntity {
     }
 
     @Override
-    public InteractionResult interactAt(Hand hand) {
+    public InteractionResult interactAt(InteractionHand hand) {
         if (!isMarker && !session.getPlayerInventory().getItemInHand(hand).is(Items.NAME_TAG)) {
             // Java Edition returns SUCCESS if in spectator mode, but this is overridden with an earlier check on the client
             return InteractionResult.CONSUME;
@@ -295,7 +294,7 @@ public class ArmorStandEntity extends LivingEntity {
     }
 
     @Override
-    public void setCustomNameVisible(BooleanEntityMetadata entityMetadata) {
+    public void setCustomNameVisible(DataValue<Boolean> entityMetadata) {
         super.setCustomNameVisible(entityMetadata);
         updateSecondEntityStatus(false);
     }
@@ -387,8 +386,8 @@ public class ArmorStandEntity extends LivingEntity {
     }
 
     private boolean hasAnyEquipment() {
-        return (!getItemInSlot(EquipmentSlot.HELMET).isEmpty() || !getItemInSlot(EquipmentSlot.CHESTPLATE).isEmpty()
-            || !getItemInSlot(EquipmentSlot.LEGGINGS).isEmpty() || !getItemInSlot(EquipmentSlot.BOOTS).isEmpty()
+        return (!getItemInSlot(EquipmentSlot.HEAD).isEmpty() || !getItemInSlot(EquipmentSlot.CHEST).isEmpty()
+            || !getItemInSlot(EquipmentSlot.LEGS).isEmpty() || !getItemInSlot(EquipmentSlot.FEET).isEmpty()
             || !getMainHandItem().isEmpty() || !getOffHandItem().isEmpty());
     }
 

@@ -52,23 +52,10 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.translator.protocol.java.inventory.JavaMerchantOffersTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.CompositeSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.DyedSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.EmptySlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemStackSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.OnlyWithComponentSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.SlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.TagSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.WithAnyPotionSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.WithRemainderSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundOpenBookPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClosePacket;
+import net.minecraft.world.item.ItemStack;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.crafting.display.SlotDisplay;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
 import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;
@@ -85,7 +72,7 @@ public class InventoryUtils {
      */
     public static int LAST_RECIPE_NET_ID;
     
-    public static final ItemStack REFRESH_ITEM = new ItemStack(1, 127, new DataComponents(new HashMap<>()));
+    public static final ItemStack REFRESH_ITEM = org.geysermc.geyser.vanilla.protocol.VanillaItems.stack(org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.defaultRegistries(), 1, 127, null);
 
     /**
      * An arbitrary, negative long used to delay the opening of virtual inventories until the client is
@@ -207,7 +194,7 @@ public class InventoryUtils {
     /**
      * A util method to get an (open) inventory based on a Java id. This method should be used over
      * {@link GeyserSession#getOpenInventory()} (or {@link GeyserSession#getInventoryHolder()}) to account for an edge-case where the Java server expects
-     * Geyser to have the player inventory open while we're using a virtual lectern for the {@link ClientboundOpenBookPacket}.
+     * Geyser to have the player inventory open while we're using a virtual lectern for the the Java open-book packet.
      */
     public static @Nullable InventoryHolder<?> getInventory(GeyserSession session, int javaId) {
         if (javaId == 0) {
@@ -274,11 +261,11 @@ public class InventoryUtils {
     }
 
     private static void canStackDebug(GeyserItemStack item1, GeyserItemStack item2) {
-        DataComponents components1 = item1.getComponents();
-        DataComponents components2 = item2.getComponents();
+        GeyserDataComponents components1 = item1.getComponents();
+        GeyserDataComponents components2 = item2.getComponents();
         if (components1 != null && components2 != null) {
             if (components1.hashCode() == components2.hashCode() && !components1.equals(components2)) {
-                GeyserImpl.getInstance().getLogger().error("DEBUG: DataComponents hash collision");
+                GeyserImpl.getInstance().getLogger().error("DEBUG: GeyserDataComponents hash collision");
                 GeyserImpl.getInstance().getLogger().error("hash: " + components1.hashCode());
                 GeyserImpl.getInstance().getLogger().error("components1: " + components1);
                 GeyserImpl.getInstance().getLogger().error("components2: " + components2);
@@ -291,7 +278,7 @@ public class InventoryUtils {
      */
     @Contract("null -> true")
     public static boolean isEmpty(@Nullable ItemStack itemStack) {
-        return itemStack == null || itemStack.getId() == Items.AIR_ID || itemStack.getAmount() <= 0;
+        return itemStack == null || itemStack.isEmpty();
     }
 
     /**
@@ -361,53 +348,8 @@ public class InventoryUtils {
      * Returns if the provided item stack would be accepted by the slot display.
      */
     public static boolean acceptsAsInput(GeyserSession session, SlotDisplay slotDisplay, GeyserItemStack itemStack) {
-        // TODO possible code duplication with RecipeUtil#translateToInput
-        if (slotDisplay instanceof EmptySlotDisplay) {
-            return itemStack.isEmpty();
-        }
-        if (slotDisplay instanceof CompositeSlotDisplay(List<SlotDisplay> contents)) {
-            if (contents.size() == 1) {
-                return acceptsAsInput(session, contents.getFirst(), itemStack);
-            }
-            return contents.stream().anyMatch(aSlotDisplay -> acceptsAsInput(session, aSlotDisplay, itemStack));
-        }
-        if (slotDisplay instanceof WithRemainderSlotDisplay remainderSlotDisplay) {
-            return acceptsAsInput(session, remainderSlotDisplay.input(), itemStack);
-        }
-        if (slotDisplay instanceof ItemSlotDisplay(int item)) {
-            return itemStack.getJavaId() == item;
-        }
-        if (slotDisplay instanceof ItemStackSlotDisplay(ItemStack other)) {
-            // Amount check might be flimsy?
-            return itemStack.getJavaId() == other.getId() && itemStack.getAmount() >= other.getAmount()
-                && Objects.equals(itemStack.getComponents(), other.getDataComponentsPatch());
-        }
-        if (slotDisplay instanceof TagSlotDisplay(HolderSet set)) {
-            return itemStack.is(session, set);
-        }
-        if (slotDisplay instanceof OnlyWithComponentSlotDisplay(SlotDisplay source, DataComponentType<?> component)) {
-            return itemStack.has(component) && acceptsAsInput(session, source, itemStack);
-        }
-        if (slotDisplay instanceof DyedSlotDisplay(SlotDisplay ignored, SlotDisplay target)) {
-            return acceptsAsInput(session, target, itemStack);
-        }
-        if (slotDisplay instanceof WithAnyPotionSlotDisplay(SlotDisplay display)) {
-            if (display instanceof ItemStackSlotDisplay(ItemStack stack)) {
-                DataComponents clonedComponents = stack.getDataComponentsPatch() == null ? null : stack.getDataComponentsPatch().clone();
-                if (clonedComponents != null) {
-                    clonedComponents.remove(DataComponentTypes.POTION_CONTENTS);
-                }
-                ItemStack stackWithoutPotions = new ItemStack(stack.getId(), stack.getAmount(), clonedComponents);
-                GeyserItemStack originalWithoutPotions = itemStack.copy();
-                if (originalWithoutPotions.getComponents() != null) {
-                    originalWithoutPotions.getComponents().remove(DataComponentTypes.POTION_CONTENTS);
-                }
-                return acceptsAsInput(session, new ItemStackSlotDisplay(stackWithoutPotions), originalWithoutPotions);
-            }
-            return acceptsAsInput(session, display, itemStack);
-        }
-        session.getGeyser().getLogger().warning("Unknown slot display type: " + slotDisplay);
-        return false;
+        return org.geysermc.geyser.vanilla.protocol.VanillaRecipeDisplays.accepts(
+            session.vanillaRegistries(), slotDisplay, itemStack.getItemStack());
     }
 
     /**
@@ -511,7 +453,7 @@ public class InventoryUtils {
         Inventory inventory = holder.inventory();
 
         String inventoryType = inventory.getContainerType() != null ?
-            inventory.getContainerType().name() : "null";
+            net.minecraft.core.registries.BuiltInRegistries.MENU.getKey(inventory.getContainerType()).toString() : "null";
 
         return inventory.getClass().getSimpleName() + ": javaId=" + inventory.getJavaId() +
             ", bedrockId=" + inventory.getBedrockId() + ", size=" + inventory.getSize() +

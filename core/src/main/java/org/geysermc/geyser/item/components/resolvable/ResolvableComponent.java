@@ -27,11 +27,11 @@ package org.geysermc.geyser.item.components.resolvable;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponentType;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 /**
- * A resolvable component is a default item component that has to be loaded into its MCPL equivalent when registering
+ * A resolvable component is a default item component that has to be loaded into its vanilla value when registering
  * the item, but was unable to because it needed registry access. As such, an instance of this interface was created, added to the list of the {@link org.geysermc.geyser.item.type.Item}'s resolvable components,
  * and will be resolved by {@link org.geysermc.geyser.session.cache.ComponentCache} whenever the session finishes the configuration phase.
  */
@@ -39,9 +39,9 @@ public interface ResolvableComponent<T> {
 
     DataComponentType<T> type();
 
-    @Nullable T resolve(JavaRegistryProvider registries);
+    @Nullable T resolve(net.minecraft.core.RegistryAccess registries);
 
-    default void resolve(JavaRegistryProvider registries, DataComponents map) {
+    default void resolve(net.minecraft.core.RegistryAccess registries, GeyserDataComponents map) {
         T value = resolve(registries);
         if (value != null) {
             map.put(type(), value);

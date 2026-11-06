@@ -32,7 +32,7 @@ import org.cloudburstmc.protocol.bedrock.packet.LevelEventPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MoveEntityDeltaPacket;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.level.block.BlockStateValues;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 
 /**
  * Used as a class for any object-like entity that moves as a projectile
@@ -123,19 +123,19 @@ public class ProjectileEntity extends Entity implements Tickable {
      */
     protected float getGravity() {
         if (getFlag(EntityFlag.HAS_GRAVITY)) {
-            switch (getEntityType()) {
-                case LINGERING_POTION, SPLASH_POTION:
+            switch (net.minecraft.world.entity.EntityType.getKey(getEntityType()).getPath()) {
+                case "lingering_potion", "splash_potion":
                     return 0.05f;
-                case EXPERIENCE_BOTTLE:
+                case "experience_bottle":
                     return 0.07f;
-                case FIREBALL:
-                case SHULKER_BULLET:
+                case "fireball":
+                case "shulker_bullet":
                     return 0;
-                case SNOWBALL:
-                case EGG:
-                case ENDER_PEARL:
+                case "snowball":
+                case "egg":
+                case "ender_pearl":
                     return 0.03f;
-                case LLAMA_SPIT:
+                case "llama_spit":
                     return 0.06f;
             }
         }
@@ -149,19 +149,19 @@ public class ProjectileEntity extends Entity implements Tickable {
         if (isInWater()) {
             return 0.8f;
         } else {
-            switch (getEntityType()) {
-                case LINGERING_POTION, SPLASH_POTION:
-                case EXPERIENCE_BOTTLE:
-                case SNOWBALL:
-                case EGG:
-                case ENDER_PEARL:
-                case LLAMA_SPIT:
+            switch (net.minecraft.world.entity.EntityType.getKey(getEntityType()).getPath()) {
+                case "lingering_potion", "splash_potion":
+                case "experience_bottle":
+                case "snowball":
+                case "egg":
+                case "ender_pearl":
+                case "llama_spit":
                     return 0.99f;
-                case FIREBALL:
-                case SMALL_FIREBALL:
-                case DRAGON_FIREBALL:
+                case "fireball":
+                case "small_fireball":
+                case "dragon_fireball":
                     return 0.95f;
-                case SHULKER_BULLET:
+                case "shulker_bullet":
                     return 1;
             }
         }
@@ -178,7 +178,7 @@ public class ProjectileEntity extends Entity implements Tickable {
 
     @Override
     public void despawnEntity() {
-        if (javaDefinition.is(EntityType.ENDER_PEARL)) {
+        if (javaDefinition.is(EntityTypes.ENDER_PEARL)) {
             LevelEventPacket particlePacket = new LevelEventPacket();
             particlePacket.setType(LevelEvent.PARTICLE_TELEPORT);
             particlePacket.setPosition(bedrockPosition());

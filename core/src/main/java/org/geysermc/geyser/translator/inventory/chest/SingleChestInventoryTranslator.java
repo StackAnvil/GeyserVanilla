@@ -95,7 +95,7 @@ public class SingleChestInventoryTranslator extends ChestInventoryTranslator<Gen
     }
 
     @Override
-    public Generic9X3Container createInventory(GeyserSession session, String name, int windowId, org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType containerType) {
+    public Generic9X3Container createInventory(GeyserSession session, String name, int windowId, net.minecraft.world.inventory.MenuType<?> containerType) {
         return new Generic9X3Container(session, name, windowId, this.size, containerType);
     }
 

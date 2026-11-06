@@ -30,14 +30,14 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundPlayerLookAtPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerLookAtPacket;
 
 @Translator(packet = ClientboundPlayerLookAtPacket.class)
 public class JavaPlayerLookAtTranslator extends PacketTranslator<ClientboundPlayerLookAtPacket> {
     @Override
     public void translate(GeyserSession session, ClientboundPlayerLookAtPacket packet) {
         Vector3f targetPosition = targetPosition(session, packet);
-        Vector3f originPosition = switch (packet.getOrigin()) {
+        Vector3f originPosition = switch (packet.getFromAnchor()) {
             case FEET -> session.getPlayerEntity().position();
             // FIXME should be entity#eyeHeight, not bounding box height
             case EYES -> session.getPlayerEntity().position().add(0, session.getPlayerEntity().getBoundingBoxHeight(), 0);
@@ -56,17 +56,18 @@ public class JavaPlayerLookAtTranslator extends PacketTranslator<ClientboundPlay
     }
 
     public Vector3f targetPosition(GeyserSession session, ClientboundPlayerLookAtPacket packet) {
-        if (packet.getTargetEntityOrigin() != null) {
-            var entityId = packet.getTargetEntityId();
+        var targetInfo = org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.lookAtTarget(packet);
+        if (targetInfo.entity().isPresent()) {
+            var entityId = targetInfo.entity().get().id();
             var target = session.getEntityCache().getEntityByJavaId(entityId);
             if (target != null) {
-                return switch (packet.getTargetEntityOrigin()) {
+                return switch (targetInfo.entity().get().anchor()) {
                     case FEET -> target.position();
                     // FIXME should be entity#eyeHeight, not bounding box height
                     case EYES -> target.position().add(0, target.getBoundingBoxHeight(), 0);
                 };
             }
         }
-        return Vector3f.from(packet.getX(), packet.getY(), packet.getZ());
+        return MathUtils.toVector3f(targetInfo.position());
     }
 }

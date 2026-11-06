@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.level.event;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundLevelEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.LevelEventType;
 import org.cloudburstmc.protocol.bedrock.packet.LevelEventPacket;
@@ -38,7 +38,7 @@ public record SoundLevelEventTranslator(LevelEventType levelEventType,
         LevelEventPacket eventPacket = new LevelEventPacket();
         eventPacket.setType(levelEventType);
         eventPacket.setData(data);
-        eventPacket.setPosition(Vector3f.from(packet.getPosition().getX(), packet.getPosition().getY(), packet.getPosition().getZ()).add(0.5f, 0.5f, 0.5f));
+        eventPacket.setPosition(Vector3f.from(packet.getPos().getX(), packet.getPos().getY(), packet.getPos().getZ()).add(0.5f, 0.5f, 0.5f));
         session.sendUpstreamPacket(eventPacket);
     }
 }

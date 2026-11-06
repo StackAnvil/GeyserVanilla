@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.GenericMath;
 import org.cloudburstmc.math.vector.Vector3d;
 import org.cloudburstmc.math.vector.Vector3f;
@@ -36,10 +38,9 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.MinecartStep;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveMinecartPacket;
+import net.minecraft.world.entity.vehicle.minecart.NewMinecartBehavior.MinecartStep;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.network.protocol.game.ClientboundMoveMinecartPacket;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -51,7 +52,7 @@ public class MinecartEntity extends Entity implements Tickable {
     private final List<MinecartStep> currentLerpSteps = new LinkedList<>();
 
     // NewMinecartBehavior
-    private MinecartStep lastCompletedStep = new MinecartStep(Vector3d.ZERO, Vector3d. ZERO, 0.0F, 0.0F, 0.0F);
+    private MinecartStep lastCompletedStep = new MinecartStep(net.minecraft.world.phys.Vec3.ZERO, net.minecraft.world.phys.Vec3.ZERO, 0.0F, 0.0F, 0.0F);
     private float currentStepsTotalWeight = 0.0F;
     private int lerpDelay = 0;
 
@@ -68,15 +69,15 @@ public class MinecartEntity extends Entity implements Tickable {
         super(context);
     }
 
-    public void setCustomBlock(IntEntityMetadata entityMetadata) {
+    public void setCustomBlock(DataValue<java.util.Optional<net.minecraft.world.level.block.state.BlockState>> entityMetadata) {
         // Optional block state -> "0" is air, aka none
         // Sets whether the custom block should be enabled
-        metadata.put(EntityDataTypes.CUSTOM_DISPLAY, (byte) (entityMetadata.getPrimitiveValue() != 0 ? 1 : 0));
-        metadata.put(EntityDataTypes.DISPLAY_BLOCK_STATE, session.getBlockMappings().getBedrockBlock(entityMetadata.getPrimitiveValue()));
+        metadata.put(EntityDataTypes.CUSTOM_DISPLAY, (byte) (entityMetadata.value().map(net.minecraft.world.level.block.Block::getId).orElse(0) != 0 ? 1 : 0));
+        metadata.put(EntityDataTypes.DISPLAY_BLOCK_STATE, session.getBlockMappings().getBedrockBlock(entityMetadata.value().map(net.minecraft.world.level.block.Block::getId).orElse(0)));
     }
 
-    public void setCustomBlockOffset(IntEntityMetadata entityMetadata) {
-        metadata.put(EntityDataTypes.DISPLAY_OFFSET, entityMetadata.getPrimitiveValue());
+    public void setCustomBlockOffset(DataValue<Integer> entityMetadata) {
+        metadata.put(EntityDataTypes.DISPLAY_OFFSET, entityMetadata.value());
     }
 
     @Override
@@ -237,7 +238,7 @@ public class MinecartEntity extends Entity implements Tickable {
     }
 
     public void handleMinecartMovePacket(ClientboundMoveMinecartPacket packet) {
-        lerpSteps.addAll(packet.getLerpSteps());
+        lerpSteps.addAll(packet.lerpSteps());
     }
 
     private boolean isLerping() {
@@ -299,7 +300,7 @@ public class MinecartEntity extends Entity implements Tickable {
     }
 
     private void updateCompletedStep() {
-        lastCompletedStep = new MinecartStep(position.toDouble(), motion.toDouble(), yaw, pitch, 0.0F);
+        lastCompletedStep = new MinecartStep(org.geysermc.geyser.util.MathUtils.toVec3(position), org.geysermc.geyser.util.MathUtils.toVec3(motion), yaw, pitch, 0.0F);
     }
 
     @Override
@@ -316,7 +317,7 @@ public class MinecartEntity extends Entity implements Tickable {
     }
 
     @Override
-    protected InteractiveTag testInteraction(Hand hand) {
+    protected InteractiveTag testInteraction(InteractionHand hand) {
         if (javaDefinition == VanillaEntities.CHEST_MINECART || javaDefinition == VanillaEntities.HOPPER_MINECART) {
             return InteractiveTag.OPEN_CONTAINER;
         } else {
@@ -333,7 +334,7 @@ public class MinecartEntity extends Entity implements Tickable {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         if (javaDefinition == VanillaEntities.CHEST_MINECART || javaDefinition == VanillaEntities.HOPPER_MINECART) {
             // Opening the UI of this minecart
             return InteractionResult.SUCCESS;
@@ -350,8 +351,8 @@ public class MinecartEntity extends Entity implements Tickable {
         }
     }
 
-    private static Vector3d lerp(double delta, Vector3d start, Vector3d end) {
-        return Vector3d.from(lerp(delta, start.getX(), end.getX()), lerp(delta, start.getY(), end.getY()), lerp(delta, start.getZ(), end.getZ()));
+    private static Vector3d lerp(double delta, net.minecraft.world.phys.Vec3 start, net.minecraft.world.phys.Vec3 end) {
+        return Vector3d.from(lerp(delta, start.x(), end.x()), lerp(delta, start.y(), end.y()), lerp(delta, start.z(), end.z()));
     }
 
     public static double lerp(double delta, double start, double end) {

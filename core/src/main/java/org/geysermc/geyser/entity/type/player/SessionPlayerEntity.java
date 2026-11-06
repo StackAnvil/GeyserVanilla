@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.player;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
@@ -57,21 +59,19 @@ import org.geysermc.geyser.session.cache.TeleportCache;
 import org.geysermc.geyser.session.cache.tags.BlockTag;
 import org.geysermc.geyser.translator.protocol.bedrock.BedrockInventoryTransactionTranslator;
 import org.geysermc.geyser.translator.protocol.java.entity.player.JavaPlayerPositionTranslator;
-import org.geysermc.geyser.util.AttributeUtils;
+import org.geysermc.geyser.vanilla.protocol.VanillaAttributes;
 import org.geysermc.geyser.util.DimensionUtils;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.GlobalPos;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
+import org.geysermc.geyser.level.EffectType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket.AttributeSnapshot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.Equippable;
 
 import java.util.Collections;
 import java.util.List;
@@ -294,9 +294,9 @@ public class SessionPlayerEntity extends PlayerEntity {
      * Also "fixes" <a href="https://github.com/GeyserMC/Geyser/issues/3318">issue 3318</a>
      */
     @Override
-    public void setFlags(ByteEntityMetadata entityMetadata) {
+    public void setFlags(DataValue<Byte> entityMetadata) {
         // TODO: proper fix, BDS somehow does it? https://paste.gg/p/anonymous/3adfb7612f1540be80fa03a2281f93dc (BDS 1.20.13)
-        if (!this.session.getGameMode().equals(GameMode.SPECTATOR)) {
+        if (!this.session.getGameMode().equals(GameType.SPECTATOR)) {
             super.setFlags(entityMetadata);
         }
     }
@@ -414,28 +414,28 @@ public class SessionPlayerEntity extends PlayerEntity {
     @Override
     protected boolean hasChargedProjectiles() {
         // Must be overridden to point to the player's inventory cache
-        List<ItemStack> chargedProjectiles = session.getPlayerInventory().getItemInHand().getComponent(DataComponentTypes.CHARGED_PROJECTILES);
+        var chargedProjectiles = session.getPlayerInventory().getItemInHand().getComponent(DataComponents.CHARGED_PROJECTILES);
         return chargedProjectiles != null && !chargedProjectiles.isEmpty();
     }
 
     @Override
-    protected void updateAttribute(Attribute javaAttribute, List<AttributeData> newAttributes) {
-        if (javaAttribute.getType() instanceof AttributeType.Builtin type) {
-            switch (type) {
-                case ATTACK_SPEED -> {
-                    session.setAttackSpeed(AttributeUtils.calculateValue(javaAttribute));
+    protected void updateAttribute(AttributeSnapshot javaAttribute, List<AttributeData> newAttributes) {
+        {
+            switch (org.geysermc.geyser.vanilla.protocol.VanillaAttributes.key(javaAttribute).toString()) {
+                case "minecraft:attack_speed" -> {
+                    session.setAttackSpeed(VanillaAttributes.calculateValue(javaAttribute));
                 }
-                case BLOCK_INTERACTION_RANGE -> {
-                    this.blockInteractionRange = AttributeUtils.calculateValue(javaAttribute);
+                case "minecraft:block_interaction_range" -> {
+                    this.blockInteractionRange = VanillaAttributes.calculateValue(javaAttribute);
                 }
-                case MINING_EFFICIENCY -> {
-                    this.miningEfficiency = AttributeUtils.calculateValue(javaAttribute);
+                case "minecraft:mining_efficiency" -> {
+                    this.miningEfficiency = VanillaAttributes.calculateValue(javaAttribute);
                 }
-                case BLOCK_BREAK_SPEED -> {
-                    this.blockBreakSpeed = AttributeUtils.calculateValue(javaAttribute);
+                case "minecraft:block_break_speed" -> {
+                    this.blockBreakSpeed = VanillaAttributes.calculateValue(javaAttribute);
                 }
-                case SUBMERGED_MINING_SPEED -> {
-                    this.submergedMiningSpeed = AttributeUtils.calculateValue(javaAttribute);
+                case "minecraft:submerged_mining_speed" -> {
+                    this.submergedMiningSpeed = VanillaAttributes.calculateValue(javaAttribute);
                 }
                 default -> {
                     super.updateAttribute(javaAttribute, newAttributes);
@@ -445,7 +445,7 @@ public class SessionPlayerEntity extends PlayerEntity {
     }
 
     @Override
-    protected AttributeData calculateAttribute(Attribute javaAttribute, GeyserAttributeType type) {
+    protected AttributeData calculateAttribute(AttributeSnapshot javaAttribute, GeyserAttributeType type) {
         AttributeData attributeData = super.calculateAttribute(javaAttribute, type);
         this.attributes.put(type, attributeData);
         return attributeData;
@@ -453,7 +453,7 @@ public class SessionPlayerEntity extends PlayerEntity {
 
     /**
      * This will ONLY include attributes that have a Bedrock equivalent!!!
-     * see {@link LivingEntity#updateAttribute(Attribute, List)}
+     * see {@link LivingEntity#updateAttribute(AttributeSnapshot, List)}
      */
     public float attributeOrDefault(GeyserAttributeType type) {
         var attribute = this.attributes.get(type);
@@ -466,8 +466,8 @@ public class SessionPlayerEntity extends PlayerEntity {
 
     public void setLastDeathPosition(@Nullable GlobalPos pos) {
         if (pos != null) {
-            metadata.put(EntityDataTypes.PLAYER_LAST_DEATH_POS, pos.getPosition());
-            metadata.put(EntityDataTypes.PLAYER_LAST_DEATH_DIMENSION, DimensionUtils.javaToBedrock(pos.getDimension().asString()));
+            metadata.put(EntityDataTypes.PLAYER_LAST_DEATH_POS, MathUtils.toVector3i(pos.pos()));
+            metadata.put(EntityDataTypes.PLAYER_LAST_DEATH_DIMENSION, DimensionUtils.javaToBedrock(pos.dimension().identifier().toString()));
             metadata.put(EntityDataTypes.PLAYER_HAS_DIED, true);
         } else {
             metadata.put(EntityDataTypes.PLAYER_HAS_DIED, false);
@@ -480,18 +480,18 @@ public class SessionPlayerEntity extends PlayerEntity {
     }
 
     @Override
-    public void setAbsorptionHearts(FloatEntityMetadata entityMetadata) {
+    public void setAbsorptionHearts(DataValue<Float> entityMetadata) {
         // The bedrock client can glitch when sending a health and absorption attribute in the same tick
         // This can happen when switching servers. Resending the absorption attribute fixes the issue
-        attributes.put(GeyserAttributeType.ABSORPTION, GeyserAttributeType.ABSORPTION.getAttribute(entityMetadata.getPrimitiveValue()));
+        attributes.put(GeyserAttributeType.ABSORPTION, GeyserAttributeType.ABSORPTION.getAttribute(entityMetadata.value()));
         super.setAbsorptionHearts(entityMetadata);
     }
 
     @Override
-    public void setLivingEntityFlags(ByteEntityMetadata entityMetadata) {
+    public void setLivingEntityFlags(DataValue<Byte> entityMetadata) {
         super.setLivingEntityFlags(entityMetadata);
 
-        byte xd = entityMetadata.getPrimitiveValue();
+        byte xd = entityMetadata.value();
         boolean isUsingOffhand = (xd & 0x02) == 0x02;
         if (session.getWorldCache().hasCooldown(isUsingOffhand ? getOffHandItem() : getMainHandItem())) {
             setFlag(EntityFlag.BLOCKING, false);
@@ -597,7 +597,7 @@ public class SessionPlayerEntity extends PlayerEntity {
     }
 
     public boolean isOnClimbableBlock() {
-        if (session.getGameMode() == GameMode.SPECTATOR) {
+        if (session.getGameMode() == GameType.SPECTATOR) {
             return false;
         }
         Vector3i pos = this.position.toInt();
@@ -619,7 +619,7 @@ public class SessionPlayerEntity extends PlayerEntity {
 
     public boolean canStartGliding() {
         // You can't start gliding when levitation is applied
-        if (session.getEffectCache().getEntityEffects().contains(Effect.LEVITATION)) {
+        if (session.getEffectCache().getEntityEffects().contains(EffectType.LEVITATION)) {
             return false;
         }
 
@@ -635,15 +635,15 @@ public class SessionPlayerEntity extends PlayerEntity {
         // if we wanted to. However, we still need to check that gliding is possible even with, say,
         // an elytra that does not have the glider component.
         for (Map.Entry<EquipmentSlot, GeyserItemStack> entry : session.getPlayerInventory().getEquipment().entrySet()) {
-            if (entry.getValue().getComponent(DataComponentTypes.GLIDER) != null) {
-                Equippable equippable = entry.getValue().getComponent(DataComponentTypes.EQUIPPABLE);
+            if (entry.getValue().getComponent(DataComponents.GLIDER) != null) {
+                Equippable equippable = entry.getValue().getComponent(DataComponents.EQUIPPABLE);
                 if (equippable != null && equippable.slot() == entry.getKey() && !entry.getValue().nextDamageWillBreak()) {
                     return true;
                 }
             }
 
             // Bedrock will NOT allow flight when not wearing an elytra; even if it doesn't have a glider component
-            if (entry.getKey() == EquipmentSlot.CHESTPLATE && !entry.getValue().is(Items.ELYTRA)) {
+            if (entry.getKey() == EquipmentSlot.CHEST && !entry.getValue().is(Items.ELYTRA)) {
                 return false;
             }
         }

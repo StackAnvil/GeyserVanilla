@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
 
 import java.util.Objects;
 
@@ -41,9 +42,9 @@ public class DisplayBaseEntity extends Entity {
         super(context);
     }
 
-    public void setTranslation(EntityMetadata<Vector3f, ?> translationMeta) {
+    public void setTranslation(DataValue<org.joml.Vector3fc> translationMeta) {
         Vector3f oldTranslation = this.baseTranslation;
-        this.baseTranslation = translationMeta.getValue() == null ? Vector3f.ZERO : translationMeta.getValue();
+        this.baseTranslation = org.geysermc.geyser.util.MathUtils.toVector3f(translationMeta.value());
 
         // If translations are the same, don't update
         if (Objects.equals(oldTranslation, this.baseTranslation)) {

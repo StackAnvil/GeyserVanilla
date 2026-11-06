@@ -28,13 +28,13 @@ package org.geysermc.geyser.translator.protocol.java.entity.player;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundStoreCookiePacket;
+import net.minecraft.network.protocol.common.ClientboundStoreCookiePacket;
 
 @Translator(packet = ClientboundStoreCookiePacket.class)
 public class JavaStoreCookieTranslator extends PacketTranslator<ClientboundStoreCookiePacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundStoreCookiePacket packet) {
-        session.getCookies().put(packet.getKey().asString(), packet.getPayload());
+        session.getCookies().put(packet.key().toString(), packet.payload());
     }
 }

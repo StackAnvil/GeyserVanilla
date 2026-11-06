@@ -27,7 +27,7 @@ package org.geysermc.geyser.item.type;
 
 import it.unimi.dsi.fastutil.Pair;
 import net.kyori.adventure.key.Key;
-import net.kyori.adventure.text.Component;
+import net.minecraft.network.chat.Component;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.nbt.NbtList;
 import org.cloudburstmc.nbt.NbtMap;
@@ -35,7 +35,7 @@ import org.cloudburstmc.nbt.NbtType;
 import org.geysermc.geyser.inventory.item.BannerPattern;
 import org.geysermc.geyser.inventory.item.DyeColor;
 import org.geysermc.geyser.item.TooltipOptions;
-import org.geysermc.geyser.item.components.Rarity;
+import net.minecraft.world.item.Rarity;
 import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.registry.type.ItemMapping;
@@ -44,11 +44,11 @@ import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryLookup;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.BannerPatternLayer;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.TooltipDisplay;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
+import net.minecraft.world.level.block.entity.BannerPatternLayers.Layer;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,18 +79,18 @@ public class BannerItem extends BlockItem {
         );
     }
 
-    public static boolean isOminous(JavaRegistryProvider registries, List<BannerPatternLayer> patternLayers) {
+    public static boolean isOminous(JavaRegistryProvider registries, List<Layer> patternLayers) {
         if (OMINOUS_BANNER_PATTERN.size() != patternLayers.size()) {
             return false;
         }
         for (int i = 0; i < OMINOUS_BANNER_PATTERN.size(); i++) {
-            BannerPatternLayer patternLayer = patternLayers.get(i);
+            Layer patternLayer = patternLayers.get(i);
             Pair<BannerPattern, DyeColor> pair = OMINOUS_BANNER_PATTERN.get(i);
-            if (patternLayer.getColorId() != pair.right().ordinal() ||
-                    !patternLayer.getPattern().isId()) {
+            if (patternLayer.color().getId() != pair.right().ordinal() ||
+                    patternLayer.pattern().unwrapKey().isEmpty()) {
                 return false;
             }
-            Optional<BannerPattern> bannerPattern = JavaRegistries.BANNER_PATTERN.get(registries, patternLayer.getPattern().id());
+            Optional<BannerPattern> bannerPattern = patternLayer.pattern().unwrapKey().flatMap(key -> JavaRegistries.BANNER_PATTERN.get(registries, MinecraftKey.key(key.identifier().toString())));
             if (bannerPattern.orElse(null) != pair.left()) {
                 return false;
             }
@@ -141,20 +141,20 @@ public class BannerItem extends BlockItem {
     /**
      * Converts a Java item component for banners into Bedrock item NBT.
      */
-    static void convertBannerPattern(JavaRegistryProvider registries, List<BannerPatternLayer> patterns, BedrockItemBuilder builder) {
+    static void convertBannerPattern(JavaRegistryProvider registries, List<Layer> patterns, BedrockItemBuilder builder) {
         if (isOminous(registries, patterns)) {
             // Remove the current patterns and set the ominous banner type
             builder.putInt("Type", 1);
         } else {
             List<NbtMap> patternList = new ArrayList<>(patterns.size());
-            for (BannerPatternLayer patternLayer : patterns) {
-                patternLayer.getPattern().ifId(id -> JavaRegistries.BANNER_PATTERN.get(registries, id).ifPresent(bannerPattern -> {
+            for (Layer patternLayer : patterns) {
+                patternLayer.pattern().unwrapKey().flatMap(key -> JavaRegistries.BANNER_PATTERN.get(registries, MinecraftKey.key(key.identifier().toString()))).ifPresent(bannerPattern -> {
                     NbtMap tag = NbtMap.builder()
                         .putString("Pattern", bannerPattern.getBedrockIdentifier())
-                        .putInt("Color", 15 - patternLayer.getColorId())
+                        .putInt("Color", 15 - patternLayer.color().getId())
                         .build();
                     patternList.add(tag);
-                }));
+                });
             }
             builder.putList("Patterns", NbtType.COMPOUND, patternList);
         }
@@ -186,17 +186,16 @@ public class BannerItem extends BlockItem {
      * @param pattern Bedrock edition pattern nbt
      * @return The Java edition format pattern layer
      */
-    public static BannerPatternLayer getJavaBannerPattern(JavaRegistryProvider registries, NbtMap pattern) {
-        JavaRegistryLookup<BannerPattern> registry = registries.registry(JavaRegistries.BANNER_PATTERN);
+    public static Layer getJavaBannerPattern(GeyserSession session, NbtMap pattern) {
         BannerPattern bannerPattern = BannerPattern.getByBedrockIdentifier(pattern.getString("Pattern"));
         DyeColor dyeColor = DyeColor.getById(15 - pattern.getInt("Color"));
-        if (dyeColor != null) {
-            OptionalInt id = registry.getId(bannerPattern);
-            if (id.isPresent()) {
-                return new BannerPatternLayer(Holder.ofId(id.getAsInt()), dyeColor.ordinal());
-            }
+        if (bannerPattern == null || dyeColor == null) {
+            return null;
         }
-        return null;
+        return session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.BANNER_PATTERN)
+            .get(net.minecraft.resources.Identifier.parse(bannerPattern.getJavaIdentifier().asString()))
+            .map(holder -> new Layer(holder, net.minecraft.world.item.DyeColor.byId(dyeColor.ordinal())))
+            .orElse(null);
     }
 
     public BannerItem(Builder builder, Block block, Block... otherBlocks) {
@@ -204,32 +203,33 @@ public class BannerItem extends BlockItem {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        List<BannerPatternLayer> patterns = components.get(DataComponentTypes.BANNER_PATTERNS);
+        BannerPatternLayers patterns = components.get(DataComponents.BANNER_PATTERNS);
         if (patterns != null) {
-            convertBannerPattern(session.javaRegistries(), patterns, builder);
+            convertBannerPattern(session.javaRegistries(), patterns.layers(), builder);
         }
     }
 
     @Override
-    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull DataComponents components, @NonNull ItemMapping mapping) {
+    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull GeyserDataComponents components, @NonNull ItemMapping mapping) {
         super.translateNbtToJava(session, bedrockTag, components, mapping);
 
         if (bedrockTag.getInt("Type") == 1) {
             // Ominous banner pattern
-            List<BannerPatternLayer> patternLayers = new ArrayList<>();
+            List<Layer> patternLayers = new ArrayList<>();
             for (Pair<BannerPattern, DyeColor> pair : OMINOUS_BANNER_PATTERN) {
-                patternLayers.add(new BannerPatternLayer(JavaRegistries.BANNER_PATTERN.wrapOrThrow(session, pair.left()),
-                    pair.right().ordinal()));
+                patternLayers.add(new Layer(session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.BANNER_PATTERN)
+                    .get(net.minecraft.resources.Identifier.parse(pair.left().getJavaIdentifier().asString())).orElseThrow(),
+                    net.minecraft.world.item.DyeColor.byId(pair.right().ordinal())));
             }
 
-            components.put(DataComponentTypes.BANNER_PATTERNS, patternLayers);
+            components.put(DataComponents.BANNER_PATTERNS, new BannerPatternLayers(List.copyOf(patternLayers)));
             // The ominous banner item in the Java creative menu just has banner patterns hidden as of 1.21.5
-            components.put(DataComponentTypes.TOOLTIP_DISPLAY, new TooltipDisplay(false, List.of(DataComponentTypes.BANNER_PATTERNS)));
-            components.put(DataComponentTypes.ITEM_NAME, Component.translatable("block.minecraft.ominous_banner"));
-            components.put(DataComponentTypes.RARITY, Rarity.UNCOMMON.ordinal());
+            components.put(DataComponents.TOOLTIP_DISPLAY, TooltipDisplay.DEFAULT.withHidden(DataComponents.BANNER_PATTERNS, true));
+            components.put(DataComponents.ITEM_NAME, Component.translatable("block.minecraft.ominous_banner"));
+            components.put(DataComponents.RARITY, Rarity.UNCOMMON);
         }
         // Bedrock's creative inventory does not support other patterns as of 1.20.5
     }

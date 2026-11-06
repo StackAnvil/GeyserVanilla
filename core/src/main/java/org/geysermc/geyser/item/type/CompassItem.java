@@ -34,9 +34,9 @@ import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.LodestoneTracker;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.component.LodestoneTracker;
 
 public class CompassItem extends Item {
     public CompassItem(String javaIdentifier, Builder builder) {
@@ -44,7 +44,7 @@ public class CompassItem extends Item {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         if (isLodestoneCompass(components)) {
             return super.translateToBedrock(session, count, components, mappings.getLodestoneCompass(), mappings);
         }
@@ -52,7 +52,7 @@ public class CompassItem extends Item {
     }
 
     @Override
-    public ItemMapping toBedrockDefinition(DataComponents components, ItemMappings mappings) {
+    public ItemMapping toBedrockDefinition(GeyserDataComponents components, ItemMappings mappings) {
         if (isLodestoneCompass(components)) {
             return mappings.getLodestoneCompass();
         }
@@ -60,10 +60,10 @@ public class CompassItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        LodestoneTracker tracker = components.get(DataComponentTypes.LODESTONE_TRACKER);
+        LodestoneTracker tracker = components.get(DataComponents.LODESTONE_TRACKER);
         if (tracker != null) {
             int trackId = session.getLodestoneCache().store(tracker);
             // Set the bedrock tracking id - will return 0 if invalid
@@ -71,9 +71,9 @@ public class CompassItem extends Item {
         }
     }
 
-    private boolean isLodestoneCompass(@Nullable DataComponents components) {
+    private boolean isLodestoneCompass(@Nullable GeyserDataComponents components) {
         if (components != null) {
-            return components.getDataComponents().containsKey(DataComponentTypes.LODESTONE_TRACKER);
+            return components.contains(DataComponents.LODESTONE_TRACKER);
         }
         return false;
     }

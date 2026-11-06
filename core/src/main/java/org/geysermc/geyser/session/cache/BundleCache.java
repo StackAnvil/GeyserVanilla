@@ -40,8 +40,8 @@ import org.geysermc.geyser.inventory.PlayerInventory;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,10 +75,10 @@ public final class BundleCache {
             }
 
             BundleData bundleData;
-            List<ItemStack> rawContents = itemStack.getComponent(DataComponentTypes.BUNDLE_CONTENTS);
+            var rawContents = itemStack.getComponent(DataComponents.BUNDLE_CONTENTS);
             if (rawContents != null) {
                 // Use existing list and transform it to support net IDs
-                bundleData = new BundleData(session, rawContents);
+                bundleData = new BundleData(session, rawContents.itemCopies().toList());
             } else {
                 // This is valid behavior (as of vanilla 1.21.2) if the bundle is empty.
                 // Create new list
@@ -307,12 +307,12 @@ public final class BundleCache {
             return freshFromServer;
         }
 
-        public List<ItemStack> toComponent() {
+        public net.minecraft.world.item.component.BundleContents toComponent() {
             List<ItemStack> component = new ArrayList<>(this.contents.size());
             for (GeyserItemStack content : this.contents) {
                 component.add(content.getItemStack());
             }
-            return component;
+            return net.minecraft.world.item.component.BundleContents.EMPTY.copyWithContents(component.stream());
         }
 
         /**

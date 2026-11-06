@@ -34,12 +34,12 @@ import org.geysermc.geyser.GeyserImpl;
 import java.util.function.ToIntFunction;
 
 public enum Direction {
-    DOWN(1, Vector3i.from(0, -1, 0), Axis.Y, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.DOWN),
-    UP(0, Vector3i.UNIT_Y, Axis.Y, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.UP),
-    NORTH(3, Vector3i.from(0, 0, -1), Axis.Z, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.NORTH),
-    SOUTH(2, Vector3i.UNIT_Z, Axis.Z, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.SOUTH),
-    WEST(5, Vector3i.from(-1, 0, 0), Axis.X, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.WEST),
-    EAST(4, Vector3i.UNIT_X, Axis.X, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction.EAST);
+    DOWN(1, Vector3i.from(0, -1, 0), Axis.Y, net.minecraft.core.Direction.DOWN),
+    UP(0, Vector3i.UNIT_Y, Axis.Y, net.minecraft.core.Direction.UP),
+    NORTH(3, Vector3i.from(0, 0, -1), Axis.Z, net.minecraft.core.Direction.NORTH),
+    SOUTH(2, Vector3i.UNIT_Z, Axis.Z, net.minecraft.core.Direction.SOUTH),
+    WEST(5, Vector3i.from(-1, 0, 0), Axis.X, net.minecraft.core.Direction.WEST),
+    EAST(4, Vector3i.UNIT_X, Axis.X, net.minecraft.core.Direction.EAST);
 
     public static final Direction[] VALUES = values();
     public static final Direction[] HORIZONTAL = new Direction[]{Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
@@ -51,13 +51,13 @@ public enum Direction {
     private final Axis axis;
     @Getter
     @Accessors(fluent = true)
-    private final org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction mcpl;
+    private final net.minecraft.core.Direction javaDirection;
 
-    Direction(int reversedId, Vector3i unitVector, Axis axis, org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction mcpl) {
+    Direction(int reversedId, Vector3i unitVector, Axis axis, net.minecraft.core.Direction javaDirection) {
         this.reversedId = reversedId;
         this.unitVector = unitVector;
         this.axis = axis;
-        this.mcpl = mcpl;
+        this.javaDirection = javaDirection;
     }
 
     public Direction reversed() {
@@ -92,9 +92,9 @@ public enum Direction {
         };
     }
 
-    public static @NonNull Direction fromMCPL(org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction mcpl) {
+    public static @NonNull Direction fromJava(net.minecraft.core.Direction javaDirection) {
         for (Direction direction : VALUES) {
-            if (direction.mcpl == mcpl) {
+            if (direction.javaDirection == javaDirection) {
                 return direction;
             }
         }

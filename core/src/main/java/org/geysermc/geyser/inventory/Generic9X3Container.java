@@ -30,7 +30,7 @@ import lombok.Setter;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 /**
  * A "hack" to be able to use existing barrels.
@@ -41,7 +41,7 @@ public class Generic9X3Container extends Container {
 
     private boolean isBarrel;
 
-    public Generic9X3Container(GeyserSession session, String title, int id, int size, ContainerType containerType) {
+    public Generic9X3Container(GeyserSession session, String title, int id, int size, MenuType<?> containerType) {
         super(session, title, id, size, containerType);
     }
 

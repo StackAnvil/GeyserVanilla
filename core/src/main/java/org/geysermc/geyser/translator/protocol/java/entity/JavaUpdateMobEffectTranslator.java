@@ -36,7 +36,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.EntityEffectCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundUpdateMobEffectPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateMobEffectPacket;
 
 import java.util.Collections;
 
@@ -50,33 +50,34 @@ public class JavaUpdateMobEffectTranslator extends PacketTranslator<ClientboundU
             return;
         }
 
+        EffectType effect = EffectType.fromJavaEffect(packet.getEffect().value());
         var event = MobEffectPacket.Event.ADD;
 
         if (entity == session.getPlayerEntity()) {
             EntityEffectCache cache = session.getEffectCache();
             // Matches BDS
-            if (cache.getEntityEffects().contains(packet.getEffect())) {
+            if (cache.getEntityEffects().contains(effect)) {
                 event = MobEffectPacket.Event.MODIFY;
             }
 
-            cache.setEffect(packet.getEffect(), packet.getAmplifier());
+            cache.setEffect(effect, packet.getEffectAmplifier());
         } else if (entity instanceof ClientVehicle clientVehicle) {
-            clientVehicle.getVehicleComponent().setEffect(packet.getEffect(), packet.getAmplifier());
+            clientVehicle.getVehicleComponent().setEffect(effect, packet.getEffectAmplifier());
         }
 
         MobEffectPacket mobEffectPacket = new MobEffectPacket();
-        mobEffectPacket.setAmplifier(packet.getAmplifier());
-        mobEffectPacket.setDuration(packet.getDuration());
+        mobEffectPacket.setAmplifier(packet.getEffectAmplifier());
+        mobEffectPacket.setDuration(packet.getEffectDurationTicks());
         mobEffectPacket.setEvent(event);
         mobEffectPacket.setRuntimeEntityId(entity.geyserId());
-        mobEffectPacket.setParticles(packet.isShowParticles());
-        mobEffectPacket.setAmbient(packet.isAmbient());
-        mobEffectPacket.setEffectId(EffectType.fromJavaEffect(packet.getEffect()).getBedrockId());
+        mobEffectPacket.setParticles(packet.isEffectVisible());
+        mobEffectPacket.setAmbient(packet.isEffectAmbient());
+        mobEffectPacket.setEffectId(effect.getBedrockId());
         session.sendUpstreamPacket(mobEffectPacket);
 
         // Bedrock expects some attributes to be updated in the same tick as the effect causing them
         if (entity == session.getPlayerEntity()) {
-            AttributeData attribute = switch (packet.getEffect()) {
+            AttributeData attribute = switch (effect) {
                 // Fixes https://github.com/GeyserMC/Geyser/issues/5347
                 case ABSORPTION -> session.getPlayerEntity().getAttributes().get(GeyserAttributeType.ABSORPTION);
                 // Fixes https://github.com/GeyserMC/Geyser/issues/5388

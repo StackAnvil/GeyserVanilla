@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -35,8 +37,6 @@ import org.geysermc.geyser.entity.VanillaEntities;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.ArmorStandEntity;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -82,13 +82,13 @@ public class TextDisplayEntity extends DisplayBaseEntity {
     }
 
     @Override
-    public void setCustomNameVisible(BooleanEntityMetadata entityMetadata) {
+    public void setCustomNameVisible(DataValue<Boolean> entityMetadata) {
         super.setCustomNameVisible(entityMetadata);
         this.updateNameTag();
     }
 
     @Override
-    public void setCustomName(EntityMetadata<Optional<Component>, ?> entityMetadata) {
+    public void setCustomName(DataValue<Optional<net.minecraft.network.chat.Component>> entityMetadata) {
         super.setCustomName(entityMetadata);
         this.updateNameTag();
     }
@@ -127,10 +127,10 @@ public class TextDisplayEntity extends DisplayBaseEntity {
         super.moveAbsoluteRaw(position, yaw, pitch, headYaw, isOnGround, teleported);
     }
 
-    public void setText(EntityMetadata<Component, ?> entityMetadata) {
-        this.metadata.put(EntityDataTypes.NAME, MessageTranslator.convertMessage(entityMetadata.getValue(), session.locale()));
+    public void setText(DataValue<net.minecraft.network.chat.Component> entityMetadata) {
+        this.metadata.put(EntityDataTypes.NAME, MessageTranslator.convertMessage(org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(entityMetadata.value(), session.vanillaRegistries()), session.locale()));
         int oldLineCount = this.lineCount;
-        this.lineCount = calculateLineCount(entityMetadata.getValue());
+        this.lineCount = calculateLineCount(org.geysermc.geyser.translator.text.MessageTranslator.fromVanilla(entityMetadata.value(), session.vanillaRegistries()));
 
         // If the line count changed, update the position to account for the new offset
         if (this.lineCount != oldLineCount) {

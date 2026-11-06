@@ -30,7 +30,7 @@ import org.geysermc.geyser.inventory.MerchantContainer;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSelectTradePacket;
+import net.minecraft.network.protocol.game.ServerboundSelectTradePacket;
 
 import java.util.concurrent.TimeUnit;
 

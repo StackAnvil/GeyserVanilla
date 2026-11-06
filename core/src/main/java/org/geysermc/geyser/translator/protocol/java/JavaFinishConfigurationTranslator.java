@@ -34,7 +34,7 @@ import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.PlayerListUtils;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundFinishConfigurationPacket;
+import net.minecraft.network.protocol.configuration.ClientboundFinishConfigurationPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +86,7 @@ public class JavaFinishConfigurationTranslator extends PacketTranslator<Clientbo
         // This makes this packet a good place to reset the scoreboard.
         session.getWorldCache().resetScoreboard();
 
-        // Resolve API components from non-vanilla registered items that required registry data to map to MCPL components
+        // Resolve API components from non-vanilla registered items that required registry data to create native component values
         session.getComponentCache().resolveComponents();
         // This MUST be called after components are resolved. It uses both the collected data-driven registry information and the resolved components
         session.getTrimRecipes().initializeBedrockTrimRecipes(session);

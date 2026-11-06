@@ -45,8 +45,7 @@ import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.translator.level.block.entity.BedrockChunkWantsBlockEntityTag;
 import org.geysermc.geyser.util.BlockEntityUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import org.intellij.lang.annotations.Subst;
 
 import java.util.ArrayList;
@@ -64,7 +63,7 @@ public class Block {
      * Can you harvest this with your hand.
      */
     private final boolean requiresCorrectToolForDrops;
-    private final @Nullable BlockEntityType blockEntityType;
+    private final @Nullable BlockEntityType<?> blockEntityType;
     private final float destroyTime;
     private final @NonNull PistonBehavior pushReaction;
     protected Item item = null;
@@ -157,7 +156,7 @@ public class Block {
     }
 
     @Nullable
-    public BlockEntityType blockEntityType() {
+    public BlockEntityType<?> blockEntityType() {
         return blockEntityType;
     }
 
@@ -189,9 +188,7 @@ public class Block {
         return session.javaRegistries().is(tag, javaId);
     }
 
-    public boolean is(GeyserSession session, HolderSet set) {
-        return session.javaRegistries().is(JavaRegistries.BLOCK, set, javaId);
-    }
+
 
     @Override
     public String toString() {
@@ -212,7 +209,7 @@ public class Block {
     public static final class Builder {
         private final Map<Property<?>, List<Comparable<?>>> states = new LinkedHashMap<>();
         private boolean requiresCorrectToolForDrops = false;
-        private BlockEntityType blockEntityType = null;
+        private BlockEntityType<?> blockEntityType = null;
         private PistonBehavior pushReaction = PistonBehavior.PUSH_PULL;
         private float destroyTime;
 
@@ -256,7 +253,7 @@ public class Block {
             return this;
         }
 
-        public Builder setBlockEntity(BlockEntityType blockEntityType) {
+        public Builder setBlockEntity(BlockEntityType<?> blockEntityType) {
             this.blockEntityType = blockEntityType;
             return this;
         }

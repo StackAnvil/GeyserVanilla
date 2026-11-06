@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.text;
 
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
+import net.minecraft.world.scores.TeamColor;
 
 public class ChatColor {
     public static final String ANSI_RESET = (char) 0x1b + "[0m";

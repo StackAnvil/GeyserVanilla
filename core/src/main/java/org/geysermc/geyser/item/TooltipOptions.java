@@ -25,10 +25,10 @@
 
 package org.geysermc.geyser.item;
 
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.TooltipDisplay;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 @FunctionalInterface
 public interface TooltipOptions {
@@ -39,8 +39,8 @@ public interface TooltipOptions {
 
     boolean showInTooltip(DataComponentType<?> component);
 
-    static TooltipOptions fromComponents(DataComponents components) {
-        TooltipDisplay display = components.get(DataComponentTypes.TOOLTIP_DISPLAY);
+    static TooltipOptions fromComponents(GeyserDataComponents components) {
+        TooltipDisplay display = components.get(DataComponents.TOOLTIP_DISPLAY);
         if (display == null) {
             return ALL_SHOWN;
         } else if (display.hideTooltip()) {
@@ -52,8 +52,8 @@ public interface TooltipOptions {
         return component -> !display.hiddenComponents().contains(component);
     }
 
-    static boolean hideTooltip(DataComponents components) {
-        TooltipDisplay display = components.get(DataComponentTypes.TOOLTIP_DISPLAY);
+    static boolean hideTooltip(GeyserDataComponents components) {
+        TooltipDisplay display = components.get(DataComponents.TOOLTIP_DISPLAY);
         return display != null && display.hideTooltip();
     }
 }

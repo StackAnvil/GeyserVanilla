@@ -30,8 +30,8 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
+import net.minecraft.world.level.GameType;
+import net.minecraft.core.component.DataComponents;
 
 import java.util.Map;
 
@@ -95,18 +95,18 @@ public interface BlockSoundInteractionTranslator extends SoundInteractionTransla
      * Determines if the adventure gamemode would prevent this item from actually succeeding
      */
     static boolean canInteract(GeyserSession session, GeyserItemStack itemInHand, String blockIdentifier) {
-        if (session.getGameMode() != GameMode.ADVENTURE) {
+        if (session.getGameMode() != GameType.ADVENTURE) {
             // There are no restrictions on the item
             return true;
         }
 
-        var canPlaceOn = itemInHand.getComponent(DataComponentTypes.CAN_PLACE_ON);
-        if (canPlaceOn == null || canPlaceOn.getPredicates().isEmpty()) {
+        var canPlaceOn = itemInHand.getComponent(DataComponents.CAN_PLACE_ON);
+        if (canPlaceOn == null || org.geysermc.geyser.vanilla.protocol.VanillaAdventurePredicates.predicates(canPlaceOn).isEmpty()) {
             // Component doesn't exist - no restrictions apply.
             return true;
         }
 
-        for (var blockPredicate : canPlaceOn.getPredicates()) {
+        for (var blockPredicate : org.geysermc.geyser.vanilla.protocol.VanillaAdventurePredicates.predicates(canPlaceOn)) {
             // I don't want to deal with this right now. TODO
         }
 

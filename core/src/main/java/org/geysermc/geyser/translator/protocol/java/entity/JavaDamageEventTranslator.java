@@ -34,19 +34,19 @@ import org.geysermc.geyser.registry.java.reader.JavaRegistryReader;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundDamageEventPacket;
+import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
 
 @Translator(packet = ClientboundDamageEventPacket.class)
 public class JavaDamageEventTranslator extends PacketTranslator<ClientboundDamageEventPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundDamageEventPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.entityId());
         if (entity == null) {
             return;
         }
 
-        EntityDamageCause cause = JavaRegistries.DAMAGE_TYPE.get(session.javaRegistries(), packet.getSourceTypeId())
+        EntityDamageCause cause = JavaRegistries.DAMAGE_TYPE.get(session.javaRegistries(), org.geysermc.geyser.util.MinecraftKey.key(packet.sourceType().unwrapKey().orElseThrow().identifier().toString()))
             .orElse(EntityDamageCause.OVERRIDE);
 
         EntityEventPacket entityEventPacket = new EntityEventPacket();

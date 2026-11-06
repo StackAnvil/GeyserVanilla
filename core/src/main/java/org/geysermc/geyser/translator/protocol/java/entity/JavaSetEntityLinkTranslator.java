@@ -33,7 +33,7 @@ import org.geysermc.geyser.entity.type.Leashable;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityLinkPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityLinkPacket;
 
 /**
  * Called when a leash is attached, removed or updated from an entity
@@ -43,13 +43,13 @@ public class JavaSetEntityLinkTranslator extends PacketTranslator<ClientboundSet
 
     @Override
     public void translate(GeyserSession session, ClientboundSetEntityLinkPacket packet) {
-        Entity holderId = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity holderId = session.getEntityCache().getEntityByJavaId(packet.getSourceId());
         if (!(holderId instanceof Leashable asLeashable)) {
             return;
         }
 
-        Entity attachedToId = session.getEntityCache().getEntityByJavaId(packet.getAttachedToId());
-        if (attachedToId == null || packet.getAttachedToId() == 0) {
+        Entity attachedToId = session.getEntityCache().getEntityByJavaId(packet.getDestId());
+        if (attachedToId == null || packet.getDestId() == 0) {
             // Is not being leashed
             holderId.setFlag(EntityFlag.LEASHED, false);
             asLeashable.setLeashHolderBedrockId(-1L);

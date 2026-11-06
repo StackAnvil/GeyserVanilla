@@ -28,8 +28,8 @@ package org.geysermc.geyser.translator.protocol.java.entity.player;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.cookie.clientbound.ClientboundCookieRequestPacket;
-import org.geysermc.mcprotocollib.protocol.packet.cookie.serverbound.ServerboundCookieResponsePacket;
+import net.minecraft.network.protocol.cookie.ClientboundCookieRequestPacket;
+import net.minecraft.network.protocol.cookie.ServerboundCookieResponsePacket;
 
 @Translator(packet = ClientboundCookieRequestPacket.class)
 public class JavaCookieRequestTranslator extends PacketTranslator<ClientboundCookieRequestPacket> {
@@ -37,8 +37,8 @@ public class JavaCookieRequestTranslator extends PacketTranslator<ClientboundCoo
     @Override
     public void translate(GeyserSession session, ClientboundCookieRequestPacket packet) {
         ServerboundCookieResponsePacket responsePacket = new ServerboundCookieResponsePacket(
-                packet.getKey(),
-                session.getCookies().get(packet.getKey().asString())
+                packet.key(),
+                session.getCookies().get(packet.key().toString())
         );
         session.sendDownstreamPacket(responsePacket);
     }

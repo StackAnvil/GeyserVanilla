@@ -38,7 +38,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.EntityUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetPassengersPacket;
+import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,12 +48,12 @@ public class JavaSetPassengersTranslator extends PacketTranslator<ClientboundSet
 
     @Override
     public void translate(GeyserSession session, ClientboundSetPassengersPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getVehicle());
         if (entity == null) return;
 
         // Handle new/existing passengers
         List<Entity> newPassengers = new ArrayList<>();
-        int @NonNull [] passengerIds = packet.getPassengerIds();
+        int @NonNull [] passengerIds = packet.getPassengers();
         for (int i = 0; i < passengerIds.length; i++) {
             int passengerId = passengerIds[i];
             Entity passenger = session.getEntityCache().getEntityByJavaId(passengerId);
@@ -72,7 +72,7 @@ public class JavaSetPassengersTranslator extends PacketTranslator<ClientboundSet
                 continue;
             }
 
-            boolean rider = packet.getPassengerIds()[0] == passengerId;
+            boolean rider = packet.getPassengers()[0] == passengerId;
             EntityLinkData.Type type = rider ? EntityLinkData.Type.RIDER : EntityLinkData.Type.PASSENGER;
             SetEntityLinkPacket linkPacket = new SetEntityLinkPacket();
             linkPacket.setEntityLink(new EntityLinkData(entity.geyserId(), passenger.geyserId(), type, false, false, 0f));
@@ -81,7 +81,7 @@ public class JavaSetPassengersTranslator extends PacketTranslator<ClientboundSet
 
             passenger.setVehicle(entity);
             EntityUtils.updateRiderRotationLock(passenger, entity, true);
-            EntityUtils.updateMountOffset(passenger, entity, rider, true, i, packet.getPassengerIds().length);
+            EntityUtils.updateMountOffset(passenger, entity, rider, true, i, packet.getPassengers().length);
             // Force an update to the passenger metadata
             passenger.updateBedrockMetadata();
             passenger.setMotion(Vector3f.ZERO);
@@ -113,7 +113,7 @@ public class JavaSetPassengersTranslator extends PacketTranslator<ClientboundSet
 
                 passenger.setVehicle(null);
                 EntityUtils.updateRiderRotationLock(passenger, entity, false);
-                EntityUtils.updateMountOffset(passenger, entity, false, false, i, packet.getPassengerIds().length);
+                EntityUtils.updateMountOffset(passenger, entity, false, false, i, packet.getPassengers().length);
                 // Force an update to the passenger metadata
                 passenger.updateBedrockMetadata();
 
@@ -153,8 +153,8 @@ public class JavaSetPassengersTranslator extends PacketTranslator<ClientboundSet
         }
 
         entity.setPassengers(newPassengers);
-        switch (entity.getEntityType()) {
-            case HORSE, SKELETON_HORSE, DONKEY, MULE, RAVAGER -> {
+        switch (entity.getEntityType().getDescriptionId()) {
+            case "entity.minecraft.horse", "entity.minecraft.skeleton_horse", "entity.minecraft.donkey", "entity.minecraft.mule", "entity.minecraft.ravager" -> {
                 entity.getMetadata().put(EntityDataTypes.SEAT_ROTATION_OFFSET_DEGREES, 181.0f);
                 entity.updateBedrockMetadata();
             }

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.entity.properties.type.EnumProperty;
@@ -32,8 +34,7 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.ArmadilloState;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
+import net.minecraft.world.entity.animal.armadillo.Armadillo.ArmadilloState;
 
 import java.util.concurrent.TimeUnit;
 
@@ -51,8 +52,8 @@ public class ArmadilloEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setArmadilloState(ObjectEntityMetadata<ArmadilloState> entityMetadata) {
-        armadilloState = entityMetadata.getValue();
+    public void setArmadilloState(DataValue<ArmadilloState> entityMetadata) {
+        armadilloState = entityMetadata.value();
 
         switch (armadilloState) {
             case IDLE -> STATE_PROPERTY.apply(propertyManager, State.UNROLLED);

@@ -33,7 +33,7 @@ import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.MathUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerButtonClickPacket;
+import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 
 /**
  * Used to translate moving pages, or closing the inventory

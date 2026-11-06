@@ -33,11 +33,9 @@ import org.geysermc.geyser.api.item.custom.v2.CustomItemIcons;
 import org.geysermc.geyser.api.util.CreativeCategory;
 import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.registry.populator.custom.CustomItemContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.ModifierOperation;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Equippable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ItemAttributeModifiers;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.equipment.Equippable;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
@@ -56,27 +54,14 @@ public record GeyserCustomItemBedrockOptions(@NonNull CustomItemIcons icons, boo
 
     public int protectionValue(CustomItemContext context) {
         if (protectionValue == -1 && context.vanillaMapping().isPresent()) {
-            ItemAttributeModifiers attributeModifiers = context.components().get(DataComponentTypes.ATTRIBUTE_MODIFIERS);
-            Equippable equippable = context.components().get(DataComponentTypes.EQUIPPABLE);
+            ItemAttributeModifiers attributeModifiers = context.components().get(DataComponents.ATTRIBUTE_MODIFIERS);
+            Equippable equippable = context.components().get(DataComponents.EQUIPPABLE);
             if (attributeModifiers != null && equippable != null) {
-                ItemAttributeModifiers.EquipmentSlotGroup slotGroup = switch (equippable.slot()) {
-                    case MAIN_HAND -> ItemAttributeModifiers.EquipmentSlotGroup.MAIN_HAND;
-                    case OFF_HAND -> ItemAttributeModifiers.EquipmentSlotGroup.OFF_HAND;
-                    case BOOTS -> ItemAttributeModifiers.EquipmentSlotGroup.FEET;
-                    case LEGGINGS -> ItemAttributeModifiers.EquipmentSlotGroup.LEGS;
-                    case CHESTPLATE -> ItemAttributeModifiers.EquipmentSlotGroup.CHEST;
-                    case HELMET -> ItemAttributeModifiers.EquipmentSlotGroup.HEAD;
-                    case BODY -> ItemAttributeModifiers.EquipmentSlotGroup.BODY;
-                    case SADDLE -> ItemAttributeModifiers.EquipmentSlotGroup.SADDLE;
-                };
-                return (int) attributeModifiers.getModifiers().stream()
-                    .filter(entry -> entry.getAttribute() == AttributeType.Builtin.ARMOR.getId()
-                        // entry.slot == any || entry.slot == expected || (expected == hands && entry.slot == hand)
-                        && (entry.getSlot() == ItemAttributeModifiers.EquipmentSlotGroup.ANY || entry.getSlot() == slotGroup
-                            || ((slotGroup == ItemAttributeModifiers.EquipmentSlotGroup.MAIN_HAND || slotGroup == ItemAttributeModifiers.EquipmentSlotGroup.OFF_HAND)
-                                && entry.getSlot() == ItemAttributeModifiers.EquipmentSlotGroup.HAND))
-                        && entry.getModifier().getOperation() == ModifierOperation.ADD)
-                    .mapToDouble(entry -> entry.getModifier().getAmount())
+                return (int) attributeModifiers.modifiers().stream()
+                    .filter(entry -> entry.attribute().is(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR.unwrapKey().orElseThrow())
+                        && entry.slot().test(equippable.slot())
+                        && entry.modifier().operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE)
+                    .mapToDouble(entry -> entry.modifier().amount())
                     .sum();
             }
         }

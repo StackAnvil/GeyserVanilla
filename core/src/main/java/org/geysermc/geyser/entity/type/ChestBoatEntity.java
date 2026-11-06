@@ -28,7 +28,7 @@ package org.geysermc.geyser.entity.type;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class ChestBoatEntity extends BoatEntity {
     public ChestBoatEntity(EntitySpawnContext context, BoatVariant variant) {
@@ -36,12 +36,12 @@ public class ChestBoatEntity extends BoatEntity {
     }
 
     @Override
-    protected InteractiveTag testInteraction(Hand hand) {
+    protected InteractiveTag testInteraction(InteractionHand hand) {
         return passengers.isEmpty() && !session.isSneaking() ? super.testInteraction(hand) : InteractiveTag.OPEN_CONTAINER;
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         return passengers.isEmpty() && !session.isSneaking() ? super.interact(hand) : InteractionResult.SUCCESS;
     }
 }

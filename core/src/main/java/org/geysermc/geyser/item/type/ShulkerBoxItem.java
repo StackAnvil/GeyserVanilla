@@ -41,10 +41,10 @@ import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.item.CustomItemTranslator;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotionContents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,40 +57,40 @@ public class ShulkerBoxItem extends BlockItem {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        List<Optional<ItemStack>> contents = components.get(DataComponentTypes.CONTAINER);
-        if (contents == null || contents.isEmpty()) {
+        var container = components.get(DataComponents.CONTAINER);
+        List<ItemStack> contents = container == null ? List.of() : container.itemCopies().toList();
+        if (contents.isEmpty()) {
             // Empty shulker box
             return;
         }
         List<NbtMap> itemsList = new ArrayList<>();
         for (int slot = 0; slot < contents.size(); slot++) {
-            Optional<ItemStack> optionalItem = contents.get(slot);
-            if (optionalItem.isEmpty() || optionalItem.get().getId() == Items.AIR_ID) {
+            ItemStack item = contents.get(slot);
+            if (item.isEmpty()) {
                 continue;
             }
-            ItemStack item = optionalItem.get();
-            ItemMapping boxMapping = session.getItemMappings().getMapping(item.getId());
+            ItemMapping boxMapping = session.getItemMappings().getMapping(org.geysermc.geyser.vanilla.protocol.VanillaItems.id(item));
 
             int bedrockData = boxMapping.getBedrockData();
             String bedrockIdentifier = boxMapping.getBedrockIdentifier();
-            DataComponents boxComponents = item.getDataComponentsPatch();
+            GeyserDataComponents boxComponents = org.geysermc.geyser.vanilla.protocol.GeyserDataComponents.from(item.getComponentsPatch());
 
             if (boxComponents != null) {
                 // Check for custom items - components should never be null as we've checked for air already
                 boxComponents = Objects.requireNonNull(GeyserItemStack.from(session, item).getAllComponents());
-                ItemDefinition customItemDefinition = CustomItemTranslator.getCustomItem(session, item.getAmount(), boxComponents, boxMapping);
+                ItemDefinition customItemDefinition = CustomItemTranslator.getCustomItem(session, item.getCount(), boxComponents, boxMapping);
                 if (customItemDefinition != null) {
                     bedrockIdentifier = customItemDefinition.getIdentifier();
                     bedrockData = 0;
                 } else {
                     // Manual checks for potions/tipped arrows
                     if (boxMapping.getJavaItem() instanceof PotionItem || boxMapping.getJavaItem() instanceof ArrowItem) {
-                        PotionContents potionContents = boxComponents.get(DataComponentTypes.POTION_CONTENTS);
+                        PotionContents potionContents = boxComponents.get(DataComponents.POTION_CONTENTS);
                         if (potionContents != null) {
-                            Potion potion = Potion.getByJavaId(potionContents.getPotionId());
+                            Potion potion = Potion.fromComponent(potionContents);
                             if (potion != null) {
                                 bedrockData = potion.getBedrockId();
                             }
@@ -99,7 +99,7 @@ public class ShulkerBoxItem extends BlockItem {
                 }
             }
 
-            NbtMapBuilder boxItemNbt = BedrockItemBuilder.createItemNbt(bedrockIdentifier, item.getAmount(), bedrockData); // Final item tag to add to the list
+            NbtMapBuilder boxItemNbt = BedrockItemBuilder.createItemNbt(bedrockIdentifier, item.getCount(), bedrockData); // Final item tag to add to the list
             boxItemNbt.putByte("Slot", (byte) slot);
             boxItemNbt.putByte("WasPickedUp", (byte) 0); // ??? TODO might not be needed
 

@@ -44,8 +44,8 @@ import org.geysermc.geyser.inventory.updater.InventoryUpdater;
 import org.geysermc.geyser.inventory.updater.UIInventoryUpdater;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundSelectTradePacket;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.network.protocol.game.ServerboundSelectTradePacket;
 
 import java.util.concurrent.TimeUnit;
 
@@ -193,7 +193,7 @@ public class MerchantInventoryTranslator extends BaseInventoryTranslator<Merchan
     }
 
     @Override
-    public MerchantContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public MerchantContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new MerchantContainer(session, name, windowId, this.size, containerType);
     }
 }

@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.horse;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.vector.Vector2f;
@@ -50,11 +52,10 @@ import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.Attribute;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.attribute.AttributeType;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket.AttributeSnapshot;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.InteractionHand;
 
 public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
 
@@ -101,9 +102,9 @@ public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
     }
 
     @Override
-    protected AttributeData calculateAttribute(Attribute javaAttribute, GeyserAttributeType type) {
+    protected AttributeData calculateAttribute(AttributeSnapshot javaAttribute, GeyserAttributeType type) {
         AttributeData attributeData = super.calculateAttribute(javaAttribute, type);
-        if (javaAttribute.getType() == AttributeType.Builtin.JUMP_STRENGTH) {
+        if (javaAttribute.attribute().value() == Attributes.JUMP_STRENGTH.value()) {
             vehicleComponent.setHorseJumpStrength(attributeData.getValue());
         }
         return attributeData;
@@ -114,8 +115,8 @@ public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
         return !this.getFlag(EntityFlag.SADDLED);
     }
 
-    public void setHorseFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setHorseFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         boolean tamed = (xd & 0x02) == 0x02;
         setFlag(EntityFlag.TAMED, tamed);
         setFlag(EntityFlag.EATING, (xd & 0x10) == 0x10);
@@ -157,12 +158,12 @@ public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         return testHorseInteraction(hand, itemInHand);
     }
 
     @NonNull
-    protected final InteractiveTag testHorseInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected final InteractiveTag testHorseInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         boolean isBaby = isBaby();
         if (!isBaby) {
             if (getFlag(EntityFlag.TAMED) && session.isSneaking()) {
@@ -207,12 +208,12 @@ public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         return mobHorseInteract(hand, itemInHand);
     }
 
     @NonNull
-    protected final InteractionResult mobHorseInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected final InteractionResult mobHorseInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         boolean isBaby = isBaby();
         if (!isBaby) {
             if (getFlag(EntityFlag.TAMED) && session.isSneaking()) {
@@ -278,7 +279,7 @@ public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
 
     /* Just a place to stuff common code for the undead variants without having duplicate code */
 
-    protected final InteractiveTag testUndeadHorseInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected final InteractiveTag testUndeadHorseInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.TAMED)) {
             return InteractiveTag.NONE;
         } else if (isBaby()) {
@@ -300,7 +301,7 @@ public class AbstractHorseEntity extends AnimalEntity implements ClientVehicle {
         }
     }
 
-    protected final InteractionResult undeadHorseInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected final InteractionResult undeadHorseInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!getFlag(EntityFlag.TAMED)) {
             return InteractionResult.PASS;
         } else if (isBaby()) {

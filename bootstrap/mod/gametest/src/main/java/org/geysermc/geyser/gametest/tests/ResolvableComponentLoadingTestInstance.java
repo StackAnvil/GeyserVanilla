@@ -38,7 +38,7 @@ import net.minecraft.world.item.Item;
 import org.geysermc.geyser.item.components.resolvable.ResolvableComponent;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.HashMap;
 
@@ -57,12 +57,12 @@ public class ResolvableComponentLoadingTestInstance extends GeyserTestInstance {
 
     @Override
     public void run(GameTestHelper helper) {
-        JavaRegistryProvider registries = createRegistryProvider(helper);
+        var registries = helper.getLevel().registryAccess();
         var geyserItem = BuiltInJavaRegistries.ITEM.getOrThrow(BuiltInRegistries.ITEM.getId(item.value()));
 
         helper.assertFalse(geyserItem.resolvableComponents().isEmpty(), "a test was created for this item but it does not have any resolvable components loaded");
 
-        DataComponents components = new DataComponents(new HashMap<>());
+        GeyserDataComponents components = new GeyserDataComponents();
         for (ResolvableComponent<?> component : geyserItem.resolvableComponents()) {
             try {
                 // Have to resolve into map to make sure casts and stuff are checked

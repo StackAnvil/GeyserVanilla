@@ -25,11 +25,12 @@
 
 package org.geysermc.geyser.entity.type.living.monster.raid;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.VanillaEntities;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 public class SpellcasterIllagerEntity extends AbstractIllagerEntity {
     private static final int SUMMON_VEX_PARTICLE_COLOR = (179 << 16) | (179 << 8) | 204;
@@ -42,8 +43,8 @@ public class SpellcasterIllagerEntity extends AbstractIllagerEntity {
         setFlag(EntityFlag.BRIBED, javaDefinition == VanillaEntities.ILLUSIONER);
     }
 
-    public void setSpellType(ByteEntityMetadata entityMetadata) {
-        int spellType = entityMetadata.getPrimitiveValue();
+    public void setSpellType(DataValue<Byte> entityMetadata) {
+        int spellType = entityMetadata.value();
         // Summon vex, attack, or wololo
         setFlag(EntityFlag.CASTING, spellType == 1 || spellType == 2 || spellType == 3);
         int rgbData = switch (spellType) {

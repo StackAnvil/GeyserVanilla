@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -35,8 +37,7 @@ import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryKey;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
+import net.minecraft.world.entity.Pose;
 
 import java.util.OptionalInt;
 
@@ -64,8 +65,8 @@ public class FrogEntity extends AnimalEntity implements VariantIntHolder {
         metadata.put(EntityDataTypes.VARIANT, bedrockId);
     }
 
-    public void setTongueTarget(ObjectEntityMetadata<OptionalInt> entityMetadata) {
-        OptionalInt entityId = entityMetadata.getValue();
+    public void setTongueTarget(DataValue<OptionalInt> entityMetadata) {
+        OptionalInt entityId = entityMetadata.value();
         if (entityId.isPresent()) {
             Entity entity = session.getEntityCache().getEntityByJavaId(entityId.getAsInt());
             if (entity != null) {

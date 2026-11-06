@@ -35,8 +35,7 @@ import org.geysermc.geyser.scoreboard.Objective;
 import org.geysermc.geyser.scoreboard.ScoreReference;
 import org.geysermc.geyser.scoreboard.UpdateType;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
+import net.minecraft.world.scores.TeamColor;
 
 public abstract class DisplaySlot {
     protected final GeyserSession session;
@@ -46,13 +45,13 @@ public abstract class DisplaySlot {
      * but each slot has its own logic and might not contain all scores
      */
     protected final String objectiveId;
-    protected final ScoreboardPosition slot;
+    protected final net.minecraft.world.scores.DisplaySlot slot;
     protected final TeamColor teamColor;
     protected final String positionName;
 
     protected UpdateType updateType = UpdateType.ADD;
 
-    public DisplaySlot(GeyserSession session, Objective objective, ScoreboardPosition slot) {
+    public DisplaySlot(GeyserSession session, Objective objective, net.minecraft.world.scores.DisplaySlot slot) {
         this.session = session;
         this.objective = objective;
         this.objectiveId = String.valueOf(objective.getScoreboard().nextDisplayId());
@@ -110,7 +109,7 @@ public abstract class DisplaySlot {
         return objectiveId;
     }
 
-    public ScoreboardPosition position() {
+    public net.minecraft.world.scores.DisplaySlot position() {
         return slot;
     }
 
@@ -122,40 +121,40 @@ public abstract class DisplaySlot {
         return updateType;
     }
 
-    public static ScoreboardPosition slotCategory(ScoreboardPosition slot) {
+    public static net.minecraft.world.scores.DisplaySlot slotCategory(net.minecraft.world.scores.DisplaySlot slot) {
         return switch (slot) {
-            case BELOW_NAME -> ScoreboardPosition.BELOW_NAME;
-            case PLAYER_LIST -> ScoreboardPosition.PLAYER_LIST;
-            default -> ScoreboardPosition.SIDEBAR;
+            case BELOW_NAME -> net.minecraft.world.scores.DisplaySlot.BELOW_NAME;
+            case LIST -> net.minecraft.world.scores.DisplaySlot.LIST;
+            default -> net.minecraft.world.scores.DisplaySlot.SIDEBAR;
         };
     }
 
-    private static String positionName(ScoreboardPosition slot) {
+    private static String positionName(net.minecraft.world.scores.DisplaySlot slot) {
         return switch (slot) {
             case BELOW_NAME -> "belowname";
-            case PLAYER_LIST -> "list";
+            case LIST -> "list";
             default -> "sidebar";
         };
     }
 
-    private static @Nullable TeamColor teamColor(ScoreboardPosition slot) {
+    private static @Nullable TeamColor teamColor(net.minecraft.world.scores.DisplaySlot slot) {
         return switch (slot) {
-            case SIDEBAR_TEAM_RED -> TeamColor.RED;
-            case SIDEBAR_TEAM_AQUA -> TeamColor.AQUA;
-            case SIDEBAR_TEAM_BLUE -> TeamColor.BLUE;
-            case SIDEBAR_TEAM_GOLD -> TeamColor.GOLD;
-            case SIDEBAR_TEAM_GRAY -> TeamColor.GRAY;
-            case SIDEBAR_TEAM_BLACK -> TeamColor.BLACK;
-            case SIDEBAR_TEAM_GREEN -> TeamColor.GREEN;
-            case SIDEBAR_TEAM_WHITE -> TeamColor.WHITE;
-            case SIDEBAR_TEAM_YELLOW -> TeamColor.YELLOW;
-            case SIDEBAR_TEAM_DARK_RED -> TeamColor.DARK_RED;
-            case SIDEBAR_TEAM_DARK_AQUA -> TeamColor.DARK_AQUA;
-            case SIDEBAR_TEAM_DARK_BLUE -> TeamColor.DARK_BLUE;
-            case SIDEBAR_TEAM_DARK_GRAY -> TeamColor.DARK_GRAY;
-            case SIDEBAR_TEAM_DARK_GREEN -> TeamColor.DARK_GREEN;
-            case SIDEBAR_TEAM_DARK_PURPLE -> TeamColor.DARK_PURPLE;
-            case SIDEBAR_TEAM_LIGHT_PURPLE -> TeamColor.LIGHT_PURPLE;
+            case TEAM_RED -> TeamColor.RED;
+            case TEAM_AQUA -> TeamColor.AQUA;
+            case TEAM_BLUE -> TeamColor.BLUE;
+            case TEAM_GOLD -> TeamColor.GOLD;
+            case TEAM_GRAY -> TeamColor.GRAY;
+            case TEAM_BLACK -> TeamColor.BLACK;
+            case TEAM_GREEN -> TeamColor.GREEN;
+            case TEAM_WHITE -> TeamColor.WHITE;
+            case TEAM_YELLOW -> TeamColor.YELLOW;
+            case TEAM_DARK_RED -> TeamColor.DARK_RED;
+            case TEAM_DARK_AQUA -> TeamColor.DARK_AQUA;
+            case TEAM_DARK_BLUE -> TeamColor.DARK_BLUE;
+            case TEAM_DARK_GRAY -> TeamColor.DARK_GRAY;
+            case TEAM_DARK_GREEN -> TeamColor.DARK_GREEN;
+            case TEAM_DARK_PURPLE -> TeamColor.DARK_PURPLE;
+            case TEAM_LIGHT_PURPLE -> TeamColor.LIGHT_PURPLE;
             default -> null;
         };
     }

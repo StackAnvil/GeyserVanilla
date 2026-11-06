@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.registry.populator;
 
+import com.mojang.authlib.minecraft.MinecraftProfileTexture;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -46,9 +48,7 @@ import org.geysermc.geyser.skin.SkinProvider;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.util.FileUtils;
 import org.geysermc.geyser.util.JsonUtils;
-import org.geysermc.mcprotocollib.auth.texture.Texture;
-import org.geysermc.mcprotocollib.auth.texture.TextureType;
-import org.geysermc.mcprotocollib.auth.util.TextureUrlChecker;
+import org.geysermc.geyser.vanilla.protocol.VanillaProfiles;
 
 import java.io.File;
 import java.io.IOException;
@@ -229,8 +229,8 @@ public class CustomSkullRegistryPopulator {
         }
 
         if (result != null && result.textures != null) {
-            for (Texture texture : result.textures.values()) {
-                if (TextureUrlChecker.isAllowedTextureDomain(texture.getURL())) {
+            for (MinecraftProfileTexture texture : result.textures.values()) {
+                if (VanillaProfiles.isAllowedTextureDomain(texture.getUrl())) {
                     continue;
                 }
 
@@ -238,7 +238,7 @@ public class CustomSkullRegistryPopulator {
                 return null;
             }
 
-            Texture skin = result.textures.get(TextureType.SKIN);
+            MinecraftProfileTexture skin = result.textures.get(MinecraftProfileTexture.Type.SKIN);
             if (skin == null) {
                 GeyserImpl.getInstance().getLogger().warning("Textures payload contains no skin!");
                 return null;
@@ -299,6 +299,6 @@ public class CustomSkullRegistryPopulator {
      * We only need the textures, and e.g. profileId throws due to missing uuid conversion
      */
     private static class MinimalTexturesPayload {
-        public Map<TextureType, Texture> textures;
+        public Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> textures;
     }
 }

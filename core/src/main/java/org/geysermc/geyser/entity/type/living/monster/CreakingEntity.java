@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.nbt.NbtMap;
@@ -35,8 +37,6 @@ import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.entity.properties.type.EnumProperty;
 import org.geysermc.geyser.entity.properties.type.IntProperty;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataType;
 
 import java.util.Optional;
 
@@ -71,28 +71,28 @@ public class CreakingEntity extends MonsterEntity {
         setFlag(EntityFlag.FIRE_IMMUNE, true);
     }
 
-    public void setCanMove(EntityMetadata<Boolean,? extends MetadataType<Boolean>> booleanEntityMetadata) {
-        setFlag(EntityFlag.BODY_ROTATION_BLOCKED, !booleanEntityMetadata.getValue());
-        STATE_PROPERTY.apply(propertyManager, booleanEntityMetadata.getValue() ? CreakingState.HOSTILE_UNOBSERVED : CreakingState.HOSTILE_OBSERVED);
+    public void setCanMove(DataValue<Boolean> booleanEntityMetadata) {
+        setFlag(EntityFlag.BODY_ROTATION_BLOCKED, !booleanEntityMetadata.value());
+        STATE_PROPERTY.apply(propertyManager, booleanEntityMetadata.value() ? CreakingState.HOSTILE_UNOBSERVED : CreakingState.HOSTILE_OBSERVED);
         updateBedrockEntityProperties();
     }
 
-    public void setActive(EntityMetadata<Boolean,? extends MetadataType<Boolean>> booleanEntityMetadata) {
-        if (!booleanEntityMetadata.getValue()) {
+    public void setActive(DataValue<Boolean> booleanEntityMetadata) {
+        if (!booleanEntityMetadata.value()) {
             STATE_PROPERTY.apply(propertyManager, CreakingState.NEUTRAL);
         }
     }
 
-    public void setIsTearingDown(EntityMetadata<Boolean,? extends MetadataType<Boolean>> booleanEntityMetadata) {
-        if (booleanEntityMetadata.getValue()) {
+    public void setIsTearingDown(DataValue<Boolean> booleanEntityMetadata) {
+        if (booleanEntityMetadata.value()) {
             STATE_PROPERTY.apply(propertyManager, CreakingState.CRUMBLING);
             updateBedrockEntityProperties();
         }
     }
 
-    public void setHomePos(EntityMetadata<Optional<Vector3i>,? extends MetadataType<Optional<Vector3i>>> optionalEntityMetadata) {
-        if (optionalEntityMetadata.getValue().isPresent()) {
-            this.homePosition = optionalEntityMetadata.getValue().get();
+    public void setHomePos(DataValue<Optional<net.minecraft.core.BlockPos>> optionalEntityMetadata) {
+        if (optionalEntityMetadata.value().map(org.geysermc.geyser.util.MathUtils::toVector3i).isPresent()) {
+            this.homePosition = optionalEntityMetadata.value().map(org.geysermc.geyser.util.MathUtils::toVector3i).get();
         } else {
             this.homePosition = null;
         }

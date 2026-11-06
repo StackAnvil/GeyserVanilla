@@ -29,9 +29,10 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.item.TooltipOptions;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.BannerPatternLayer;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
+import net.minecraft.world.level.block.entity.BannerPatternLayers.Layer;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.List;
 
@@ -41,17 +42,17 @@ public class ShieldItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        List<BannerPatternLayer> patterns = components.get(DataComponentTypes.BANNER_PATTERNS);
+        BannerPatternLayers patterns = components.get(DataComponents.BANNER_PATTERNS);
         if (patterns != null) {
-            BannerItem.convertBannerPattern(session.javaRegistries(), patterns, builder);
+            BannerItem.convertBannerPattern(session.javaRegistries(), patterns.layers(), builder);
         }
         // Shield pattern backing color
-        Integer baseColor = components.get(DataComponentTypes.BASE_COLOR);
+        var baseColor = components.get(DataComponents.BASE_COLOR);
         if (baseColor != null) {
-            builder.putInt("Base", 15 - baseColor);
+            builder.putInt("Base", 15 - baseColor.getId());
         }
     }
 }

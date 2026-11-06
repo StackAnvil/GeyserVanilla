@@ -31,7 +31,7 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class DolphinEntity extends AgeableWaterEntity {
     public DolphinEntity(EntitySpawnContext context) {
@@ -50,7 +50,7 @@ public class DolphinEntity extends AgeableWaterEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!itemInHand.isEmpty() && itemInHand.is(session, ItemTag.FISHES)) {
             return InteractiveTag.FEED;
         }
@@ -59,7 +59,7 @@ public class DolphinEntity extends AgeableWaterEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!itemInHand.isEmpty() && itemInHand.is(session, ItemTag.FISHES)) {
             // Feed
             return InteractionResult.SUCCESS;

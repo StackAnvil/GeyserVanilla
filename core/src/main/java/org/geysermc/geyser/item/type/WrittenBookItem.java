@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.item.type;
 
-import net.kyori.adventure.text.Component;
+import net.minecraft.network.chat.Component;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.nbt.NbtMap;
 import org.cloudburstmc.nbt.NbtMapBuilder;
@@ -34,10 +34,10 @@ import org.geysermc.geyser.item.TooltipOptions;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Filterable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.WrittenBookContent;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.server.network.Filterable;
+import net.minecraft.world.item.component.WrittenBookContent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,24 +52,24 @@ public class WrittenBookItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        WrittenBookContent bookContent = components.get(DataComponentTypes.WRITTEN_BOOK_CONTENT);
+        WrittenBookContent bookContent = components.get(DataComponents.WRITTEN_BOOK_CONTENT);
         if (bookContent == null) {
             return;
         }
         List<NbtMap> bedrockPages = new ArrayList<>();
-        for (Filterable<Component> page : bookContent.getPages()) {
+        for (Filterable<Component> page : bookContent.pages()) {
             NbtMapBuilder pageBuilder = NbtMap.builder();
             pageBuilder.putString("photoname", "");
-            pageBuilder.putString("text", MessageTranslator.convertMessage(session, page.getRaw()));
+            pageBuilder.putString("text", MessageTranslator.convertMessage(session, page.raw()));
             bedrockPages.add(pageBuilder.build());
         }
         builder.putList("pages", NbtType.COMPOUND, bedrockPages);
 
-        builder.putString("title", bookContent.getTitle().getRaw())
-                .putString("author", bookContent.getAuthor())
-                .putInt("generation", bookContent.getGeneration());
+        builder.putString("title", bookContent.title().raw())
+                .putString("author", bookContent.author())
+                .putInt("generation", bookContent.generation());
     }
 }

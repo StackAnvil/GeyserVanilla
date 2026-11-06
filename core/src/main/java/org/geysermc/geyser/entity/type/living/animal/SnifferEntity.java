@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.LevelEvent;
@@ -37,9 +39,8 @@ import org.geysermc.geyser.entity.type.Tickable;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.SnifferState;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.animal.sniffer.Sniffer.State;
 
 public class SnifferEntity extends AnimalEntity implements Tickable {
     private static final int DIG_END = 120;
@@ -75,16 +76,16 @@ public class SnifferEntity extends AnimalEntity implements Tickable {
         return ItemTag.SNIFFER_FOOD;
     }
 
-    public void setSnifferState(ObjectEntityMetadata<SnifferState> entityMetadata) {
-        SnifferState snifferState = entityMetadata.getValue();
+    public void setSnifferState(DataValue<State> entityMetadata) {
+        State snifferState = entityMetadata.value();
 
-        // SnifferState.SCENTING and SnifferState.IDLING not used in bedrock
+        // State.SCENTING and State.IDLING not used in bedrock
         // The bedrock client does the scenting animation and sound on its own
-        setFlag(EntityFlag.FEELING_HAPPY, snifferState == SnifferState.FEELING_HAPPY);
-        setFlag(EntityFlag.SCENTING, snifferState == SnifferState.SNIFFING); // SnifferState.SNIFFING -> EntityFlag.SCENTING
-        setFlag(EntityFlag.SEARCHING, snifferState == SnifferState.SEARCHING);
-        setFlag(EntityFlag.DIGGING, snifferState == SnifferState.DIGGING);
-        setFlag(EntityFlag.RISING, snifferState == SnifferState.RISING);
+        setFlag(EntityFlag.FEELING_HAPPY, snifferState == State.FEELING_HAPPY);
+        setFlag(EntityFlag.SCENTING, snifferState == State.SNIFFING); // State.SNIFFING -> EntityFlag.SCENTING
+        setFlag(EntityFlag.SEARCHING, snifferState == State.SEARCHING);
+        setFlag(EntityFlag.DIGGING, snifferState == State.DIGGING);
+        setFlag(EntityFlag.RISING, snifferState == State.RISING);
 
         setDimensionsFromPose(pose);
 

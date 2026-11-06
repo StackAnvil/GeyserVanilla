@@ -32,9 +32,9 @@ import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.BlockStateProperties;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.world.item.component.BlockItemStateProperties;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 public class LightItem extends BlockItem {
 
@@ -43,7 +43,7 @@ public class LightItem extends BlockItem {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings)  {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings)  {
         ItemMapping lightLevelMapping = getLightLevelMapping(components, mappings);
         if (lightLevelMapping != null) {
             return super.translateToBedrock(session, count, components, lightLevelMapping, mappings);
@@ -52,7 +52,7 @@ public class LightItem extends BlockItem {
     }
 
     @Override
-    public ItemMapping toBedrockDefinition(DataComponents components, ItemMappings mappings) {
+    public ItemMapping toBedrockDefinition(GeyserDataComponents components, ItemMappings mappings) {
         ItemMapping lightLevelMapping = getLightLevelMapping(components, mappings);
         if (lightLevelMapping != null) {
             return lightLevelMapping;
@@ -60,13 +60,13 @@ public class LightItem extends BlockItem {
         return super.toBedrockDefinition(components, mappings);
     }
 
-    private static ItemMapping getLightLevelMapping(DataComponents components, ItemMappings mappings) {
+    private static ItemMapping getLightLevelMapping(GeyserDataComponents components, ItemMappings mappings) {
         String lightLevel = "15";
         if (components != null) {
-            BlockStateProperties blockStateProperties = components.get(DataComponentTypes.BLOCK_STATE);
+            BlockItemStateProperties blockStateProperties = components.get(DataComponents.BLOCK_STATE);
 
             if (blockStateProperties != null) {
-                lightLevel = blockStateProperties.getProperties().get(Properties.LEVEL.name());
+                lightLevel = blockStateProperties.properties().get(Properties.LEVEL.name());
             }
         }
         ItemDefinition definition = mappings.getDefinition("minecraft:light_block_" + lightLevel);

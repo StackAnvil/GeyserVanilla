@@ -44,8 +44,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.BundleCache;
 import org.geysermc.geyser.util.InventoryUtils;
 import org.geysermc.geyser.util.thirdparty.Fraction;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.List;
 
@@ -304,12 +304,12 @@ public final class BundleInventoryTranslator {
         if (itemStack.getBundleData() != null) {
             return BUNDLE_IN_BUNDLE_WEIGHT.add(calculateBundleWeight(itemStack.getBundleData().contents()));
         }
-        DataComponents components = itemStack.getComponents();
+        GeyserDataComponents components = itemStack.getComponents();
         if (components != null) {
             // NOTE: this seems to be Java-only, so it can technically cause a bundle weight desync,
             // but it'll be so rare we can probably ignore it.
-            List<?> bees = components.get(DataComponentTypes.BEES);
-            if (bees != null && !bees.isEmpty()) {
+            var bees = components.get(DataComponents.BEES);
+            if (bees != null && !bees.bees().isEmpty()) {
                 // Bees be heavy, I guess.
                 return Fraction.ONE;
             }

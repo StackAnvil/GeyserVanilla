@@ -25,7 +25,6 @@
 
 package org.geysermc.geyser.platform.spigot;
 
-import org.geysermc.mcprotocollib.protocol.data.DefaultComponentSerializer;
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -109,7 +108,7 @@ public final class PaperAdventure {
         }
 
         try {
-            return NATIVE_GSON_COMPONENT_SERIALIZER_DESERIALIZE_METHOD_BOUND.invoke(DefaultComponentSerializer.get().serialize(component));
+            return NATIVE_GSON_COMPONENT_SERIALIZER_DESERIALIZE_METHOD_BOUND.invoke(net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().serialize(component));
         } catch (final Throwable throwable) {
             GeyserImpl.getInstance().getLogger().error("Failed to create native Component message", throwable);
             return null;

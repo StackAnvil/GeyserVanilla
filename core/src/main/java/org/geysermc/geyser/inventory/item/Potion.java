@@ -27,7 +27,7 @@ package org.geysermc.geyser.inventory.item;
 
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotionContents;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -98,8 +98,9 @@ public enum Potion {
         return this.bedrockId + 1;
     }
 
-    public PotionContents toComponent() {
-        return new PotionContents(this.ordinal(), -1, Collections.emptyList(), null);
+    public PotionContents toComponent(org.geysermc.geyser.session.GeyserSession session) {
+        return new PotionContents(session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.POTION)
+            .get(net.minecraft.resources.Identifier.parse(javaIdentifier)).orElseThrow());
     }
 
     public static Potion getByJavaIdentifier(String javaIdentifier) {
@@ -111,11 +112,9 @@ public enum Potion {
         return null;
     }
 
-    public static @Nullable Potion getByJavaId(int javaId) {
-        if (javaId >= 0 && javaId < VALUES.length) {
-            return VALUES[javaId];
-        }
-        return null;
+    public static @Nullable Potion fromComponent(PotionContents contents) {
+        return contents.potion().flatMap(net.minecraft.core.Holder::unwrapKey)
+            .map(key -> getByJavaIdentifier(key.identifier().toString())).orElse(null);
     }
 
     public static @Nullable Potion getByBedrockId(int bedrockId) {

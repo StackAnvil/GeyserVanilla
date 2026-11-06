@@ -30,7 +30,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.ChunkUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundForgetLevelChunkPacket;
+import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,17 +40,17 @@ public class JavaForgetLevelChunkTranslator extends PacketTranslator<Clientbound
 
     @Override
     public void translate(GeyserSession session, ClientboundForgetLevelChunkPacket packet) {
-        session.getChunkCache().removeChunk(packet.getX(), packet.getZ());
+        session.getChunkCache().removeChunk(packet.pos().x(), packet.pos().z());
 
         // Checks if a skull is in an unloaded chunk then removes it
         List<Vector3i> removedSkulls = new ArrayList<>();
         for (Vector3i position : session.getSkullCache().getSkulls().keySet()) {
-            if ((position.getX() >> 4) == packet.getX() && (position.getZ() >> 4) == packet.getZ()) {
+            if ((position.getX() >> 4) == packet.pos().x() && (position.getZ() >> 4) == packet.pos().z()) {
                 removedSkulls.add(position);
             }
         }
         removedSkulls.forEach(session.getSkullCache()::removeSkull);
 
-        ChunkUtils.sendEmptyChunk(session, packet.getX(), packet.getZ(), false);
+        ChunkUtils.sendEmptyChunk(session, packet.pos().x(), packet.pos().z(), false);
     }
 }

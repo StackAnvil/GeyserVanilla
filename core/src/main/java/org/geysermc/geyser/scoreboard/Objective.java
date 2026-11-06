@@ -34,8 +34,8 @@ import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import org.geysermc.geyser.scoreboard.display.slot.DisplaySlot;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.NumberFormat;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
+import net.minecraft.network.chat.numbers.NumberFormat;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
 
 @Getter
 public final class Objective {
@@ -47,7 +47,7 @@ public final class Objective {
 
     private String displayName;
     private NumberFormat numberFormat;
-    private ScoreType type;
+    private RenderType type;
 
     public Objective(Scoreboard scoreboard, String objectiveName) {
         this.scoreboard = scoreboard;
@@ -82,7 +82,7 @@ public final class Objective {
         }
     }
 
-    public void updateProperties(Component displayNameComponent, ScoreType type, NumberFormat format) {
+    public void updateProperties(Component displayNameComponent, RenderType type, NumberFormat format) {
         String displayName = MessageTranslator.convertMessageRaw(displayNameComponent, scoreboard.session().locale()).replace("%", "%%");
         boolean changed = !Objects.equals(this.displayName, displayName) || this.type != type;
 

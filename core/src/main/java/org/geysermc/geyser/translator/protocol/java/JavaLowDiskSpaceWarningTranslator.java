@@ -30,7 +30,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundLowDiskSpaceWarningPacket;
+import net.minecraft.network.protocol.game.ClientboundLowDiskSpaceWarningPacket;
 
 @Translator(packet = ClientboundLowDiskSpaceWarningPacket.class)
 public class JavaLowDiskSpaceWarningTranslator extends PacketTranslator<ClientboundLowDiskSpaceWarningPacket> {

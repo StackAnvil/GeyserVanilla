@@ -34,9 +34,8 @@ import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.registry.BlockRegistries;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockChangeEntry;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSectionBlocksUpdatePacket;
+import net.minecraft.world.level.chunk.PalettedContainer;
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -51,80 +50,78 @@ public class JavaSectionBlocksUpdateTranslator extends PacketTranslator<Clientbo
 
     @Override
     public void translate(GeyserSession session, ClientboundSectionBlocksUpdatePacket packet) {
-        DataPalette palette = null;
-        if (session.getChunkCache().isCache()) {
-            palette = session.getChunkCache().getChunkSection(packet.getChunkX(), packet.getChunkY(), packet.getChunkZ(), true);
-            if (palette == null) {
-                return;
-            }
-        }
-
         Vector3i clientBreakPos = session.getBlockBreakHandler().getCurrentBlockPos();
         BitSet waterlogged = BlockRegistries.WATERLOGGED.get();
 
         UpdateSubChunkBlocksPacket updateSubChunkBlocksPacket = new UpdateSubChunkBlocksPacket();
-        updateSubChunkBlocksPacket.setPosition(Vector3i.from(
-            packet.getChunkX() << 4, packet.getChunkY() << 4, packet.getChunkZ() << 4
-        ));
-
-        for (BlockChangeEntry entry : packet.getEntries()) {
-            session.getWorldCache().removePrediction(entry.getPosition());
+        packet.runUpdates((javaPosition, javaState) -> {
+            Vector3i position = org.geysermc.geyser.util.MathUtils.toVector3i(javaPosition);
+            int blockId = net.minecraft.world.level.block.Block.getId(javaState);
+            PalettedContainer<net.minecraft.world.level.block.state.BlockState> palette = null;
+            if (session.getChunkCache().isCache()) {
+                palette = session.getChunkCache().getChunkSection(position.getX() >> 4, position.getY() >> 4, position.getZ() >> 4, true);
+                if (palette == null) {
+                    return;
+                }
+            }
+            updateSubChunkBlocksPacket.setPosition(Vector3i.from(position.getX() & ~15, position.getY() & ~15, position.getZ() & ~15));
+            session.getWorldCache().removePrediction(position);
 
             // Hack to avoid looking up blockstates for the currently broken position each tick
-            if (clientBreakPos != null && Objects.equals(clientBreakPos, entry.getPosition())) {
-                session.getBlockBreakHandler().setUpdatedServerBlockStateId(entry.getBlock());
+            if (clientBreakPos != null && Objects.equals(clientBreakPos, position)) {
+                session.getBlockBreakHandler().setUpdatedServerBlockStateId(blockId);
             }
 
             int oldBlock;
             if (palette != null) {
-                oldBlock = palette.get(entry.getPosition().getX() & 0xF, entry.getPosition().getY() & 0xF, entry.getPosition().getZ() & 0xF);
-                if (entry.getBlock() == oldBlock) {
+                oldBlock = net.minecraft.world.level.block.Block.getId(palette.get(position.getX() & 0xF, position.getY() & 0xF, position.getZ() & 0xF));
+                if (blockId == oldBlock) {
                     // Skip unchanged blocks which may occur with older versions of Minecraft
-                    continue;
+                    return;
                 }
 
-                palette.set(entry.getPosition().getX() & 0xF, entry.getPosition().getY() & 0xF, entry.getPosition().getZ() & 0xF, entry.getBlock());
+                palette.set(position.getX() & 0xF, position.getY() & 0xF, position.getZ() & 0xF, javaState);
             } else {
                 oldBlock = -1;
             }
 
-            BlockState blockState = BlockState.of(entry.getBlock());
+            BlockState blockState = BlockState.of(blockId);
             if (blockState.is(Blocks.AIR)) {
-                ItemFrameEntity itemFrameEntity = ItemFrameEntity.getItemFrameEntity(session, entry.getPosition());
+                ItemFrameEntity itemFrameEntity = ItemFrameEntity.getItemFrameEntity(session, position);
                 if (itemFrameEntity != null) { // Item frame is still present and no block overrides that; refresh it
                     itemFrameEntity.updateBlock(true);
-                    continue;
+                    return;
                 }
             }
 
             // Some block may have special handling, keep it that way
             if (!(blockState.block().getClass().equals(Block.class))) {
-                blockState.block().updateBlock(session, blockState, entry.getPosition());
-                continue;
+                blockState.block().updateBlock(session, blockState, position);
+                return;
             }
 
             // Skull is gone
-            session.getSkullCache().removeSkull(entry.getPosition());
+            session.getSkullCache().removeSkull(position);
 
             updateSubChunkBlocksPacket.getStandardBlocks().add(new org.cloudburstmc.protocol.bedrock.data.BlockChangeEntry(
-                entry.getPosition(),
+                position,
                 session.getBlockMappings().getBedrockBlock(blockState),
                 FLAG_ALL,
                 -1,
                 MessageType.NONE
             ));
 
-            boolean isWaterlogged = waterlogged.get(entry.getBlock());
+            boolean isWaterlogged = waterlogged.get(blockId);
             if (palette == null || waterlogged.get(oldBlock) != isWaterlogged) {
                 updateSubChunkBlocksPacket.getExtraBlocks().add(new org.cloudburstmc.protocol.bedrock.data.BlockChangeEntry(
-                    entry.getPosition(),
+                    position,
                     isWaterlogged ? session.getBlockMappings().getBedrockWater() : session.getBlockMappings().getBedrockAir(),
                     0,
                     -1,
                     MessageType.NONE
                 ));
             }
-        }
+        });
 
         if (!updateSubChunkBlocksPacket.getStandardBlocks().isEmpty()) {
             session.sendUpstreamPacket(updateSubChunkBlocksPacket);

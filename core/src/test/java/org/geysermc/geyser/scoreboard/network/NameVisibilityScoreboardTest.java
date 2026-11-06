@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.scoreboard.network;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import net.kyori.adventure.text.Component;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -35,19 +39,16 @@ import org.geysermc.geyser.entity.type.player.PlayerEntity;
 import org.geysermc.geyser.translator.protocol.java.entity.JavaSetEntityDataTranslator;
 import org.geysermc.geyser.translator.protocol.java.entity.JavaSetPassengersTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityDataPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetPassengersPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
@@ -71,18 +72,7 @@ public class NameVisibilityScoreboardTest {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"player1"}
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"player1"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -102,18 +92,7 @@ public class NameVisibilityScoreboardTest {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.HIDE_FOR_OTHER_TEAMS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"player1"}
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.HIDE_FOR_OTHER_TEAMS, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"player1"})
             );
             // only hidden if session player (Tim203) is in a team as well
             assertNextPacket(context, () -> {
@@ -127,18 +106,7 @@ public class NameVisibilityScoreboardTest {
             // create another team and add Tim203 to it
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"Tim203"}
-                )
+                VanillaScoreboardPackets.createTeam("team2", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"Tim203"})
             );
             // Tim203 is now in another team, so it should be hidden
             assertNextPacket(context, () -> {
@@ -152,7 +120,7 @@ public class NameVisibilityScoreboardTest {
             // add Tim203 to same team as player1, score should be visible again
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("team1", TeamAction.ADD_PLAYER, new String[]{"Tim203"})
+                VanillaScoreboardPackets.addPlayers("team1", new String[]{"Tim203"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -172,18 +140,7 @@ public class NameVisibilityScoreboardTest {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.HIDE_FOR_OWN_TEAM,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"player1"}
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.HIDE_FOR_OWN_TEAM, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"player1"})
             );
             // Tim203 is not in a team (let alone the same team), so should be visible
             assertNextPacket(context, () -> {
@@ -197,7 +154,7 @@ public class NameVisibilityScoreboardTest {
             // Tim203 is now in the same team as player1, so should be hidden
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("team1", TeamAction.ADD_PLAYER, new String[]{"Tim203"})
+                VanillaScoreboardPackets.addPlayers("team1", new String[]{"Tim203"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -210,18 +167,7 @@ public class NameVisibilityScoreboardTest {
             // create another team and add Tim203 to there, score should be visible again
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"Tim203"}
-                )
+                VanillaScoreboardPackets.createTeam("team2", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"Tim203"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -241,18 +187,7 @@ public class NameVisibilityScoreboardTest {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"player1"}
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"player1"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -264,25 +199,14 @@ public class NameVisibilityScoreboardTest {
             // adding self to another team shouldn't make a difference
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team2",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"Tim203"}
-                )
+                VanillaScoreboardPackets.createTeam("team2", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"Tim203"})
             );
             assertNoNextPacket(context);
 
             // adding self to player1 team shouldn't matter
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("team1", TeamAction.ADD_PLAYER, new String[]{"Tim203"})
+                VanillaScoreboardPackets.addPlayers("team1", new String[]{"Tim203"})
             );
             assertNoNextPacket(context);
         });
@@ -299,10 +223,10 @@ public class NameVisibilityScoreboardTest {
 
             // Set custom name for armor stand
             ClientboundSetEntityDataPacket showNamePacket = new ClientboundSetEntityDataPacket(3,
-                new EntityMetadata[]{
+                List.of(
                     // custom name shown -> true
-                    new BooleanEntityMetadata(3, MetadataTypes.BOOLEAN, true)
-                }
+                    new DataValue<>(3, EntityDataSerializers.BOOLEAN, true)
+                )
             );
 
             context.translate(setEntityMetadataTranslator, showNamePacket);
@@ -332,10 +256,10 @@ public class NameVisibilityScoreboardTest {
 
             // Now: Send custom name, it should show up too
             ClientboundSetEntityDataPacket customNamePacket = new ClientboundSetEntityDataPacket(3,
-                new EntityMetadata[]{
+                List.of(
                     // show custom name
-                    new ObjectEntityMetadata<>(2, MetadataTypes.OPTIONAL_COMPONENT, Optional.of(Component.text("Custom Name")))
-                }
+                    new DataValue<>(2, EntityDataSerializers.OPTIONAL_COMPONENT, Optional.of(net.minecraft.network.chat.Component.literal("Custom Name")))
+                )
             );
 
             context.translate(setEntityMetadataTranslator, customNamePacket);
@@ -353,18 +277,7 @@ public class NameVisibilityScoreboardTest {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "team1",
-                    Component.text("displayName"),
-                    Component.text("prefix"),
-                    Component.text("suffix"),
-                    false,
-                    false,
-                    NameTagVisibility.ALWAYS,
-                    CollisionRule.NEVER,
-                    TeamColor.DARK_RED,
-                    new String[]{"Tim203"}
-                )
+                VanillaScoreboardPackets.createTeam("team1", Component.text("displayName"), Component.text("prefix"), Component.text("suffix"), false, false, Visibility.ALWAYS, CollisionRule.NEVER, TeamColor.DARK_RED, new String[]{"Tim203"})
             );
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -384,7 +297,7 @@ public class NameVisibilityScoreboardTest {
             PlayerEntity player = spawnPlayerSilently(context, "eclipseisoffline", 2L);
             spawnArmorStand(context, 3L);
 
-            context.translate(new JavaSetPassengersTranslator(), new ClientboundSetPassengersPacket(2, new int[]{3}));
+            context.translate(new JavaSetPassengersTranslator(), org.geysermc.geyser.scoreboard.VanillaScoreboardPackets.passengers(2, new int[]{3}));
             // Passenger/vehicle link
             assertNextPacketType(context, SetEntityLinkPacket.class);
             // Passenger metadata
@@ -407,15 +320,15 @@ public class NameVisibilityScoreboardTest {
             ArmorStandEntity vehicle = spawnArmorStand(context, 2L);
             spawnArmorStand(context, 3L);
 
-            context.translate(new JavaSetEntityDataTranslator(), new ClientboundSetEntityDataPacket(2, new EntityMetadata[]{
-                new ObjectEntityMetadata<>(2, MetadataTypes.OPTIONAL_COMPONENT, Optional.of(Component.text("apples are gud")))
-            }));
+            context.translate(new JavaSetEntityDataTranslator(), new ClientboundSetEntityDataPacket(2, List.of(
+                new DataValue<>(2, EntityDataSerializers.OPTIONAL_COMPONENT, Optional.of(net.minecraft.network.chat.Component.literal("apples are gud")))
+            )));
 
             assertNextPacketMatch(context, SetEntityDataPacket.class, packet -> {
                 assertEquals("apples are gud", packet.getMetadata().get(EntityDataTypes.NAME));
             });
 
-            context.translate(new JavaSetPassengersTranslator(), new ClientboundSetPassengersPacket(2, new int[]{3}));
+            context.translate(new JavaSetPassengersTranslator(), org.geysermc.geyser.scoreboard.VanillaScoreboardPackets.passengers(2, new int[]{3}));
             // Passenger/vehicle link
             assertNextPacketType(context, SetEntityLinkPacket.class);
             // Passenger metadata
@@ -438,7 +351,7 @@ public class NameVisibilityScoreboardTest {
 
             JavaSetPassengersTranslator setPassengersTranslator = new JavaSetPassengersTranslator();
 
-            context.translate(setPassengersTranslator, new ClientboundSetPassengersPacket(2, new int[]{3}));
+            context.translate(setPassengersTranslator, org.geysermc.geyser.scoreboard.VanillaScoreboardPackets.passengers(2, new int[]{3}));
             // Passenger/vehicle link
             assertNextPacketType(context, SetEntityLinkPacket.class);
             // Passenger metadata
@@ -448,16 +361,16 @@ public class NameVisibilityScoreboardTest {
             // Since the vehicle has no custom name, no new name should be sent
             assertNoNextPacket(context);
 
-            context.translate(new JavaSetEntityDataTranslator(), new ClientboundSetEntityDataPacket(2, new EntityMetadata[]{
-                new ObjectEntityMetadata<>(2, MetadataTypes.OPTIONAL_COMPONENT, Optional.of(Component.text("apples are gud")))
-            }));
+            context.translate(new JavaSetEntityDataTranslator(), new ClientboundSetEntityDataPacket(2, List.of(
+                new DataValue<>(2, EntityDataSerializers.OPTIONAL_COMPONENT, Optional.of(net.minecraft.network.chat.Component.literal("apples are gud")))
+            )));
 
             // Since it's a vehicle, the custom name should not be sent
             assertNextPacketMatch(context, SetEntityDataPacket.class, packet -> {
                 assertEquals("", packet.getMetadata().get(EntityDataTypes.NAME));
             });
 
-            context.translate(setPassengersTranslator, new ClientboundSetPassengersPacket(2, new int[0]));
+            context.translate(setPassengersTranslator, org.geysermc.geyser.scoreboard.VanillaScoreboardPackets.passengers(2, new int[0]));
             // Passenger/vehicle link
             assertNextPacketType(context, SetEntityLinkPacket.class);
             // Passenger metadata

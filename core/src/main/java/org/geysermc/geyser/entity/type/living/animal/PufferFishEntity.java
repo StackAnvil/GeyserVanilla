@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.AbstractFishEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class PufferFishEntity extends AbstractFishEntity {
 
@@ -36,8 +37,8 @@ public class PufferFishEntity extends AbstractFishEntity {
         super(context);
     }
 
-    public void setPufferfishSize(IntEntityMetadata entityMetadata) {
-        int puffsize = entityMetadata.getPrimitiveValue();
+    public void setPufferfishSize(DataValue<Integer> entityMetadata) {
+        int puffsize = entityMetadata.value();
         metadata.put(EntityDataTypes.PUFFED_STATE, (byte) puffsize);
         metadata.put(EntityDataTypes.VARIANT, puffsize);
     }

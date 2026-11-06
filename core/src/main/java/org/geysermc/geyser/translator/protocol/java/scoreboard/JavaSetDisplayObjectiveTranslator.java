@@ -33,7 +33,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.WorldCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
 
 @Translator(packet = ClientboundSetDisplayObjectivePacket.class)
 public class JavaSetDisplayObjectiveTranslator extends PacketTranslator<ClientboundSetDisplayObjectivePacket> {
@@ -49,7 +49,7 @@ public class JavaSetDisplayObjectiveTranslator extends PacketTranslator<Clientbo
         Scoreboard scoreboard = worldCache.getScoreboard();
         int pps = worldCache.increaseAndGetScoreboardPacketsPerSecond();
 
-        scoreboard.displayObjective(packet.getName(), packet.getPosition());
+        scoreboard.displayObjective(packet.getObjectiveName(), packet.getSlot());
 
         // ScoreboardUpdater will handle it for us if the packets per second
         // (for score and team packets) is higher than the first threshold

@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSelectAdvancementsTabPacket;
+import net.minecraft.network.protocol.game.ClientboundSelectAdvancementsTabPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
@@ -38,6 +38,6 @@ public class JavaSelectAdvancementsTabTranslator extends PacketTranslator<Client
 
     @Override
     public void translate(GeyserSession session, ClientboundSelectAdvancementsTabPacket packet) {
-        session.getAdvancementsCache().setCurrentAdvancementCategoryId(packet.getTabId());
+        session.getAdvancementsCache().setCurrentAdvancementCategoryId(packet.getTab() == null ? null : packet.getTab().toString());
     }
 }

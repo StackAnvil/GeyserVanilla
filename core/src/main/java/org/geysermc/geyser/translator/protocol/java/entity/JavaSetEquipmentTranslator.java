@@ -34,17 +34,16 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.skin.FakeHeadProvider;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Equipment;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEquipmentPacket;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ClientboundSetEquipmentPacket;
 
 @Translator(packet = ClientboundSetEquipmentPacket.class)
 public class JavaSetEquipmentTranslator extends PacketTranslator<ClientboundSetEquipmentPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSetEquipmentPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntity());
         if (entity == null)
             return;
 
@@ -57,11 +56,11 @@ public class JavaSetEquipmentTranslator extends PacketTranslator<ClientboundSetE
         boolean armorUpdated = false;
         boolean mainHandUpdated = false;
         boolean offHandUpdated = false;
-        for (Equipment equipment : packet.getEquipment()) {
-            GeyserItemStack stack = GeyserItemStack.from(session, equipment.getItem());
-            switch (equipment.getSlot()) {
-                case HELMET -> {
-                    ResolvableProfile profile = stack.getComponent(DataComponentTypes.PROFILE);
+        for (var equipment : packet.getSlots()) {
+            GeyserItemStack stack = GeyserItemStack.from(session, equipment.getSecond());
+            switch (equipment.getFirst()) {
+                case HEAD -> {
+                    ResolvableProfile profile = stack.getComponent(DataComponents.PROFILE);
                     if (livingEntity instanceof PlayerEntity && stack.is(Items.PLAYER_HEAD) && profile != null) {
                         FakeHeadProvider.setHead(session, (PlayerEntity) livingEntity, profile);
                     } else {
@@ -71,7 +70,7 @@ public class JavaSetEquipmentTranslator extends PacketTranslator<ClientboundSetE
                     livingEntity.setHelmet(stack);
                     armorUpdated = true;
                 }
-                case CHESTPLATE -> {
+                case CHEST -> {
                     livingEntity.setChestplate(stack);
                     armorUpdated = true;
                 }
@@ -81,22 +80,22 @@ public class JavaSetEquipmentTranslator extends PacketTranslator<ClientboundSetE
                     livingEntity.setBody(stack);
                     armorUpdated = true;
                 }
-                case LEGGINGS -> {
+                case LEGS -> {
                     livingEntity.setLeggings(stack);
                     armorUpdated = true;
                 }
-                case BOOTS -> {
+                case FEET -> {
                     livingEntity.setBoots(stack);
                     armorUpdated = true;
                 }
                 case SADDLE -> {
                     livingEntity.setSaddle(stack);
                 }
-                case MAIN_HAND -> {
+                case MAINHAND -> {
                     livingEntity.setHand(stack);
                     mainHandUpdated = true;
                 }
-                case OFF_HAND -> {
+                case OFFHAND -> {
                     livingEntity.setOffhand(stack);
                     offHandUpdated = true;
                 }

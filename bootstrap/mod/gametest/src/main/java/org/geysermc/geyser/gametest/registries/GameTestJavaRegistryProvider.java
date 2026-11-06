@@ -31,12 +31,11 @@ import net.minecraft.server.RegistryLayer;
 import net.minecraft.server.network.ConfigurationTask;
 import net.minecraft.server.network.config.SynchronizeRegistriesTask;
 import org.geysermc.geyser.gametest.mixin.SynchronizeRegistriesTaskAccessor;
-import org.geysermc.geyser.gametest.util.NetworkUtil;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.session.cache.registry.JavaRegistryTagCache;
-import org.geysermc.mcprotocollib.network.packet.Packet;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundUpdateTagsPacket;
-import org.geysermc.mcprotocollib.protocol.packet.configuration.clientbound.ClientboundRegistryDataPacket;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
+import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,13 +53,12 @@ public final class GameTestJavaRegistryProvider {
 
         ((SynchronizeRegistriesTaskAccessor) synchronizeRegistriesTask).invokeSendRegistries(
             packet -> {
-                Packet mcpl = NetworkUtil.mojangToGeyserPacket(ConfigurationProtocols.CLIENTBOUND, packet);
-                if (mcpl instanceof ClientboundRegistryDataPacket registryDataPacket) {
+                if (packet instanceof ClientboundRegistryDataPacket registryDataPacket) {
                     provider.loadRegistryData(registryDataPacket);
-                } else if (mcpl instanceof ClientboundUpdateTagsPacket tagsPacket) {
+                } else if (packet instanceof ClientboundUpdateTagsPacket tagsPacket) {
                     provider.loadTags(Optional.empty(), tagsPacket);
                 } else {
-                    throw new IllegalStateException("Unexpected packet during registry synchronisation: " + mcpl);
+                    throw new IllegalStateException("Unexpected packet during registry synchronisation: " + packet);
                 }
             },
             Set.of()

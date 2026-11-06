@@ -31,7 +31,7 @@ import org.geysermc.erosion.packet.backendbound.BackendboundBlockRequestPacket;
 import org.geysermc.erosion.util.BlockPositionIterator;
 import org.geysermc.geyser.erosion.ErosionCancellationException;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
+import net.minecraft.world.level.GameType;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -87,7 +87,7 @@ public class GeyserWorldManager extends WorldManager {
     }
 
     @Override
-    public GameMode getDefaultGameMode(GeyserSession session) {
-        return GameMode.SURVIVAL;
+    public GameType getDefaultGameMode(GeyserSession session) {
+        return GameType.SURVIVAL;
     }
 }

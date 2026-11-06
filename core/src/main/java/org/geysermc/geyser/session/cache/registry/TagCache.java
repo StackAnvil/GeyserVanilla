@@ -39,7 +39,7 @@ import org.geysermc.geyser.session.cache.tags.BlockTag;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundUpdateTagsPacket;
+import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -58,7 +58,12 @@ public final class TagCache {
     TagCache() {}
 
     public void loadPacket(Optional<GeyserSession> session, ClientboundUpdateTagsPacket packet) {
-        Map<Key, Map<Key, int[]>> allTags = packet.getTags();
+        Map<Key, Map<Key, int[]>> allTags = new Object2ObjectOpenHashMap<>();
+        packet.tags().forEach((registry, payload) -> {
+            Map<Key, int[]> entries = new Object2ObjectOpenHashMap<>();
+            payload.tags().forEach((tag, ids) -> entries.put(MinecraftKey.key(tag.toString()), ids.toIntArray()));
+            allTags.put(MinecraftKey.key(registry.identifier().toString()), entries);
+        });
         GeyserLogger logger = GeyserImpl.getInstance().getLogger();
 
         this.tags.clear();

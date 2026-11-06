@@ -25,20 +25,20 @@
 
 package org.geysermc.geyser.translator.protocol.java.entity;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveEntityRotPacket;
+import net.minecraft.network.protocol.game.ClientboundMoveEntityPacket;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 
-@Translator(packet = ClientboundMoveEntityRotPacket.class)
-public class JavaMoveEntityRotTranslator extends PacketTranslator<ClientboundMoveEntityRotPacket> {
+@Translator(packet = ClientboundMoveEntityPacket.Rot.class)
+public class JavaMoveEntityRotTranslator extends PacketTranslator<ClientboundMoveEntityPacket.Rot> {
 
     @Override
-    public void translate(GeyserSession session, ClientboundMoveEntityRotPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+    public void translate(GeyserSession session, ClientboundMoveEntityPacket.Rot packet) {
+        Entity entity = session.getEntityCache().getEntityByJavaId(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.entityId(packet));
         if (entity == null) return;
 
-        entity.updateRotation(packet.getYaw(), packet.getPitch(), packet.isOnGround());
+        entity.updateRotation(packet.getYRot(), packet.getXRot(), packet.isOnGround());
     }
 }

@@ -42,7 +42,7 @@ import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.PistonCache;
 import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValueType;
+import org.geysermc.geyser.level.physics.PistonAction;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -74,7 +74,7 @@ public class PistonBaseBlockMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/piston/PistonStructureResolver;getToDestroy()Ljava/util/List;")
     )
     private void geyser$onBlocksMove(Level level, BlockPos blockPos, Direction direction, boolean isExtending, CallbackInfoReturnable<Boolean> cir, @Share("pushBlocks") LocalRef<Map<BlockPos, BlockState>> localRef) {
-        PistonValueType type = isExtending ? PistonValueType.PUSHING : PistonValueType.PULLING;
+        PistonAction type = isExtending ? PistonAction.EXTEND : PistonAction.RETRACT;
         boolean sticky = this.isSticky;
 
         Object2ObjectMap<Vector3i, org.geysermc.geyser.level.block.type.BlockState> attachedBlocks = new Object2ObjectArrayMap<>();

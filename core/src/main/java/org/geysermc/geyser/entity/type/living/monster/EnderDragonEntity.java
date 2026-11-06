@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Data;
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.ParticleType;
@@ -39,8 +41,6 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.Tickable;
 import org.geysermc.geyser.entity.type.living.MobEntity;
 import org.geysermc.geyser.util.DimensionUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 import java.util.Optional;
 import java.util.Random;
@@ -93,7 +93,7 @@ public class EnderDragonEntity extends MobEntity implements Tickable {
     }
 
     @Override
-    public void setHealth(FloatEntityMetadata entityMetadata) {
+    public void setHealth(DataValue<Float> entityMetadata) {
         super.setHealth(entityMetadata);
         if (phase == 9 && this.health <= 0) { // Dying phase
             EntityEventPacket entityEventPacket = new EntityEventPacket();
@@ -104,8 +104,8 @@ public class EnderDragonEntity extends MobEntity implements Tickable {
         }
     }
 
-    public void setPhase(IntEntityMetadata entityMetadata) {
-        phase = entityMetadata.getPrimitiveValue();
+    public void setPhase(DataValue<Integer> entityMetadata) {
+        phase = entityMetadata.value();
         phaseTicks = 0;
         setFlag(EntityFlag.SITTING, isSitting());
     }

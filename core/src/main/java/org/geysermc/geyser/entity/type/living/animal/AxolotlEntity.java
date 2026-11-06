@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -36,17 +38,15 @@ import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.EntityUtils;
 import org.geysermc.geyser.util.InteractionResult;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class AxolotlEntity extends AnimalEntity {
     public AxolotlEntity(EntitySpawnContext context) {
         super(context);
     }
 
-    public void setVariant(IntEntityMetadata entityMetadata) {
-        int variant = entityMetadata.getPrimitiveValue();
+    public void setVariant(DataValue<Integer> entityMetadata) {
+        int variant = entityMetadata.value();
         switch (variant) {
             case 1 -> variant = 3; // Java - "Wild" (brown)
             case 3 -> variant = 1; // Java - cyan
@@ -54,8 +54,8 @@ public class AxolotlEntity extends AnimalEntity {
         metadata.put(EntityDataTypes.VARIANT, variant);
     }
 
-    public void setPlayingDead(BooleanEntityMetadata entityMetadata) {
-        setFlag(EntityFlag.PLAYING_DEAD, entityMetadata.getPrimitiveValue());
+    public void setPlayingDead(DataValue<Boolean> entityMetadata) {
+        setFlag(EntityFlag.PLAYING_DEAD, entityMetadata.value());
     }
 
     @Override
@@ -76,7 +76,7 @@ public class AxolotlEntity extends AnimalEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (EntityUtils.attemptToBucket(itemInHand)) {
             return InteractionResult.SUCCESS;
         } else {

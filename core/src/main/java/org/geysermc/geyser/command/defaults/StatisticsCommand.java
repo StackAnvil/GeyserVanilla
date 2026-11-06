@@ -29,8 +29,7 @@ import org.geysermc.geyser.api.util.TriState;
 import org.geysermc.geyser.command.GeyserCommand;
 import org.geysermc.geyser.command.GeyserCommandSource;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.ClientCommand;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundClientCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
 import org.incendo.cloud.context.CommandContext;
 
 import java.util.Objects;
@@ -46,7 +45,7 @@ public class StatisticsCommand extends GeyserCommand {
         GeyserSession session = Objects.requireNonNull(context.sender().connection());
 
         session.setWaitingForStatistics(true);
-        ServerboundClientCommandPacket packet = new ServerboundClientCommandPacket(ClientCommand.REQUEST_STATS);
+        ServerboundClientCommandPacket packet = new ServerboundClientCommandPacket(ServerboundClientCommandPacket.Action.REQUEST_STATS);
         session.sendDownstreamGamePacket(packet);
     }
 }

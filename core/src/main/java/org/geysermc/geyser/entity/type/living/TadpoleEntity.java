@@ -31,7 +31,7 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class TadpoleEntity extends AbstractFishEntity {
     public TadpoleEntity(EntitySpawnContext context) {
@@ -40,7 +40,7 @@ public class TadpoleEntity extends AbstractFishEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (isFood(itemInHand)) {
             return InteractiveTag.FEED;
         }
@@ -49,7 +49,7 @@ public class TadpoleEntity extends AbstractFishEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (isFood(itemInHand)) {
             //TODO particles
             return InteractionResult.SUCCESS;

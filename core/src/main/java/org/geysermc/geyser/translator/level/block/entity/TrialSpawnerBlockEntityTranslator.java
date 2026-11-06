@@ -32,11 +32,11 @@ import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.Optional;
 
-@BlockEntity(type = BlockEntityType.TRIAL_SPAWNER)
+@BlockEntity(type = "minecraft:trial_spawner")
 public class TrialSpawnerBlockEntityTranslator extends BlockEntityTranslator {
     // Note that it would appear block entity updates don't include the NBT, but we do need it on chunk load.
     @Override

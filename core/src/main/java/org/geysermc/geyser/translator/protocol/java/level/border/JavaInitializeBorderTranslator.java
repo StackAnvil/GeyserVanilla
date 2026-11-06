@@ -30,7 +30,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.WorldBorder;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.border.ClientboundInitializeBorderPacket;
+import net.minecraft.network.protocol.game.ClientboundInitializeBorderPacket;
 
 @Translator(packet = ClientboundInitializeBorderPacket.class)
 public class JavaInitializeBorderTranslator extends PacketTranslator<ClientboundInitializeBorderPacket> {

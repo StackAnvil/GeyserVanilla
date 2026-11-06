@@ -34,19 +34,19 @@ import org.geysermc.geyser.entity.type.LivingEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSwingAnimationPacket;
+import net.minecraft.network.protocol.game.ClientboundSwingAnimationPacket;
 
 @Translator(packet = ClientboundSwingAnimationPacket.class)
 public class JavaSwingAnimationTranslator extends PacketTranslator<ClientboundSwingAnimationPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSwingAnimationPacket packet) {
-        Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        Entity entity = session.getEntityCache().getEntityByJavaId(packet.entityId());
         if (entity == null) {
             return;
         }
 
-        switch (packet.getHand()) {
+        switch (packet.hand()) {
             case MAIN_HAND -> {
                 if (entity instanceof LivingEntity livingEntity && livingEntity.useArmSwingAttack()) {
                     EntityEventPacket entityEventPacket = new EntityEventPacket();

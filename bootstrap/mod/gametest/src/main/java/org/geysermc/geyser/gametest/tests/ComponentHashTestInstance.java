@@ -45,12 +45,7 @@ import net.minecraft.resources.RegistryOps;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.HashOps;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.item.hashing.DataComponentHashers;
-import org.geysermc.geyser.item.hashing.MapHasher;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.mcprotocollib.protocol.codec.MinecraftTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponent;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,33 +90,23 @@ public class ComponentHashTestInstance extends GeyserTestInstance {
 
     @Override
     public void run(GameTestHelper helper) {
-        RegistryOps<Object> javaOps = helper.getLevel().registryAccess().createSerializationContext(JavaOps.INSTANCE);
-        RegistryOps<HashCode> hashOps = helper.getLevel().registryAccess().createSerializationContext(HashOps.CRC32C_INSTANCE);
-
+        var registries = helper.getLevel().registryAccess();
+        var hashOps = registries.createSerializationContext(HashOps.CRC32C_INSTANCE);
+        var hasher = org.geysermc.geyser.vanilla.protocol.VanillaItemHashing.hasher(registries);
         for (TypedDataComponent<?> testCase : testCases) {
-            // Encode vanilla component to buffer
-            RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), helper.getLevel().registryAccess());
-            TypedDataComponent.STREAM_CODEC.encode(buffer, testCase);
-
-            // Read with MCPL
-            int id = MinecraftTypes.readVarInt(buffer);
-            DataComponent<?, ?> mcplComponent = DataComponentTypes.from(id).readDataComponent(buffer);
-
-            Object encodedJavaValue = testCase.encodeValue(javaOps).getOrThrow();
-            // Hash both and compare
-            int expected = testCase.encodeValue(hashOps).getOrThrow().asInt();
-            JavaRegistryProvider registries = createRegistryProvider(helper);
-            int geyser = DataComponentHashers.hash(registries, mcplComponent).asInt();
-
+            var patch = net.minecraft.core.component.DataComponentPatch.builder().set(testCase).build();
+            var edits = org.geysermc.geyser.vanilla.protocol.GeyserDataComponents.from(patch);
+            var buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), registries);
             try {
-                helper.assertValueEqual(expected, geyser, "hash for component " + encodedJavaValue);
-            } catch (GameTestAssertException assertException) {
-                GeyserImpl.getInstance().getLogger().warning("Hash failed for component " + testCase.type() + " (" + testCase.value() + "), printing values of MapHasher");
-                MapHasher.debug = true;
-                DataComponentHashers.hash(registries, mcplComponent);
-                MapHasher.debug = false;
-                GeyserImpl.getInstance().getLogger().warning("The Mojang encoded/expected value is printed in the exception message");
-                throw assertException;
+                net.minecraft.core.component.DataComponentPatch.STREAM_CODEC.encode(buffer, edits.toVanilla());
+                var decoded = org.geysermc.geyser.vanilla.protocol.GeyserDataComponents.from(
+                    net.minecraft.core.component.DataComponentPatch.STREAM_CODEC.decode(buffer));
+                int expected = testCase.encodeValue(hashOps).getOrThrow().asInt();
+                int actual = hasher.apply(decoded.getTyped(testCase.type()));
+                helper.assertValueEqual(expected, actual, "hash for component " + testCase.type());
+                helper.assertValueEqual(0, buffer.readableBytes(), "unread component bytes");
+            } finally {
+                buffer.release();
             }
         }
 

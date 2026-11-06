@@ -27,8 +27,44 @@ package org.geysermc.geyser.util;
 
 import org.cloudburstmc.math.TrigMath;
 import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.math.vector.Vector3d;
+import org.cloudburstmc.math.vector.Vector3i;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 public class MathUtils {
+    public static BlockPos toBlockPos(Vector3i position) {
+        return new BlockPos(position.getX(), position.getY(), position.getZ());
+    }
+
+    public static Vector3i toVector3i(BlockPos position) {
+        return Vector3i.from(position.getX(), position.getY(), position.getZ());
+    }
+
+    public static Vec3 toVec3(Vector3d vector) {
+        return new Vec3(vector.getX(), vector.getY(), vector.getZ());
+    }
+
+    public static Vec3 toVec3(Vector3f vector) {
+        return new Vec3(vector.getX(), vector.getY(), vector.getZ());
+    }
+
+    public static Vector3f toVector3f(Vec3 vector) {
+        return Vector3f.from(vector.x, vector.y, vector.z);
+    }
+
+    public static Vector3f toVector3f(org.joml.Vector3fc vector) {
+        return Vector3f.from(vector.x(), vector.y(), vector.z());
+    }
+
+    public static Vector3f toVector3f(net.minecraft.core.Rotations rotations) {
+        return Vector3f.from(rotations.x(), rotations.y(), rotations.z());
+    }
+
+    public static Vector3d toVector3d(Vec3 vector) {
+        return Vector3d.from(vector.x, vector.y, vector.z);
+    }
+
     public static final double SQRT_OF_TWO = Math.sqrt(2);
 
     public static Vector3f xYRot(Vector3f velocity, float pitch, float yaw) {

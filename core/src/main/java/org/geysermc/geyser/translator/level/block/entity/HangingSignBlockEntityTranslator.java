@@ -26,13 +26,14 @@
 package org.geysermc.geyser.translator.level.block.entity;
 
 import org.geysermc.geyser.util.SignUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityTypes;
 
-@BlockEntity(type = BlockEntityType.HANGING_SIGN)
+@BlockEntity(type = "minecraft:hanging_sign")
 public class HangingSignBlockEntityTranslator extends SignBlockEntityTranslator {
 
     @Override
     public int signWidthMax() {
-        return SignUtils.HANGING_SIGN_WIDTH_MAX; // Smaller than that for BlockEntityType.SIGN
+        return SignUtils.HANGING_SIGN_WIDTH_MAX; // Smaller than that for BlockEntityTypes.SIGN
     }
 }

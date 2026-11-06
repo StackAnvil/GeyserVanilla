@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.entity;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundRemoveEntitiesPacket;
+import net.minecraft.network.protocol.game.ClientboundRemoveEntitiesPacket;
 import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -36,7 +36,7 @@ public class JavaRemoveEntitiesTranslator extends PacketTranslator<ClientboundRe
 
     @Override
     public void translate(GeyserSession session, ClientboundRemoveEntitiesPacket packet) {
-        for (int entityId : packet.getEntityIds()) {
+        for (int entityId : packet.entityIds()) {
             Entity entity = session.getEntityCache().getEntityByJavaId(entityId);
             if (entity != null) {
                 session.getEntityCache().removeEntity(entity);

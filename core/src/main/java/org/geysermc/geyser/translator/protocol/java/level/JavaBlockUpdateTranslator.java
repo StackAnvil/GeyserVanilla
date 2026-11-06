@@ -35,20 +35,20 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.sound.BlockSoundInteractionTranslator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 
 @Translator(packet = ClientboundBlockUpdatePacket.class)
 public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlockUpdatePacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundBlockUpdatePacket packet) {
-        Vector3i pos = packet.getEntry().getPosition();
+        Vector3i pos = org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos());
         WorldManager worldManager = session.getGeyser().getWorldManager();
         // Platforms where Geyser has direct server access don't allow us to detect actual block changes,
         // hence why those platforms deal with sounds for block placements differently
         boolean updatePlacement = !worldManager.hasOwnChunkCache() &&
-                !session.getErosionHandler().isActive() && worldManager.getBlockAt(session, pos) != packet.getEntry().getBlock();
-        session.getWorldCache().updateServerCorrectBlockState(pos, packet.getEntry().getBlock());
+                !session.getErosionHandler().isActive() && worldManager.getBlockAt(session, pos) != net.minecraft.world.level.block.Block.getId(packet.getBlockState());
+        session.getWorldCache().updateServerCorrectBlockState(pos, net.minecraft.world.level.block.Block.getId(packet.getBlockState()));
         if (updatePlacement) {
             this.checkPlaceSound(session, packet);
         }
@@ -60,16 +60,16 @@ public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlock
         if (lastPlacePos == null) {
             return;
         }
-        if ((lastPlacePos.getX() != packet.getEntry().getPosition().getX()
-                || lastPlacePos.getY() != packet.getEntry().getPosition().getY()
-                || lastPlacePos.getZ() != packet.getEntry().getPosition().getZ())) {
+        if ((lastPlacePos.getX() != packet.getPos().getX()
+                || lastPlacePos.getY() != packet.getPos().getY()
+                || lastPlacePos.getZ() != packet.getPos().getZ())) {
             return;
         }
 
         // We need to check if the identifier is the same, else a packet with the sound of what the
         // player has in their hand is played, despite if the block is being placed or not
         boolean contains = false;
-        Item item = BlockState.of(packet.getEntry().getBlock()).block().asItem();
+        Item item = BlockState.of(net.minecraft.world.level.block.Block.getId(packet.getBlockState())).block().asItem();
         if (item == session.getLastBlockPlaced()) {
             contains = true;
         }
@@ -85,7 +85,7 @@ public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlock
         placeBlockSoundPacket.setSound(SoundEvent.PLACE);
         placeBlockSoundPacket.setPosition(lastPlacePos.toFloat());
         placeBlockSoundPacket.setBabySound(false);
-        placeBlockSoundPacket.setExtraData(session.getBlockMappings().getBedrockBlockId(packet.getEntry().getBlock()));
+        placeBlockSoundPacket.setExtraData(session.getBlockMappings().getBedrockBlockId(net.minecraft.world.level.block.Block.getId(packet.getBlockState())));
         placeBlockSoundPacket.setIdentifier(":");
         session.sendUpstreamPacket(placeBlockSoundPacket);
         session.setLastBlockPlacePosition(null);
@@ -97,12 +97,12 @@ public class JavaBlockUpdateTranslator extends PacketTranslator<ClientboundBlock
         if (lastInteractPos == null || !session.isInteracting()) {
             return;
         }
-        if ((lastInteractPos.getX() != packet.getEntry().getPosition().getX()
-                || lastInteractPos.getY() != packet.getEntry().getPosition().getY()
-                || lastInteractPos.getZ() != packet.getEntry().getPosition().getZ())) {
+        if ((lastInteractPos.getX() != packet.getPos().getX()
+                || lastInteractPos.getY() != packet.getPos().getY()
+                || lastInteractPos.getZ() != packet.getPos().getZ())) {
             return;
         }
-        BlockState state = BlockState.of(packet.getEntry().getBlock());
+        BlockState state = BlockState.of(net.minecraft.world.level.block.Block.getId(packet.getBlockState()));
         session.setInteracting(false);
         BlockSoundInteractionTranslator.handleBlockInteraction(session, lastInteractPos.toFloat(), state);
     }

@@ -33,7 +33,7 @@ import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.unix.UnixChannelOption;
 import lombok.experimental.UtilityClass;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.mcprotocollib.network.helper.TransportHelper;
+import org.geysermc.geyser.network.bedrock.BedrockTransport;
 
 import java.net.StandardSocketOptions;
 import java.util.concurrent.CompletableFuture;
@@ -72,7 +72,7 @@ public final class Bootstraps {
     }
 
     @SuppressWarnings({"rawtypes, unchecked"})
-    public static boolean setupBootstrap(AbstractBootstrap bootstrap, TransportHelper.TransportType transport) {
+    public static boolean setupBootstrap(AbstractBootstrap bootstrap, BedrockTransport transport) {
         boolean success = true;
         try {
             ChannelFuture future = bootstrap.register();
@@ -89,7 +89,7 @@ public final class Bootstraps {
 
             Channel channel = future.channel();
             try {
-                if (transport.method() == TransportHelper.TransportMethod.NIO) {
+                if (transport == BedrockTransport.NIO) {
                     if (channel.config().setOption(NioChannelOption.of(StandardSocketOptions.SO_REUSEPORT), true)) {
                         bootstrap.option(NioChannelOption.of(StandardSocketOptions.SO_REUSEPORT), true);
                     } else {

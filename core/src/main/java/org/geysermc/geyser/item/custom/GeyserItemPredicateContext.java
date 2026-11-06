@@ -40,11 +40,11 @@ import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.translator.inventory.BundleInventoryTranslator;
 import org.geysermc.geyser.util.MinecraftKey;
 import org.geysermc.geyser.util.thirdparty.Fraction;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ArmorTrim;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.CustomModelData;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.equipment.trim.ArmorTrim;
+import net.minecraft.world.item.component.CustomModelData;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -142,22 +142,22 @@ public record GeyserItemPredicateContext(Supplier<Identifier> dimensionSupplier,
         return null;
     }
 
-    public static ItemPredicateContext create(GeyserSession session, int stackSize, DataComponents components) {
+    public static ItemPredicateContext create(GeyserSession session, int stackSize, GeyserDataComponents components) {
         JavaRegistryProvider registries = session.javaRegistries();
 
         Supplier<Identifier> dimension = Suppliers.memoize(() -> MinecraftKey.keyToIdentifier(JavaRegistries.DIMENSION_TYPE.getKeyOrThrow(registries, session.getDimensionType())));
 
-        Supplier<Integer> maxStackSize = Suppliers.memoize(() -> components.getOrDefault(DataComponentTypes.MAX_STACK_SIZE, 64));
-        Supplier<Integer> damage = Suppliers.memoize(() -> components.getOrDefault(DataComponentTypes.DAMAGE, 0));
-        Supplier<Integer> maxDamage = Suppliers.memoize(() -> components.getOrDefault(DataComponentTypes.MAX_DAMAGE, 0));
+        Supplier<Integer> maxStackSize = Suppliers.memoize(() -> components.getOrDefault(DataComponents.MAX_STACK_SIZE, 64));
+        Supplier<Integer> damage = Suppliers.memoize(() -> components.getOrDefault(DataComponents.DAMAGE, 0));
+        Supplier<Integer> maxDamage = Suppliers.memoize(() -> components.getOrDefault(DataComponents.MAX_DAMAGE, 0));
 
         Supplier<Boolean> fishingRodCast = Suppliers.memoize(session::hasFishingRodCast);
-        Supplier<Boolean> unbreakable = Suppliers.memoize((() -> components.get(DataComponentTypes.UNBREAKABLE) != null));
+        Supplier<Boolean> unbreakable = Suppliers.memoize((() -> components.get(DataComponents.UNBREAKABLE) != null));
 
         Supplier<Float> bundleFullness = Suppliers.memoize(() -> {
-            List<ItemStack> bundleStacks = components.get(DataComponentTypes.BUNDLE_CONTENTS);
+            var bundleStacks = components.get(DataComponents.BUNDLE_CONTENTS);
             if (bundleStacks != null) {
-                Fraction fraction = BundleInventoryTranslator.calculateBundleWeight(bundleStacks.stream()
+                Fraction fraction = BundleInventoryTranslator.calculateBundleWeight(bundleStacks.itemCopies()
                     .map(stack -> GeyserItemStack.from(session, stack)).collect(Collectors.toList()));
                 return fraction.floatValue();
             }
@@ -165,20 +165,20 @@ public record GeyserItemPredicateContext(Supplier<Identifier> dimensionSupplier,
         });
 
         Supplier<Identifier> trimMaterial = Suppliers.memoize(() -> {
-            ArmorTrim trim = components.get(DataComponentTypes.TRIM);
-            if (trim != null && !trim.material().isCustom()) {
-                return MinecraftKey.keyToIdentifier(JavaRegistries.TRIM_MATERIAL.getKeyOrThrow(registries, trim.material().id()));
+            ArmorTrim trim = components.get(DataComponents.TRIM);
+            if (trim != null) {
+                return trim.material().unwrapKey().map(key -> MinecraftKey.keyToIdentifier(MinecraftKey.vanillaToKey(key.identifier()))).orElse(null);
             }
             return null;
         });
 
-        Supplier<List<ChargedProjectile>> chargedProjectiles = Suppliers.memoize(() -> components.getOrDefault(DataComponentTypes.CHARGED_PROJECTILES, List.of()).stream()
+        Supplier<List<ChargedProjectile>> chargedProjectiles = Suppliers.memoize(() -> components.getOrDefault(DataComponents.CHARGED_PROJECTILES, net.minecraft.world.item.component.ChargedProjectiles.EMPTY).itemCopies()
             .map(GeyserItemPredicateContext::stackToProjectile).toList());
 
-        Supplier<List<Identifier>> componentList = Suppliers.memoize(() -> components.getDataComponents().keySet().stream()
-            .map(type -> MinecraftKey.keyToIdentifier(type.getKey())).toList());
+        Supplier<List<Identifier>> componentList = Suppliers.memoize(() -> components.types().stream()
+            .map(type -> MinecraftKey.keyToIdentifier(MinecraftKey.vanillaToKey(net.minecraft.core.registries.BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type)))).toList());
 
-        Supplier<CustomModelData> customModelData = Suppliers.memoize(() -> components.getOrDefault(DataComponentTypes.CUSTOM_MODEL_DATA, EMPTY_CUSTOM_MODEL_DATA));
+        Supplier<CustomModelData> customModelData = Suppliers.memoize(() -> components.getOrDefault(DataComponents.CUSTOM_MODEL_DATA, EMPTY_CUSTOM_MODEL_DATA));
 
         Supplier<List<Boolean>> flags = Suppliers.memoize(() -> customModelData.get().flags());
         Supplier<List<String>> strings = Suppliers.memoize(() -> customModelData.get().strings());
@@ -189,8 +189,8 @@ public record GeyserItemPredicateContext(Supplier<Identifier> dimensionSupplier,
     }
 
     private static ChargedProjectile stackToProjectile(ItemStack stack) {
-        return stack.getId() == Items.FIREWORK_ROCKET.javaId()
-            ? new GeyserChargedProjectile(ChargedProjectile.ChargeType.ROCKET, stack.getAmount())
-            : new GeyserChargedProjectile(ChargedProjectile.ChargeType.ARROW, stack.getAmount());
+        return stack.is(net.minecraft.world.item.Items.FIREWORK_ROCKET)
+            ? new GeyserChargedProjectile(ChargedProjectile.ChargeType.ROCKET, stack.getCount())
+            : new GeyserChargedProjectile(ChargedProjectile.ChargeType.ARROW, stack.getCount());
     }
 }

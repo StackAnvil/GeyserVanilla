@@ -30,14 +30,14 @@ import org.geysermc.geyser.entity.type.Entity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundSetCameraPacket;
+import net.minecraft.network.protocol.game.ClientboundSetCameraPacket;
 
 @Translator(packet = ClientboundSetCameraPacket.class)
 public class JavaSetCameraTranslator extends PacketTranslator<ClientboundSetCameraPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSetCameraPacket packet) {
-        Entity target = session.getEntityCache().getEntityByJavaId(packet.getCameraEntityId());
+        Entity target = session.getEntityCache().getEntityByJavaId(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.entityId(packet));
         if (target == null || target == session.getPlayerEntity()) {
             EntitySpectateHelper.stop(session);
         } else {

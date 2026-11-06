@@ -48,7 +48,7 @@ import org.geysermc.geyser.platform.spigot.world.manager.GeyserSpigotWorldManage
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.cache.PistonCache;
 import org.geysermc.geyser.translator.level.block.entity.PistonBlockEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.value.PistonValueType;
+import org.geysermc.geyser.level.physics.PistonAction;
 
 import java.util.List;
 import java.util.Map;
@@ -84,7 +84,7 @@ public class GeyserPistonListener implements Listener {
 
         Location location = event.getBlock().getLocation();
         Vector3i position = getVector(location);
-        PistonValueType type = isExtend ? PistonValueType.PUSHING : PistonValueType.PULLING;
+        PistonAction type = isExtend ? PistonAction.EXTEND : PistonAction.RETRACT;
         boolean sticky = event.isSticky();
 
         Object2ObjectMap<Vector3i, BlockState> attachedBlocks = new Object2ObjectArrayMap<>();

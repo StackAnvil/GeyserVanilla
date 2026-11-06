@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import lombok.Getter;
 import org.cloudburstmc.math.vector.Vector3i;
 import org.cloudburstmc.nbt.NbtMap;
@@ -38,12 +40,10 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.ItemTranslator;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Item frames are an entity in Java but a block entity in Bedrock.
@@ -104,9 +104,9 @@ public class ItemFrameEntity extends HangingEntity {
         changed = true;
     }
 
-    public void setItemInFrame(EntityMetadata<ItemStack, ?> entityMetadata) {
-        if (entityMetadata.getValue() != null) {
-            this.heldItem = entityMetadata.getValue();
+    public void setItemInFrame(DataValue<ItemStack> entityMetadata) {
+        if (entityMetadata.value() != null) {
+            this.heldItem = entityMetadata.value();
             ItemData itemData = ItemTranslator.translateToBedrock(session, heldItem);
             String customIdentifier = session.getItemMappings().getCustomIdMappings().get(itemData.getDefinition().getRuntimeId());
 
@@ -115,7 +115,7 @@ public class ItemFrameEntity extends HangingEntity {
             NbtMap itemDataTag = itemData.getTag();
             if (itemDataTag != null) {
                 // Remove custom name that Geyser sets for items due to translating non-"custom_name" components
-                String customName = ItemTranslator.getCustomName(session, heldItem.getDataComponentsPatch(),
+                String customName = ItemTranslator.getCustomName(session, org.geysermc.geyser.vanilla.protocol.GeyserDataComponents.from(heldItem.getComponentsPatch()),
                     session.getItemMappings().getMapping(heldItem), 'f', true, false);
                 if (customName == null) {
                     // No custom name found, must modify tag if custom name exists
@@ -127,7 +127,7 @@ public class ItemFrameEntity extends HangingEntity {
                 builder.put("tag", itemDataTag);
             }
             builder.putShort("Damage", (short) itemData.getDamage());
-            builder.putString("Name", customIdentifier != null ? customIdentifier : session.getItemMappings().getMapping(entityMetadata.getValue()).getBedrockIdentifier());
+            builder.putString("Name", customIdentifier != null ? customIdentifier : session.getItemMappings().getMapping(entityMetadata.value()).getBedrockIdentifier());
             NbtMapBuilder tag = getDefaultTag().toBuilder();
             tag.put("Item", builder.build());
             tag.putFloat("ItemDropChance", 1.0f);
@@ -140,8 +140,8 @@ public class ItemFrameEntity extends HangingEntity {
         }
     }
 
-    public void setItemRotation(IntEntityMetadata entityMetadata) {
-        rotation = entityMetadata.getPrimitiveValue() * 45;
+    public void setItemRotation(DataValue<Integer> entityMetadata) {
+        rotation = entityMetadata.value() * 45;
         if (cachedTag == null) {
             return;
         }
@@ -173,7 +173,7 @@ public class ItemFrameEntity extends HangingEntity {
         builder.putInt("y", bedrockPosition.getY());
         builder.putInt("z", bedrockPosition.getZ());
         builder.putByte("isMovable", (byte) 1);
-        builder.putString("id", this.javaDefinition.is(EntityType.GLOW_ITEM_FRAME) ? "GlowItemFrame" : "ItemFrame");
+        builder.putString("id", this.javaDefinition.is(EntityTypes.GLOW_ITEM_FRAME) ? "GlowItemFrame" : "ItemFrame");
         return builder.build();
     }
 
@@ -213,13 +213,13 @@ public class ItemFrameEntity extends HangingEntity {
     }
 
     @Override
-    public InteractionResult interact(Hand hand) {
+    public InteractionResult interact(InteractionHand hand) {
         return InventoryUtils.isEmpty(heldItem) && session.getPlayerInventory().getItemInHand(hand).isEmpty() ? InteractionResult.PASS : InteractionResult.SUCCESS;
     }
 
     private BlockDefinition buildBlockDefinition(Direction direction) {
         NbtMapBuilder blockBuilder = NbtMap.builder()
-            .putString("name", this.javaDefinition.is(EntityType.GLOW_ITEM_FRAME) ? "minecraft:glow_frame" : "minecraft:frame");
+            .putString("name", this.javaDefinition.is(EntityTypes.GLOW_ITEM_FRAME) ? "minecraft:glow_frame" : "minecraft:frame");
         NbtMapBuilder statesBuilder = NbtMap.builder()
             .putInt("facing_direction", direction.ordinal())
             .putByte("item_frame_map_bit", (byte) 0)

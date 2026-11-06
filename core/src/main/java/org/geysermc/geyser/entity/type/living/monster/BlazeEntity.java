@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
 
 public class BlazeEntity extends MonsterEntity {
 
@@ -35,8 +36,8 @@ public class BlazeEntity extends MonsterEntity {
         super(context);
     }
 
-    public void setBlazeFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setBlazeFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.ON_FIRE, (xd & 0x01) == 0x01);
     }
 }

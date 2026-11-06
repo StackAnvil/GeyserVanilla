@@ -38,9 +38,9 @@ import org.geysermc.geyser.level.FireworkColor;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Fireworks;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.component.Fireworks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,21 +51,21 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        Fireworks fireworks = components.get(DataComponentTypes.FIREWORKS);
+        Fireworks fireworks = components.get(DataComponents.FIREWORKS);
         if (fireworks == null) {
             return;
         }
         // We still need to translate the explosion so this is still correct, and can be reverse translate in translateNbtToJava.
         NbtMapBuilder fireworksNbt = NbtMap.builder();
-        fireworksNbt.putByte("Flight", (byte) fireworks.getFlightDuration());
+        fireworksNbt.putByte("Flight", (byte) fireworks.flightDuration());
 
-        List<Fireworks.FireworkExplosion> explosions = fireworks.getExplosions();
+        List<net.minecraft.world.item.component.FireworkExplosion> explosions = fireworks.explosions();
         if (!explosions.isEmpty()) {
             List<NbtMap> explosionNbt = new ArrayList<>();
-            for (Fireworks.FireworkExplosion explosion : explosions) {
+            for (net.minecraft.world.item.component.FireworkExplosion explosion : explosions) {
                 explosionNbt.add(translateExplosionToBedrock(explosion));
             }
             fireworksNbt.putList("Explosions", NbtType.COMPOUND, explosionNbt);
@@ -76,26 +76,26 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
         builder.putCompound("Fireworks", fireworksNbt.build());
 
         // If the tooltip is hidden, don't add any lore.
-        if (!tooltip.showInTooltip(DataComponentTypes.FIREWORKS)) {
+        if (!tooltip.showInTooltip(DataComponents.FIREWORKS)) {
             return;
         }
 
         // Then we translate everything into lore since the explosion tag and everything is not visible anymore due to this being a data driven item.
         List<String> lore = builder.getOrCreateLore();
-        lore.add(withTranslation("§r", "item.fireworks.flight", " " + fireworks.getFlightDuration()));
+        lore.add(withTranslation("§r", "item.fireworks.flight", " " + fireworks.flightDuration()));
 
-        for (Fireworks.FireworkExplosion explosion : explosions) {
-            lore.add(withTranslation("§r  ", "item.fireworksCharge.type." + explosion.getShapeId()));
+        for (net.minecraft.world.item.component.FireworkExplosion explosion : explosions) {
+            lore.add(withTranslation("§r  ", "item.fireworksCharge.type." + explosion.shape().getId()));
 
             final List<String> colors = new ArrayList<>();
             colors.add("§r  ");
-            for (int color : explosion.getColors()) {
+            for (int color : explosion.colors().toIntArray()) {
                 FireworkColor fireworkColor = FireworkColor.values()[FireworkColor.fromJavaRGB(color)];
                 colors.add("item.fireworksCharge." + fireworkColor.getName());
                 colors.add(" ");
             }
 
-            if (explosion.getColors().length != 0) {
+            if (explosion.colors().toIntArray().length != 0) {
                 lore.add(withTranslation(colors.toArray(new String[0])));
             }
 
@@ -103,27 +103,27 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
             colors.add("§r  ");
             colors.add("item.fireworksCharge.fadeTo");
             colors.add(" ");
-            for (int color : explosion.getFadeColors()) {
+            for (int color : explosion.fadeColors().toIntArray()) {
                 FireworkColor fireworkColor = FireworkColor.values()[FireworkColor.fromJavaRGB(color)];
                 colors.add("item.fireworksCharge." + fireworkColor.getName());
                 colors.add(" ");
             }
-            if (explosion.getFadeColors().length != 0) {
+            if (explosion.fadeColors().toIntArray().length != 0) {
                 lore.add(withTranslation(colors.toArray(new String[0])));
             }
 
-            if (explosion.isHasTrail()) {
+            if (explosion.hasTrail()) {
                 lore.add(withTranslation("§r  ", "item.fireworksCharge.trail"));
             }
 
-            if (explosion.isHasTwinkle()) {
+            if (explosion.hasTwinkle()) {
                 lore.add(withTranslation("§r  ", "item.fireworksCharge.flicker"));
             }
         }
     }
 
     @Override
-    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull DataComponents components, @NonNull ItemMapping mapping) {
+    public void translateNbtToJava(@NonNull GeyserSession session, @NonNull NbtMap bedrockTag, @NonNull GeyserDataComponents components, @NonNull ItemMapping mapping) {
         super.translateNbtToJava(session, bedrockTag, components, mapping);
 
         NbtMap fireworksTag = bedrockTag.getCompound("Fireworks");
@@ -135,26 +135,26 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
 
             List<NbtMap> explosions = fireworksTag.getList("Explosions", NbtType.COMPOUND);
             if (!explosions.isEmpty()) {
-                List<Fireworks.FireworkExplosion> javaExplosions = new ArrayList<>();
+                List<net.minecraft.world.item.component.FireworkExplosion> javaExplosions = new ArrayList<>();
                 for (NbtMap explosion : explosions) {
-                    Fireworks.FireworkExplosion javaExplosion = translateExplosionToJava(explosion);
+                    net.minecraft.world.item.component.FireworkExplosion javaExplosion = translateExplosionToJava(explosion);
                     if (javaExplosion != null) {
                         javaExplosions.add(javaExplosion);
                     }
                 }
-                components.put(DataComponentTypes.FIREWORKS, new Fireworks(flightDuration, javaExplosions));
+                components.put(DataComponents.FIREWORKS, new Fireworks(flightDuration, javaExplosions));
             } else {
-                components.put(DataComponentTypes.FIREWORKS, new Fireworks(flightDuration, List.of()));
+                components.put(DataComponents.FIREWORKS, new Fireworks(flightDuration, List.of()));
             }
         }
     }
 
-    static NbtMap translateExplosionToBedrock(Fireworks.FireworkExplosion explosion) {
+    static NbtMap translateExplosionToBedrock(net.minecraft.world.item.component.FireworkExplosion explosion) {
         NbtMapBuilder newExplosionData = NbtMap.builder();
 
-        newExplosionData.putByte("FireworkType", (byte) explosion.getShapeId());
+        newExplosionData.putByte("FireworkType", (byte) explosion.shape().getId());
 
-        int[] oldColors = explosion.getColors();
+        int[] oldColors = explosion.colors().toIntArray();
         byte[] colors = new byte[oldColors.length];
 
         int i = 0;
@@ -164,7 +164,7 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
 
         newExplosionData.putByteArray("FireworkColor", colors);
 
-        oldColors = explosion.getFadeColors();
+        oldColors = explosion.fadeColors().toIntArray();
         colors = new byte[oldColors.length];
 
         i = 0;
@@ -174,8 +174,8 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
 
         newExplosionData.putByteArray("FireworkFade", colors);
 
-        newExplosionData.putBoolean("FireworkTrail", explosion.isHasTrail());
-        newExplosionData.putBoolean("FireworkFlicker", explosion.isHasTwinkle());
+        newExplosionData.putBoolean("FireworkTrail", explosion.hasTrail());
+        newExplosionData.putBoolean("FireworkFlicker", explosion.hasTwinkle());
 
         return newExplosionData.build();
     }
@@ -183,7 +183,7 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
     /**
      * The only thing that the Bedrock creative inventory has - as of 1.20.80 - is color.
      */
-    static Fireworks.FireworkExplosion translateExplosionToJava(NbtMap explosion) {
+    static net.minecraft.world.item.component.FireworkExplosion translateExplosionToJava(NbtMap explosion) {
         byte[] javaColors = explosion.getByteArray("FireworkColor", null);
         if (javaColors != null) {
             int[] colors = new int[javaColors.length];
@@ -193,7 +193,8 @@ public class FireworkRocketItem extends Item implements BedrockRequiresTagItem {
                 colors[i++] = FireworkColor.fromBedrockId(color);
             }
 
-            return new Fireworks.FireworkExplosion(0, colors, IntArrays.EMPTY_ARRAY, false, false);
+            return new net.minecraft.world.item.component.FireworkExplosion(net.minecraft.world.item.component.FireworkExplosion.Shape.SMALL_BALL,
+                it.unimi.dsi.fastutil.ints.IntArrayList.wrap(colors), it.unimi.dsi.fastutil.ints.IntList.of(), false, false);
         } else {
             return null;
         }

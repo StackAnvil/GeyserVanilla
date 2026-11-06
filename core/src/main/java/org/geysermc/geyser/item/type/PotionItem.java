@@ -35,9 +35,9 @@ import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.CustomItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.PotionContents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
 
 public class PotionItem extends Item {
     public PotionItem(String javaIdentifier, Builder builder) {
@@ -45,20 +45,20 @@ public class PotionItem extends Item {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         if (components == null) return super.translateToBedrock(session, count, components, mapping, mappings);
-        PotionContents potionContents = components.get(DataComponentTypes.POTION_CONTENTS);
+        PotionContents potionContents = components.get(DataComponents.POTION_CONTENTS);
         if (potionContents != null) {
             ItemDefinition customItemDefinition = CustomItemTranslator.getCustomItem(session, count, components, mapping);
             if (customItemDefinition == null) {
-                Potion potion = Potion.getByJavaId(potionContents.getPotionId());
+                Potion potion = Potion.fromComponent(potionContents);
                 if (potion != null) {
                     return ItemData.builder()
                             .definition(mapping.getBedrockDefinition())
                             .damage(potion.getBedrockId())
                             .count(Math.min(count, BEDROCK_MAX_STACK_SIZE));
                 }
-                GeyserImpl.getInstance().getLogger().debug("Unknown Java potion: " + potionContents.getPotionId());
+                GeyserImpl.getInstance().getLogger().debug("Unknown Java potion: " + potionContents.potion());
             } else {
                 return ItemData.builder()
                         .definition(customItemDefinition)
@@ -73,7 +73,7 @@ public class PotionItem extends Item {
         Potion potion = Potion.getByBedrockId(itemData.getDamage());
         GeyserItemStack itemStack = super.translateToJava(session, itemData, mapping, mappings);
         if (potion != null) {
-            itemStack.getOrCreateComponents().put(DataComponentTypes.POTION_CONTENTS, potion.toComponent());
+            itemStack.getOrCreateComponents().put(DataComponents.POTION_CONTENTS, potion.toComponent(session));
         }
         return itemStack;
     }

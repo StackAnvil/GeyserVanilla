@@ -36,8 +36,7 @@ import org.cloudburstmc.protocol.bedrock.codec.v2225.Bedrock_v2225;
 import org.cloudburstmc.protocol.bedrock.netty.codec.packet.BedrockPacketCodec;
 import org.geysermc.geyser.api.util.MinecraftVersion;
 import org.geysermc.geyser.impl.MinecraftVersionImpl;
-import org.geysermc.mcprotocollib.protocol.codec.MinecraftCodec;
-import org.geysermc.mcprotocollib.protocol.codec.PacketCodec;
+import net.minecraft.SharedConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,13 +73,8 @@ public final class GameProtocol {
      */
     public static final String DEFAULT_BEDROCK_VERSION;
 
-    /**
-     * Java codec that is supported. We only ever support one version for
-     * Java Edition.
-     */
-    private static final PacketCodec DEFAULT_JAVA_CODEC = MinecraftCodec.CODEC;
-
     static {
+        SharedConstants.tryDetectVersion();
         // Strict ordering
         register(Bedrock_v2168_hotfix4.CODEC, "26.40", "26.41", "26.42", "26.43", "26.44");
         register(Bedrock_v2169.CODEC, "26.45");
@@ -151,7 +145,7 @@ public final class GameProtocol {
      * @return the supported Minecraft: Java Edition version names
      */
     public static List<String> getJavaVersions() {
-        return List.of(DEFAULT_JAVA_CODEC.getMinecraftVersion());
+        return List.of(getJavaMinecraftVersion());
     }
 
     /**
@@ -160,7 +154,7 @@ public final class GameProtocol {
      * @return the supported Minecraft: Java Edition protocol version
      */
     public static int getJavaProtocolVersion() {
-        return DEFAULT_JAVA_CODEC.getProtocolVersion();
+        return SharedConstants.getProtocolVersion();
     }
 
     /**
@@ -169,7 +163,7 @@ public final class GameProtocol {
      * @return the supported Minecraft: Java Edition version
      */
     public static String getJavaMinecraftVersion() {
-        return DEFAULT_JAVA_CODEC.getMinecraftVersion();
+        return SharedConstants.getCurrentVersion().name();
     }
 
     /**

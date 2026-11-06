@@ -28,7 +28,7 @@ package org.geysermc.geyser.scoreboard;
 import java.util.Objects;
 import net.kyori.adventure.text.Component;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.chat.numbers.NumberFormat;
+import net.minecraft.network.chat.numbers.NumberFormat;
 
 public final class ScoreReference {
     private static final long LAST_UPDATE_DEFAULT = -1;

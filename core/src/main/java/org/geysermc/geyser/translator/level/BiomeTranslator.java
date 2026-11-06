@@ -40,13 +40,16 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.JavaRegistryLookup;
 import org.geysermc.geyser.registry.java.reader.RegistryEntryContext;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.BitStorage;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.DataPalette;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.palette.GlobalPalette;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.palette.Palette;
-import org.geysermc.mcprotocollib.protocol.data.game.chunk.palette.SingletonPalette;
 
 import java.util.Optional;
+import net.minecraft.world.level.chunk.PalettedContainerRO;
+import net.minecraft.world.level.chunk.Palette;
+import net.minecraft.world.level.chunk.GlobalPalette;
+import net.minecraft.world.level.chunk.SingleValuePalette;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.core.Holder;
+import net.minecraft.util.BitStorage;
+import org.geysermc.geyser.vanilla.protocol.VanillaPalettes;
 
 // Array index formula by https://wiki.vg/Chunk_Format
 public class BiomeTranslator {
@@ -92,20 +95,22 @@ public class BiomeTranslator {
         return Registries.BIOME_IDENTIFIERS.get().getOrDefault(identifier, 0);
     }
 
-    public static BlockStorage toNewBedrockBiome(GeyserSession session, DataPalette biomeData) {
+    public static BlockStorage toNewBedrockBiome(GeyserSession session, PalettedContainerRO<Holder<Biome>> biomeData) {
         JavaRegistryLookup<Integer> biomeTranslations = session.javaRegistries().registry(JavaRegistries.BIOME);
         // As of 1.17.10: the client expects the same format as a chunk but filled with biomes
         // As of 1.18 this is the same as Java Edition
 
-        Palette palette = biomeData.getPalette();
-        if (palette instanceof SingletonPalette) {
-            int biomeId = bedrockBiomeId(session, biomeTranslations, palette.idToState(0));
+        var view = VanillaPalettes.view(biomeData);
+        Palette<Holder<Biome>> palette = view.palette();
+        var registry = session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.BIOME);
+        if (palette instanceof SingleValuePalette) {
+            int biomeId = bedrockBiomeId(session, biomeTranslations, registry.getId(palette.valueFor(0).value()));
             return new BlockStorage(SingletonBitArray.INSTANCE, IntLists.singleton(biomeId));
         } else {
             BlockStorage storage;
             if (!(palette instanceof GlobalPalette)) {
-                BitStorage bitStorage = biomeData.getStorage();
-                int size = palette.size();
+                BitStorage bitStorage = view.storage();
+                int size = palette.getSize();
 
                 // Fast-path: if all 64 biome cells use the same palette index,
                 // use a singleton instead of computing the full 4096-entry BitArray
@@ -119,17 +124,17 @@ public class BiomeTranslator {
                 }
 
                 if (allSame) {
-                    int biomeId = bedrockBiomeId(session, biomeTranslations, palette.idToState(firstIdx));
+                    int biomeId = bedrockBiomeId(session, biomeTranslations, registry.getId(palette.valueFor(firstIdx).value()));
                     storage = new BlockStorage(SingletonBitArray.INSTANCE, IntLists.singleton(biomeId));
                 } else {
                     // Prevent resizing by allocating what we can ahead of time
-                    BitArray bitArray = BitArrayVersion.forBitsCeil(bitStorage.getBitsPerEntry())
+                    BitArray bitArray = BitArrayVersion.forBitsCeil(bitStorage.getBits())
                             .createArray(BlockStorage.SIZE);
 
                     IntList bedrockPalette = new IntArrayList(size);
 
                     for (int i = 0; i < size; i++) {
-                        int javaId = palette.idToState(i);
+                        int javaId = registry.getId(palette.valueFor(i).value());
                         bedrockPalette.add(bedrockBiomeId(session, biomeTranslations, javaId));
                     }
 
@@ -151,7 +156,7 @@ public class BiomeTranslator {
 
                 // Each section of biome corresponding to a chunk section contains 4 * 4 * 4 entries
                 for (int i = 0; i < 64; i++) {
-                    int javaId = palette.idToState(biomeData.getStorage().get(i));
+                    int javaId = registry.getId(palette.valueFor(view.storage().get(i)).value());
                     int x = i & 3;
                     int y = (i >> 4) & 3;
                     int z = (i >> 2) & 3;

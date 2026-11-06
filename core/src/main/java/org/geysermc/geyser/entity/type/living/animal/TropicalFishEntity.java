@@ -25,12 +25,13 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.living.AbstractFishEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 import java.util.List;
 
@@ -49,8 +50,8 @@ public class TropicalFishEntity extends AbstractFishEntity {
         super(context);
     }
 
-    public void setFishVariant(IntEntityMetadata entityMetadata) {
-        int varNumber = entityMetadata.getPrimitiveValue();
+    public void setFishVariant(DataValue<Integer> entityMetadata) {
+        int varNumber = entityMetadata.value();
 
         metadata.put(EntityDataTypes.VARIANT, getShape(varNumber)); // Shape 0-1
         metadata.put(EntityDataTypes.MARK_VARIANT, getPattern(varNumber)); // Pattern 0-5

@@ -36,14 +36,14 @@ import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.util.Optional;
 
-@BlockEntity(type = BlockEntityType.MOB_SPAWNER)
+@BlockEntity(type = "minecraft:mob_spawner")
 public class SpawnerBlockEntityTranslator extends BlockEntityTranslator {
     @Override
-    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
+    public NbtMap getBlockEntityTag(GeyserSession session, BlockEntityType<?> type, int x, int y, int z, @Nullable NbtMap javaNbt, BlockState blockState) {
         if (javaNbt == null) {
             return super.getBlockEntityTag(session, type, x, y, z, javaNbt, blockState);
         }

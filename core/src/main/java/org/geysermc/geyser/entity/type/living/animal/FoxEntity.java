@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -32,8 +34,6 @@ import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class FoxEntity extends AnimalEntity {
 
@@ -41,12 +41,12 @@ public class FoxEntity extends AnimalEntity {
         super(context);
     }
 
-    public void setFoxVariant(IntEntityMetadata entityMetadata) {
-        metadata.put(EntityDataTypes.VARIANT, entityMetadata.getPrimitiveValue());
+    public void setFoxVariant(DataValue<Integer> entityMetadata) {
+        metadata.put(EntityDataTypes.VARIANT, entityMetadata.value());
     }
 
-    public void setFoxFlags(ByteEntityMetadata entityMetadata) {
-        byte xd = entityMetadata.getPrimitiveValue();
+    public void setFoxFlags(DataValue<Byte> entityMetadata) {
+        byte xd = entityMetadata.value();
         setFlag(EntityFlag.SITTING, (xd & 0x01) == 0x01);
         setFlag(EntityFlag.SNEAKING, (xd & 0x04) == 0x04);
         setFlag(EntityFlag.INTERESTED, (xd & 0x08) == 0x08);

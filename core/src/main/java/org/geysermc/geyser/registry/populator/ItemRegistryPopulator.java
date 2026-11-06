@@ -95,7 +95,7 @@ import org.geysermc.geyser.registry.type.PaletteItem;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.util.JsonUtils;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -718,7 +718,7 @@ public class ItemRegistryPopulator {
 
                 NbtMap tag = null;
                 if (itemData.getItem().getTag() != null) {
-                    final DataComponents components = new DataComponents(new HashMap<>());
+                    final GeyserDataComponents components = new GeyserDataComponents();
                     Items.FIREWORK_ROCKET.translateNbtToJava(null, itemData.getItem().getTag(), components, null);
                     final BedrockItemBuilder builder = new BedrockItemBuilder();
                     Items.FIREWORK_ROCKET.translateComponentsToBedrock(null, components, TooltipOptions.ALL_SHOWN, builder);

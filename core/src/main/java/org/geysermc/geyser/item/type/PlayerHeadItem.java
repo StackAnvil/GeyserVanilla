@@ -34,10 +34,10 @@ import org.geysermc.geyser.skin.SkinManager;
 import org.geysermc.geyser.text.ChatColor;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.ResolvableProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.world.item.component.ResolvableProfile;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 public class PlayerHeadItem extends BlockItem {
     public PlayerHeadItem(Builder builder, Block block, Block... otherBlocks) {
@@ -45,13 +45,13 @@ public class PlayerHeadItem extends BlockItem {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
         // Use the correct color, determined by the rarity of the item
-        char rarity = Rarity.fromId(components.getOrDefault(DataComponentTypes.RARITY, Rarity.COMMON.ordinal())).getColor();
+        char rarity = Rarity.valueOf(components.getOrDefault(DataComponents.RARITY, net.minecraft.world.item.Rarity.COMMON).name()).getColor();
 
-        ResolvableProfile profile = components.get(DataComponentTypes.PROFILE);
+        ResolvableProfile profile = components.get(DataComponents.PROFILE);
         if (profile != null) {
             // Ideally we'd update the item once the profile is resolved,
             // but there's no good way of doing this as we don't know where the item is in an inventory after we have translated it
@@ -59,7 +59,7 @@ public class PlayerHeadItem extends BlockItem {
             // If not, the next time the item will be translated the profile will probably have been resolved
             GameProfile resolved = SkinManager.resolveProfile(profile).getNow(null);
             if (resolved != null) {
-                String name = resolved.getName();
+                String name = resolved.name();
                 if (name != null) {
                     // Add correct name of player skull
                     String displayName = ChatColor.RESET + ChatColor.ESCAPE + rarity +

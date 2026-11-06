@@ -31,7 +31,7 @@ import org.geysermc.geyser.inventory.BedrockContainerSlot;
 import org.geysermc.geyser.inventory.Container;
 import org.geysermc.geyser.inventory.SlotType;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
+import net.minecraft.world.inventory.MenuType;
 
 public abstract class BaseInventoryTranslator<Type extends Container> extends InventoryTranslator<Type> {
     public BaseInventoryTranslator(int size) {
@@ -92,7 +92,7 @@ public abstract class BaseInventoryTranslator<Type extends Container> extends In
     }
 
     @Override
-    public Type createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public Type createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         //noinspection unchecked
         return (Type) new Container(session, name, windowId, this.size, containerType);
     }

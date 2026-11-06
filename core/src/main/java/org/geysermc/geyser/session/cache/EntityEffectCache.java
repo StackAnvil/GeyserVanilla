@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.session.cache;
 
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
+import org.geysermc.geyser.level.EffectType;
 import lombok.Getter;
 
 import java.util.EnumSet;
@@ -36,7 +36,7 @@ public class EntityEffectCache {
      * Used to clear effects on dimension switch.
      */
     @Getter
-    private final Set<Effect> entityEffects = EnumSet.noneOf(Effect.class);
+    private final Set<EffectType> entityEffects = EnumSet.noneOf(EffectType.class);
 
     /* Used to track mining speed */
     @Getter
@@ -50,7 +50,7 @@ public class EntityEffectCache {
     @Getter
     private int jumpPower;
 
-    public void setEffect(Effect effect, int effectAmplifier) {
+    public void setEffect(EffectType effect, int effectAmplifier) {
         switch (effect) {
             case CONDUIT_POWER -> conduitPower = effectAmplifier + 1;
             case HASTE -> haste = effectAmplifier + 1;
@@ -60,7 +60,7 @@ public class EntityEffectCache {
         entityEffects.add(effect);
     }
 
-    public void removeEffect(Effect effect) {
+    public void removeEffect(EffectType effect) {
         switch (effect) {
             case CONDUIT_POWER -> conduitPower = 0;
             case HASTE -> haste = 0;

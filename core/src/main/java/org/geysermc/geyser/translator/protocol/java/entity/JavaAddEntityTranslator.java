@@ -40,13 +40,10 @@ import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.EnvironmentUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.FallingBlockData;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.ProjectileData;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.WardenData;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAddEntityPacket;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 
 import java.util.Optional;
 
@@ -70,31 +67,31 @@ public class JavaAddEntityTranslator extends PacketTranslator<ClientboundAddEnti
         }
 
         Integer removedPlayerVehicleId = session.getPlayerEntity().getRemovedPlayerVehicleId();
-        if (removedPlayerVehicleId != null && removedPlayerVehicleId == packet.getEntityId()) {
+        if (removedPlayerVehicleId != null && removedPlayerVehicleId == packet.getId()) {
             session.getPlayerEntity().setRemovedPlayerVehicleId(null);
         }
 
         EntitySpawnContext context = EntitySpawnContext.fromPacket(session, definition.get(), packet);
-        if (type.is(EntityType.PLAYER)) {
+        if (type.is(EntityTypes.PLAYER)) {
             PlayerEntity entity;
-            if (packet.getUuid().equals(session.getPlayerEntity().uuid())) {
+            if (packet.getUUID().equals(session.getPlayerEntity().uuid())) {
                 // Server is sending a fake version of the current player
                 entity = new PlayerEntity(context, session.getPlayerEntity().getUsername(), session.getPlayerEntity().getTextures());
             } else {
-                entity = session.getEntityCache().getPlayerEntity(packet.getUuid());
+                entity = session.getEntityCache().getPlayerEntity(packet.getUUID());
                 if (entity == null) {
                     if (SHOW_PLAYER_LIST_LOGS) {
-                        GeyserImpl.getInstance().getLogger().error(GeyserLocale.getLocaleStringLog("geyser.entity.player.failed_list", packet.getUuid()));
+                        GeyserImpl.getInstance().getLogger().error(GeyserLocale.getLocaleStringLog("geyser.entity.player.failed_list", packet.getUUID()));
                     }
                     return;
                 }
 
-                entity.setEntityId(packet.getEntityId());
+                entity.setEntityId(packet.getId());
                 entity.setPosition(context.position());
-                entity.setYaw(packet.getYaw());
-                entity.setPitch(packet.getPitch());
-                entity.setHeadYaw(packet.getHeadYaw());
-                entity.setMotion(packet.getMovement().toFloat());
+                entity.setYaw(packet.getYRot());
+                entity.setPitch(packet.getXRot());
+                entity.setHeadYaw(packet.getYHeadRot());
+                entity.setMotion(org.geysermc.geyser.util.MathUtils.toVector3f(packet.getMovement()));
             }
 
             entity.sendPlayer();
@@ -112,11 +109,11 @@ public class JavaAddEntityTranslator extends PacketTranslator<ClientboundAddEnti
         }
 
         Entity entity;
-        if (type.is(EntityType.FALLING_BLOCK)) {
-            entity = new FallingBlockEntity(context, ((FallingBlockData) packet.getData()).getId());
-        } else if (type.is(EntityType.FISHING_BOBBER)) {
+        if (type.is(EntityTypes.FALLING_BLOCK)) {
+            entity = new FallingBlockEntity(context, packet.getData());
+        } else if (type.is(EntityTypes.FISHING_BOBBER)) {
             // Fishing bobbers need the owner for the line
-            int ownerEntityId = ((ProjectileData) packet.getData()).getOwnerId();
+            int ownerEntityId = packet.getData();
             Entity owner = session.getEntityCache().getEntityByJavaId(ownerEntityId);
             // Java clients only spawn fishing hooks with a player as its owner
             if (owner instanceof PlayerEntity) {
@@ -129,13 +126,12 @@ public class JavaAddEntityTranslator extends PacketTranslator<ClientboundAddEnti
 
             // This is done over entity metadata in modern versions, but is still sent over network in the spawn packet
             if (entity instanceof HangingEntity hanging) {
-                hanging.setDirection((Direction) packet.getData());
+                hanging.setDirection(Direction.from3DDataValue(packet.getData()));
             }
         }
 
-        if (type.is(EntityType.WARDEN)) {
-            WardenData wardenData = (WardenData) packet.getData();
-            if (wardenData.isEmerging()) {
+        if (type.is(EntityTypes.WARDEN)) {
+            if (packet.getData() == 1) {
                 entity.setPose(Pose.EMERGING);
             }
         }

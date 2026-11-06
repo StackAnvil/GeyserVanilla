@@ -39,10 +39,9 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerState;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundAttackPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundInteractPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundAttackPacket;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
 
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +66,7 @@ public class BedrockInteractTranslator extends PacketTranslator<InteractPacket> 
                     break;
                 }
                 ServerboundInteractPacket interactPacket = new ServerboundInteractPacket(entity.getEntityId(),
-                    Vector3d.ZERO, session.isSneaking());
+                    net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.phys.Vec3.ZERO, session.isSneaking());
                 session.sendDownstreamGamePacket(interactPacket);
                 break;
             case DAMAGE:
@@ -124,7 +123,7 @@ public class BedrockInteractTranslator extends PacketTranslator<InteractPacket> 
                     Entity ridingEntity = session.getPlayerEntity().getVehicle();
                     if (ridingEntity instanceof AbstractHorseEntity || ridingEntity instanceof AbstractNautilusEntity || ridingEntity instanceof ChestBoatEntity) {
                         // This mob has an inventory of its own that we should open instead.
-                        ServerboundPlayerCommandPacket openVehicleWindowPacket = new ServerboundPlayerCommandPacket(session.getPlayerEntity().getEntityId(), PlayerState.OPEN_VEHICLE_INVENTORY);
+                        ServerboundPlayerCommandPacket openVehicleWindowPacket = org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerCommand(session.getPlayerEntity().getEntityId(), ServerboundPlayerCommandPacket.Action.OPEN_INVENTORY);
                         session.sendDownstreamGamePacket(openVehicleWindowPacket);
                     } else {
                         InventoryUtils.openInventory(session.getPlayerInventoryHolder());

@@ -35,7 +35,7 @@ import org.geysermc.geyser.session.cache.FormCache;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.SettingsUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.setting.Difficulty;
+import net.minecraft.world.Difficulty;
 
 import java.util.concurrent.TimeUnit;
 

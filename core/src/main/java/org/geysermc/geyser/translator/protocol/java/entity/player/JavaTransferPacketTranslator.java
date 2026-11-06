@@ -31,7 +31,7 @@ import org.geysermc.geyser.api.event.java.ServerTransferEvent;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.common.clientbound.ClientboundTransferPacket;
+import net.minecraft.network.protocol.common.ClientboundTransferPacket;
 
 @Translator(packet = ClientboundTransferPacket.class)
 public class JavaTransferPacketTranslator extends PacketTranslator<ClientboundTransferPacket> {
@@ -40,8 +40,8 @@ public class JavaTransferPacketTranslator extends PacketTranslator<ClientboundTr
     public void translate(GeyserSession session, ClientboundTransferPacket packet) {
         ServerTransferEvent event = new ServerTransferEvent(
                 session,
-                packet.getHost(),
-                packet.getPort(),
+                packet.host(),
+                packet.port(),
                 session.getCookies());
 
         GeyserImpl.getInstance().eventBus().fire(event);

@@ -62,7 +62,7 @@ import org.geysermc.geyser.network.bedrock.GameProtocol;
 import org.geysermc.geyser.network.bedrock.nethernet.signaling.provider.GameOutcomeReporter;
 import org.geysermc.geyser.network.bedrock.nethernet.signaling.provider.GeyserStatusCollector;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.network.helper.TransportHelper;
+import org.geysermc.geyser.network.bedrock.BedrockTransport;
 import tel.schich.libdatachannel.LibDataChannelArchDetect;
 
 import java.io.IOException;
@@ -361,7 +361,7 @@ public final class NetherNetServer implements EventRegistrar {
             boolean separateIcePort = webrtcPort != signalingPort;
             this.signaling = signalingBuilder.setIceOnLocalPort(!separateIcePort).build();
 
-            this.inbuiltEventLoopGroup = TransportHelper.TRANSPORT_TYPE.eventLoopGroupFactory()
+            this.inbuiltEventLoopGroup = BedrockTransport.PREFERRED.eventLoopGroupFactory()
                 .apply(0, new DefaultThreadFactory("NetherNet Built-in Signaling", true));
             this.inbuiltInitialiser = new NetherNetChannelInitialiser(geyser);
 
@@ -503,7 +503,7 @@ public final class NetherNetServer implements EventRegistrar {
                 if (stopping) return;
                 // Lock the durable instance before identity initialization or opening its endpoint.
                 store = new ProviderStateStore(statePath);
-                eventLoopGroup = TransportHelper.TRANSPORT_TYPE.eventLoopGroupFactory()
+                eventLoopGroup = BedrockTransport.PREFERRED.eventLoopGroupFactory()
                     .apply(0, new DefaultThreadFactory("NetherNet Provider", true));
                 providerInitialiser = new NetherNetChannelInitialiser(geyser, gameOutcomes);
                 ServerBootstrap bootstrap = new ServerBootstrap().group(eventLoopGroup).childHandler(providerInitialiser);

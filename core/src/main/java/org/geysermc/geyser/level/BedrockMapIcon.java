@@ -27,53 +27,55 @@ package org.geysermc.geyser.level;
 
 import lombok.Getter;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.geysermc.mcprotocollib.protocol.data.game.level.map.MapIconType;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.saveddata.maps.MapDecorationType;
+import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
 
 public enum BedrockMapIcon {
-    ICON_WHITE_ARROW(MapIconType.PLAYER, 0),
-    ICON_ITEM_FRAME(MapIconType.FRAME, 7),
-    ICON_RED_ARROW(MapIconType.RED_MARKER, 2),
-    ICON_BLUE_ARROW(MapIconType.BLUE_MARKER, 3),
-    ICON_WHITE_CROSS(MapIconType.TARGET_X, 4, 0, 0, 0), // Doesn't exist on Bedrock, replaced with a black cross
-    ICON_RED_POINTER(MapIconType.TARGET_POINT, 5),
-    ICON_WHITE_CIRCLE(MapIconType.PLAYER_OFF_MAP, 6),
-    ICON_SMALL_WHITE_CIRCLE(MapIconType.PLAYER_OFF_LIMITS, 13),
-    ICON_MANSION(MapIconType.MANSION, 14),
-    ICON_TEMPLE(MapIconType.MONUMENT, 15),
-    ICON_WHITE_BANNER(MapIconType.BANNER_WHITE, 13, 255, 255, 255),
-    ICON_ORANGE_BANNER(MapIconType.BANNER_ORANGE, 13, 249, 128, 29),
-    ICON_MAGENTA_BANNER(MapIconType.BANNER_MAGENTA, 13, 199, 78, 189),
-    ICON_LIGHT_BLUE_BANNER(MapIconType.BANNER_LIGHT_BLUE, 13, 58, 179, 218),
-    ICON_YELLOW_BANNER(MapIconType.BANNER_YELLOW, 13, 254, 216, 61),
-    ICON_LIME_BANNER(MapIconType.BANNER_LIME, 13, 128, 199, 31),
-    ICON_PINK_BANNER(MapIconType.BANNER_PINK, 13, 243, 139, 170),
-    ICON_GRAY_BANNER(MapIconType.BANNER_GRAY, 13, 71, 79, 82),
-    ICON_LIGHT_GRAY_BANNER(MapIconType.BANNER_LIGHT_GRAY, 13, 157, 157, 151),
-    ICON_CYAN_BANNER(MapIconType.BANNER_CYAN, 13, 22, 156, 156),
-    ICON_PURPLE_BANNER(MapIconType.BANNER_PURPLE, 13, 137, 50, 184),
-    ICON_BLUE_BANNER(MapIconType.BANNER_BLUE, 13, 60, 68, 170),
-    ICON_BROWN_BANNER(MapIconType.BANNER_BROWN, 13, 131, 84, 50),
-    ICON_GREEN_BANNER(MapIconType.BANNER_GREEN, 13, 94, 124, 22),
-    ICON_RED_BANNER(MapIconType.BANNER_RED, 13, 176, 46, 38),
-    ICON_BLACK_BANNER(MapIconType.BANNER_BLACK, 13, 29, 29, 33),
-    ICON_TREASURE_MARKER(MapIconType.RED_X, 4),
-    ICON_DESERT_VILLAGE(MapIconType.VILLAGE_DESERT, 17),
-    ICON_PLAINS_VILLAGE(MapIconType.VILLAGE_PLAINS, 18),
-    ICON_SAVANNA_VILLAGE(MapIconType.VILLAGE_SAVANNA, 19),
-    ICON_SNOWY_VILLAGE(MapIconType.VILLAGE_SNOWY, 20),
-    ICON_TAIGA_VILLAGE(MapIconType.VILLAGE_TAIGA, 21),
-    ICON_JUNGLE_TEMPLE(MapIconType.JUNGLE_TEMPLE, 22),
-    ICON_SWAMP_HUT(MapIconType.SWAMP_HUT, 23),
-    ICON_TRIAL_CHAMBERS(MapIconType.TRIAL_CHAMBERS, 24),
-    ICON_ABANDONED_CAMP(MapIconType.ABANDONED_CAMP, 25),
-    ICON_ANCIENT_CITY(MapIconType.ANCIENT_CITY, 26),
-    ICON_DESERT_PYRAMID(MapIconType.DESERT_PYRAMID, 28),
-    ICON_MINESHAFT(MapIconType.MINESHAFT, 27),
-    ICON_OCEAN_RUIN_WARM(MapIconType.OCEAN_RUIN_WARM, 29);
+    ICON_WHITE_ARROW(MapDecorationTypes.PLAYER, 0),
+    ICON_ITEM_FRAME(MapDecorationTypes.FRAME, 7),
+    ICON_RED_ARROW(MapDecorationTypes.RED_MARKER, 2),
+    ICON_BLUE_ARROW(MapDecorationTypes.BLUE_MARKER, 3),
+    ICON_WHITE_CROSS(MapDecorationTypes.TARGET_X, 4, 0, 0, 0), // Doesn't exist on Bedrock, replaced with a black cross
+    ICON_RED_POINTER(MapDecorationTypes.TARGET_POINT, 5),
+    ICON_WHITE_CIRCLE(MapDecorationTypes.PLAYER_OFF_MAP, 6),
+    ICON_SMALL_WHITE_CIRCLE(MapDecorationTypes.PLAYER_OFF_LIMITS, 13),
+    ICON_MANSION(MapDecorationTypes.WOODLAND_MANSION, 14),
+    ICON_TEMPLE(MapDecorationTypes.OCEAN_MONUMENT, 15),
+    ICON_WHITE_BANNER(MapDecorationTypes.WHITE_BANNER, 13, 255, 255, 255),
+    ICON_ORANGE_BANNER(MapDecorationTypes.ORANGE_BANNER, 13, 249, 128, 29),
+    ICON_MAGENTA_BANNER(MapDecorationTypes.MAGENTA_BANNER, 13, 199, 78, 189),
+    ICON_LIGHT_BLUE_BANNER(MapDecorationTypes.LIGHT_BLUE_BANNER, 13, 58, 179, 218),
+    ICON_YELLOW_BANNER(MapDecorationTypes.YELLOW_BANNER, 13, 254, 216, 61),
+    ICON_LIME_BANNER(MapDecorationTypes.LIME_BANNER, 13, 128, 199, 31),
+    ICON_PINK_BANNER(MapDecorationTypes.PINK_BANNER, 13, 243, 139, 170),
+    ICON_GRAY_BANNER(MapDecorationTypes.GRAY_BANNER, 13, 71, 79, 82),
+    ICON_LIGHT_GRAY_BANNER(MapDecorationTypes.LIGHT_GRAY_BANNER, 13, 157, 157, 151),
+    ICON_CYAN_BANNER(MapDecorationTypes.CYAN_BANNER, 13, 22, 156, 156),
+    ICON_PURPLE_BANNER(MapDecorationTypes.PURPLE_BANNER, 13, 137, 50, 184),
+    ICON_BLUE_BANNER(MapDecorationTypes.BLUE_BANNER, 13, 60, 68, 170),
+    ICON_BROWN_BANNER(MapDecorationTypes.BROWN_BANNER, 13, 131, 84, 50),
+    ICON_GREEN_BANNER(MapDecorationTypes.GREEN_BANNER, 13, 94, 124, 22),
+    ICON_RED_BANNER(MapDecorationTypes.RED_BANNER, 13, 176, 46, 38),
+    ICON_BLACK_BANNER(MapDecorationTypes.BLACK_BANNER, 13, 29, 29, 33),
+    ICON_TREASURE_MARKER(MapDecorationTypes.RED_X, 4),
+    ICON_DESERT_VILLAGE(MapDecorationTypes.DESERT_VILLAGE, 17),
+    ICON_PLAINS_VILLAGE(MapDecorationTypes.PLAINS_VILLAGE, 18),
+    ICON_SAVANNA_VILLAGE(MapDecorationTypes.SAVANNA_VILLAGE, 19),
+    ICON_SNOWY_VILLAGE(MapDecorationTypes.SNOWY_VILLAGE, 20),
+    ICON_TAIGA_VILLAGE(MapDecorationTypes.TAIGA_VILLAGE, 21),
+    ICON_JUNGLE_TEMPLE(MapDecorationTypes.JUNGLE_TEMPLE, 22),
+    ICON_SWAMP_HUT(MapDecorationTypes.SWAMP_HUT, 23),
+    ICON_TRIAL_CHAMBERS(MapDecorationTypes.TRIAL_CHAMBERS, 24),
+    ICON_ABANDONED_CAMP(MapDecorationTypes.ABANDONED_CAMP, 25),
+    ICON_ANCIENT_CITY(MapDecorationTypes.ANCIENT_CITY, 26),
+    ICON_DESERT_PYRAMID(MapDecorationTypes.DESERT_PYRAMID, 28),
+    ICON_MINESHAFT(MapDecorationTypes.MINESHAFT, 27),
+    ICON_OCEAN_RUIN_WARM(MapDecorationTypes.OCEAN_RUIN_WARM, 29);
 
     private static final BedrockMapIcon[] VALUES = values();
 
-    private final MapIconType iconType;
+    private final Holder<MapDecorationType> iconType;
 
     @Getter
     private final int iconID;
@@ -82,11 +84,11 @@ public enum BedrockMapIcon {
     private final int green;
     private final int blue;
 
-    BedrockMapIcon(MapIconType iconType, int iconID) {
+    BedrockMapIcon(Holder<MapDecorationType> iconType, int iconID) {
         this(iconType, iconID, 255, 255, 255);
     }
 
-    BedrockMapIcon(MapIconType iconType, int iconID, int red, int green, int blue) {
+    BedrockMapIcon(Holder<MapDecorationType> iconType, int iconID, int red, int green, int blue) {
         this.iconType = iconType;
         this.iconID = iconID;
 
@@ -101,9 +103,9 @@ public enum BedrockMapIcon {
      * @param iconType A MapIconType
      * @return The mapping for a BedrockMapIcon
      */
-    public static @Nullable BedrockMapIcon fromType(MapIconType iconType) {
+    public static @Nullable BedrockMapIcon fromType(Holder<MapDecorationType> iconType) {
         for (BedrockMapIcon icon : VALUES) {
-            if (icon.iconType.equals(iconType)) {
+            if (icon.iconType.value().equals(iconType.value())) {
                 return icon;
             }
         }

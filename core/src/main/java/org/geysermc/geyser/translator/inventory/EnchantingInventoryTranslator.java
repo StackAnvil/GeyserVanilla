@@ -42,8 +42,8 @@ import org.geysermc.geyser.item.enchantment.Enchantment;
 import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerButtonClickPacket;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.network.protocol.game.ServerboundContainerButtonClickPacket;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -168,7 +168,7 @@ public class EnchantingInventoryTranslator extends AbstractBlockInventoryTransla
     }
 
     @Override
-    public EnchantingContainer createInventory(GeyserSession session, String name, int windowId, ContainerType containerType) {
+    public EnchantingContainer createInventory(GeyserSession session, String name, int windowId, MenuType<?> containerType) {
         return new EnchantingContainer(session, name, windowId, this.size, containerType);
     }
 

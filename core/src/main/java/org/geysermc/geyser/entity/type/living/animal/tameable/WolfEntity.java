@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal.tameable;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -46,14 +48,11 @@ import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
 import org.geysermc.geyser.util.ItemUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.EquipmentSlot;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.LongEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.HolderSet;
 
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +74,7 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
     );
 
     private byte collarColor = 14; // Red - default
-    private HolderSet repairableItems = null;
+    private HolderSet<net.minecraft.world.item.Item> repairableItems = null;
     private boolean isCurseOfBinding = false;
 
     public WolfEntity(EntitySpawnContext context) {
@@ -83,7 +82,7 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
     }
 
     @Override
-    public void setTameableFlags(ByteEntityMetadata entityMetadata) {
+    public void setTameableFlags(DataValue<Byte> entityMetadata) {
         super.setTameableFlags(entityMetadata);
         // Reset wolf color
         if (getFlag(EntityFlag.ANGRY)) {
@@ -99,8 +98,8 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
         }
     }
 
-    public void setCollarColor(IntEntityMetadata entityMetadata) {
-        collarColor = (byte) entityMetadata.getPrimitiveValue();
+    public void setCollarColor(DataValue<Integer> entityMetadata) {
+        collarColor = entityMetadata.value().byteValue();
         if (!getFlag(EntityFlag.ANGRY) && getFlag(EntityFlag.TAMED)) {
             updateCollarColor();
         }
@@ -116,8 +115,8 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
     }
 
     // 1.16+
-    public void setWolfAngerTime(LongEntityMetadata entityMetadata) {
-        long time = entityMetadata.getPrimitiveValue();
+    public void setWolfAngerTime(DataValue<Long> entityMetadata) {
+        long time = entityMetadata.value();
         boolean angry = time > 0 && time - session.getGameTicks() > 0;
         setFlag(EntityFlag.ANGRY, angry);
         metadata.put(EntityDataTypes.COLOR, angry ? (byte) 0 : collarColor);
@@ -143,7 +142,8 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
     public void setBody(GeyserItemStack stack) {
         super.setBody(stack);
         isCurseOfBinding = ItemUtils.hasEffect(session.javaRegistries(), stack, EnchantmentComponent.PREVENT_ARMOR_CHANGE);
-        repairableItems = stack.getComponent(DataComponentTypes.REPAIRABLE);
+        var repairable = stack.getComponent(DataComponents.REPAIRABLE);
+        repairableItems = repairable == null ? null : repairable.items();
     }
 
     @Override
@@ -153,7 +153,7 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (getFlag(EntityFlag.ANGRY)) {
             return InteractiveTag.NONE;
         }
@@ -174,7 +174,7 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
                 return InteractiveTag.EQUIP_WOLF_ARMOR;
             }
             if (itemInHand.is(Items.SHEARS) && !getItemInSlot(EquipmentSlot.BODY).isEmpty()
-                    && (!isCurseOfBinding || session.getGameMode().equals(GameMode.CREATIVE))) {
+                    && (!isCurseOfBinding || session.getGameMode().equals(GameType.CREATIVE))) {
                 return InteractiveTag.REMOVE_WOLF_ARMOR;
             }
             if (getFlag(EntityFlag.SITTING) && itemInHand.is(session, repairableItems) &&
@@ -189,7 +189,7 @@ public class WolfEntity extends TameableEntity implements VariantIntHolder {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (ownerBedrockId == session.getPlayerEntity().geyserId() || getFlag(EntityFlag.TAMED)
                 || itemInHand.is(Items.BONE) && !getFlag(EntityFlag.ANGRY)) {
             // Sitting toggle or feeding; not angry

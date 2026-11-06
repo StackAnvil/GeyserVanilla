@@ -25,6 +25,10 @@
 
 package org.geysermc.geyser.scoreboard.network;
 
+import org.geysermc.geyser.scoreboard.VanillaScoreboardPackets;
+
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import net.kyori.adventure.text.Component;
 import org.cloudburstmc.protocol.bedrock.data.ScoreInfo;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
@@ -37,7 +41,6 @@ import org.cloudburstmc.protocol.bedrock.packet.SetScorePacket;
 import org.geysermc.geyser.GeyserResources;
 import org.geysermc.geyser.entity.type.living.monster.EnderDragonPartEntity;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
-import org.geysermc.geyser.registry.populator.DataComponentRegistryPopulator;
 import org.geysermc.geyser.translator.protocol.java.entity.JavaAddEntityTranslator;
 import org.geysermc.geyser.translator.protocol.java.entity.JavaSetEntityDataTranslator;
 import org.geysermc.geyser.translator.protocol.java.entity.player.JavaPlayerInfoUpdateTranslator;
@@ -46,31 +49,23 @@ import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetDisplayObj
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetObjectiveTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetPlayerTeamTranslator;
 import org.geysermc.geyser.translator.protocol.java.scoreboard.JavaSetScoreTranslator;
-import org.geysermc.mcprotocollib.auth.GameProfile;
-import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntry;
-import org.geysermc.mcprotocollib.protocol.data.game.PlayerListEntryAction;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ByteEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.ObjectEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.CollisionRule;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.NameTagVisibility;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ObjectiveAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreType;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.ScoreboardPosition;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamAction;
-import org.geysermc.mcprotocollib.protocol.data.game.scoreboard.TeamColor;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundPlayerInfoUpdatePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundAddEntityPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundSetEntityDataPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundResetScorePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetDisplayObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetObjectivePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetPlayerTeamPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.scoreboard.ClientboundSetScorePacket;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.scores.Team.CollisionRule;
+import net.minecraft.world.scores.Team.Visibility;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType;
+import net.minecraft.world.scores.TeamColor;
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundResetScorePacket;
+import net.minecraft.network.protocol.game.ClientboundSetDisplayObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetObjectivePacket;
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
+import net.minecraft.network.protocol.game.ClientboundSetScorePacket;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -99,7 +94,7 @@ public class ScoreboardIssueTests {
         // This is a temp fix: ideally we wouldn't have a single globally initialised registry for all tests
         // (because some future tests may want to test registering to a registry).
         mockContext(() -> {
-            DataComponentRegistryPopulator.load(GeyserResources.DEFAULT);
+            org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.initialize();
             BuiltInJavaRegistries.bootstrap();
             BuiltInJavaRegistries.freeze();
         });
@@ -152,33 +147,20 @@ public class ScoreboardIssueTests {
             var npcUuid = UUID.fromString("b0eb01d7-52c9-4730-9fd3-2c03fcb00d6e");
             context.translate(
                 playerInfoUpdateTranslator,
-                new ClientboundPlayerInfoUpdatePacket(
-                    EnumSet.of(PlayerListEntryAction.ADD_PLAYER, PlayerListEntryAction.UPDATE_LISTED),
-                    new PlayerListEntry[] {
-                        new PlayerListEntry(npcUuid, new GameProfile(npcUuid, "1297"), false, 0, GameMode.SURVIVAL, null, false, 0, null, 0, null, null)
-                    }));
+                VanillaScoreboardPackets.playerInfo(
+                    EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.ADD_PLAYER, ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LISTED),
+                    List.of(new ClientboundPlayerInfoUpdatePacket.Entry(npcUuid, new GameProfile(npcUuid, "1297"), false, 0, GameType.SURVIVAL, null, false, 0, null))));
             assertNoNextPacket(context);
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "npc_team_1297",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.WHITE,
-                    new String[0]
-                )
+                VanillaScoreboardPackets.createTeam("npc_team_1297", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.WHITE, new String[0])
             );
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("npc_team_1297", TeamAction.ADD_PLAYER, new String[]{ "1297" }));
+                VanillaScoreboardPackets.addPlayers("npc_team_1297", new String[]{ "1297" }));
 
-            context.translate(addEntityTranslator, new ClientboundAddEntityPacket(1297, npcUuid, EntityType.PLAYER, 1, 2, 3, 4, 5, 6));
+            context.translate(addEntityTranslator, new ClientboundAddEntityPacket(1297, npcUuid, 1, 2, 3, 5, 4, EntityTypes.PLAYER, 0, net.minecraft.world.phys.Vec3.ZERO, 6));
             // then it updates the displayed skin parts, which isn't relevant for us
 
             assertNextPacketMatch(context, AddPlayerPacket.class, packet -> {
@@ -197,7 +179,7 @@ public class ScoreboardIssueTests {
             var hologramUuid = UUID.fromString("b1586291-5f68-44dc-847d-6c123c5b8cbf");
             context.translate(
                 addEntityTranslator,
-                new ClientboundAddEntityPacket(1298, hologramUuid, EntityType.ARMOR_STAND, 6, 5, 4, 3, 2, 1));
+                new ClientboundAddEntityPacket(1298, hologramUuid, 6, 5, 4, 2, 3, EntityTypes.ARMOR_STAND, 0, net.minecraft.world.phys.Vec3.ZERO, 1));
 
             assertNextPacketMatch(context, AddEntityPacket.class, packet -> {
                 assertEquals(4, packet.getRuntimeEntityId());
@@ -205,11 +187,11 @@ public class ScoreboardIssueTests {
             });
 
             // metadata set: invisible, custom name, custom name visible
-            context.translate(setEntityDataTranslator, new ClientboundSetEntityDataPacket(1298, new EntityMetadata<?, ?>[]{
-                new ByteEntityMetadata(0, MetadataTypes.BYTE, (byte) 0x20),
-                new ObjectEntityMetadata<>(2, MetadataTypes.OPTIONAL_COMPONENT, Optional.of(Component.text("tesss"))),
-                new BooleanEntityMetadata(3, MetadataTypes.BOOLEAN, true)
-            }));
+            context.translate(setEntityDataTranslator, new ClientboundSetEntityDataPacket(1298, List.of(
+                new DataValue<>(0, EntityDataSerializers.BYTE, (byte) 0x20),
+                new DataValue<>(2, EntityDataSerializers.OPTIONAL_COMPONENT, Optional.of(net.minecraft.network.chat.Component.literal("tesss"))),
+                new DataValue<>(3, EntityDataSerializers.BOOLEAN, true)
+            )));
 
             assertNextPacketMatch(context, SetEntityDataPacket.class, packet -> {
                 assertEquals(4, packet.getRuntimeEntityId());
@@ -223,22 +205,11 @@ public class ScoreboardIssueTests {
 
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket(
-                    "npc_team_1298",
-                    Component.empty(),
-                    Component.empty(),
-                    Component.empty(),
-                    false,
-                    false,
-                    NameTagVisibility.NEVER,
-                    CollisionRule.NEVER,
-                    TeamColor.WHITE,
-                    new String[0]
-                )
+                VanillaScoreboardPackets.createTeam("npc_team_1298", Component.empty(), Component.empty(), Component.empty(), false, false, Visibility.NEVER, CollisionRule.NEVER, TeamColor.WHITE, new String[0])
             );
             context.translate(
                 setPlayerTeamTranslator,
-                new ClientboundSetPlayerTeamPacket("npc_team_1298", TeamAction.ADD_PLAYER, new String[]{ hologramUuid.toString() }));
+                VanillaScoreboardPackets.addPlayers("npc_team_1298", new String[]{ hologramUuid.toString() }));
 
             assertNextPacket(context, () -> {
                 var packet = new SetEntityDataPacket();
@@ -264,10 +235,9 @@ public class ScoreboardIssueTests {
             var setScoreTranslator = new JavaSetScoreTranslator();
             var resetScoreTranslator = new JavaResetScorePacket();
 
-            context.translate(setObjectiveTranslator, new ClientboundSetObjectivePacket(
-                "objective", ObjectiveAction.ADD, Component.text("objective"), ScoreType.INTEGER, null));
+            context.translate(setObjectiveTranslator, VanillaScoreboardPackets.objective("objective", ClientboundSetObjectivePacket.METHOD_ADD, Component.text("objective"), RenderType.INTEGER, null));
             context.translate(setDisplayObjectiveTranslator,
-                new ClientboundSetDisplayObjectivePacket(ScoreboardPosition.SIDEBAR, "objective"));
+                VanillaScoreboardPackets.display(net.minecraft.world.scores.DisplaySlot.SIDEBAR, "objective"));
             assertNextPacket(context, () -> {
                 var packet = new SetDisplayObjectivePacket();
                 packet.setObjectiveId("0");
@@ -278,7 +248,7 @@ public class ScoreboardIssueTests {
                 return packet;
             });
 
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("line1", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("line1", "objective", 1));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);
@@ -298,7 +268,7 @@ public class ScoreboardIssueTests {
             assertNoNextPacket(context);
 
             // and re-adds the identical line, which must be sent to Bedrock again
-            context.translate(setScoreTranslator, new ClientboundSetScorePacket("line1", "objective", 1));
+            context.translate(setScoreTranslator, VanillaScoreboardPackets.score("line1", "objective", 1));
             assertNextPacket(context, () -> {
                 var packet = new SetScorePacket();
                 packet.setAction(SetScorePacket.Action.SET);

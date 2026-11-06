@@ -25,7 +25,7 @@
 
 package org.geysermc.geyser.translator.protocol.java.level;
 
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundOpenSignEditorPacket;
+import net.minecraft.network.protocol.game.ClientboundOpenSignEditorPacket;
 import org.cloudburstmc.protocol.bedrock.packet.OpenSignPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -37,10 +37,10 @@ public class JavaOpenSignEditorTranslator extends PacketTranslator<ClientboundOp
     @Override
     public void translate(GeyserSession session, ClientboundOpenSignEditorPacket packet) {
         OpenSignPacket openSignPacket = new OpenSignPacket();
-        openSignPacket.setPosition(packet.getPosition());
-        openSignPacket.setFrontSide(packet.isFrontText());
+        openSignPacket.setPosition(org.geysermc.geyser.util.MathUtils.toVector3i(packet.pos()));
+        openSignPacket.setFrontSide((packet.slot() == net.minecraft.world.level.block.entity.SignTextSlot.FRONT));
         session.sendUpstreamPacket(openSignPacket);
 
-        session.getWorldCache().setEditingSignOnFront(packet.isFrontText());
+        session.getWorldCache().setEditingSignOnFront((packet.slot() == net.minecraft.world.level.block.entity.SignTextSlot.FRONT));
     }
 }

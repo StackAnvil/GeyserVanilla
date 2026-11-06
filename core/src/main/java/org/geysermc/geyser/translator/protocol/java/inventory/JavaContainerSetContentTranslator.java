@@ -34,21 +34,21 @@ import org.geysermc.geyser.translator.inventory.SmithingInventoryTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundContainerSetContentPacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
 
 @Translator(packet = ClientboundContainerSetContentPacket.class)
 public class JavaContainerSetContentTranslator extends PacketTranslator<ClientboundContainerSetContentPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundContainerSetContentPacket packet) {
-        InventoryHolder<?> holder = InventoryUtils.getInventory(session, packet.getContainerId());
+        InventoryHolder<?> holder = InventoryUtils.getInventory(session, packet.containerId());
         if (holder == null)
             return;
 
         Inventory inventory = holder.inventory();
 
         int inventorySize = inventory.getSize();
-        for (int i = 0; i < packet.getItems().length; i++) {
+        for (int i = 0; i < packet.items().size(); i++) {
             if (i >= inventorySize) {
                 GeyserLogger logger = session.getGeyser().getLogger();
                 logger.warning("ClientboundContainerSetContentPacket sent to " + session.bedrockUsername()
@@ -64,18 +64,18 @@ public class JavaContainerSetContentTranslator extends PacketTranslator<Clientbo
                 return;
             }
 
-            GeyserItemStack newItem = GeyserItemStack.from(session, packet.getItems()[i]);
+            GeyserItemStack newItem = GeyserItemStack.from(session, packet.items().get(i));
             session.getBundleCache().initialize(newItem);
             inventory.setItem(i, newItem, session);
         }
 
         holder.updateInventory();
 
-        int stateId = packet.getStateId();
+        int stateId = packet.stateId();
         session.setEmulatePost1_16Logic(stateId > 0 || stateId != inventory.getStateId());
         inventory.setStateId(stateId);
 
-        GeyserItemStack cursor = GeyserItemStack.from(session, packet.getCarriedItem());
+        GeyserItemStack cursor = GeyserItemStack.from(session, packet.carriedItem());
         session.getBundleCache().initialize(cursor);
         session.getPlayerInventory().setCursor(cursor, session);
         InventoryUtils.updateCursor(session);
@@ -88,7 +88,7 @@ public class JavaContainerSetContentTranslator extends PacketTranslator<Clientbo
             // That plus shift-clicking means that the state ID becomes outdated and forces
             // a complete inventory update.
             JavaContainerSetSlotTranslator.updateSmithingTableOutput(SmithingInventoryTranslator.OUTPUT,
-                packet.getItems()[SmithingInventoryTranslator.OUTPUT], holder);
+                packet.items().get(SmithingInventoryTranslator.OUTPUT), holder);
         }
     }
 }

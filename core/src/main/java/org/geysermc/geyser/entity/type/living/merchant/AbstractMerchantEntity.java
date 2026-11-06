@@ -34,7 +34,7 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class AbstractMerchantEntity extends AgeableEntity {
 
@@ -49,7 +49,7 @@ public class AbstractMerchantEntity extends AgeableEntity {
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!itemInHand.is(Items.VILLAGER_SPAWN_EGG)
                 && (javaDefinition != VanillaEntities.VILLAGER || !getFlag(EntityFlag.SLEEPING) && ((VillagerEntity) this).isCanTradeWith())) {
             // An additional check we know cannot work
@@ -62,7 +62,7 @@ public class AbstractMerchantEntity extends AgeableEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (!itemInHand.is(Items.VILLAGER_SPAWN_EGG)
                 && (javaDefinition != VanillaEntities.VILLAGER || !getFlag(EntityFlag.SLEEPING))
                 && (javaDefinition != VanillaEntities.WANDERING_TRADER || !getFlag(EntityFlag.BABY))) {

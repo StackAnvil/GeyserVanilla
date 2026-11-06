@@ -16,7 +16,6 @@ dependencies {
     api(libs.cloud.velocity)
 }
 
-platformRelocate("it.unimi.dsi.fastutil")
 platformRelocate("org.yaml")
 platformRelocate("org.spongepowered")
 platformRelocate("org.bstats")

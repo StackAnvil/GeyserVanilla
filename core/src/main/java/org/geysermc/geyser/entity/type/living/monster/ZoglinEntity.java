@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
 
 public class ZoglinEntity extends MonsterEntity {
 
@@ -37,8 +38,8 @@ public class ZoglinEntity extends MonsterEntity {
         metadata.put(EntityDataTypes.TARGET_EID, session.getPlayerEntity().geyserId());
     }
 
-    public void setBaby(BooleanEntityMetadata entityMetadata) {
-        boolean isBaby = entityMetadata.getPrimitiveValue();
+    public void setBaby(DataValue<Boolean> entityMetadata) {
+        boolean isBaby = entityMetadata.value();
         if (isBaby != getFlag(EntityFlag.BABY)) {
             setScale(isBaby ? .55f : 1f);
             setFlag(EntityFlag.BABY, isBaby);

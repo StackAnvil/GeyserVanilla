@@ -33,7 +33,7 @@ import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundCooldownPacket;
+import net.minecraft.network.protocol.game.ClientboundCooldownPacket;
 
 @Translator(packet = ClientboundCooldownPacket.class)
 public class JavaCooldownTranslator extends PacketTranslator<ClientboundCooldownPacket> {
@@ -42,7 +42,7 @@ public class JavaCooldownTranslator extends PacketTranslator<ClientboundCooldown
     public void translate(GeyserSession session, ClientboundCooldownPacket packet) {
         // If the cooldown group is a modded item, an item that Bedrock doesn't support custom cooldowns for, or a custom cooldown group,
         // then the cooldown won't be translated correctly. The cooldown won't show up on Bedrock, but they are still unable to use the item.
-        Key cooldownGroup = packet.getCooldownGroup();
+        Key cooldownGroup = org.geysermc.geyser.util.MinecraftKey.key(packet.cooldownGroup().toString());
         Item item = BuiltInJavaRegistries.ITEM.get(cooldownGroup).orElse(null);
 
         // Custom items can define an item cooldown using a custom cooldown group, which will be sent to the client if there's not a vanilla cooldown group
@@ -57,9 +57,9 @@ public class JavaCooldownTranslator extends PacketTranslator<ClientboundCooldown
 
         PlayerStartItemCooldownPacket bedrockPacket = new PlayerStartItemCooldownPacket();
         bedrockPacket.setItemCategory(cooldownCategory);
-        bedrockPacket.setCooldownDuration(Math.round(packet.getCooldownTicks() * (session.getMillisecondsPerTick() / 50)));
+        bedrockPacket.setCooldownDuration(Math.round(packet.duration() * (session.getMillisecondsPerTick() / 50)));
         session.sendUpstreamPacket(bedrockPacket);
 
-        session.getWorldCache().setCooldown(cooldownGroup, packet.getCooldownTicks());
+        session.getWorldCache().setCooldown(cooldownGroup, packet.duration());
     }
 }

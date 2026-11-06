@@ -33,9 +33,9 @@ import org.geysermc.geyser.translator.inventory.InventoryTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.InventoryUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.inventory.ClientboundOpenBookPacket;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
 
 import java.util.Objects;
 
@@ -60,8 +60,8 @@ public class JavaOpenBookTranslator extends PacketTranslator<ClientboundOpenBook
         }
 
         // The item doesn't need to be a book; just needs to have either of these components.
-        if (stack.getComponent(DataComponentTypes.WRITABLE_BOOK_CONTENT) != null ||
-            stack.getComponent(DataComponentTypes.WRITTEN_BOOK_CONTENT) != null) {
+        if (stack.getComponent(DataComponents.WRITABLE_BOOK_CONTENT) != null ||
+            stack.getComponent(DataComponents.WRITTEN_BOOK_CONTENT) != null) {
             InventoryHolder<?> openInventory = session.getInventoryHolder();
             if (openInventory != null) {
                 InventoryUtils.sendJavaContainerClose(openInventory);
@@ -73,9 +73,9 @@ public class JavaOpenBookTranslator extends PacketTranslator<ClientboundOpenBook
             }
 
             //noinspection unchecked
-            InventoryTranslator<LecternContainer> translator = (InventoryTranslator<LecternContainer>) InventoryTranslator.inventoryTranslator(ContainerType.LECTERN);
+            InventoryTranslator<LecternContainer> translator = (InventoryTranslator<LecternContainer>) InventoryTranslator.inventoryTranslator(MenuType.LECTERN);
             Objects.requireNonNull(translator, "could not find lectern inventory translator!");
-            LecternContainer container = translator.createInventory(session, "", FAKE_LECTERN_WINDOW_ID, ContainerType.LECTERN);
+            LecternContainer container = translator.createInventory(session, "", FAKE_LECTERN_WINDOW_ID, MenuType.LECTERN);
             container.setVirtualLecternBook(stack, session);
             InventoryUtils.openInventory(new InventoryHolder<>(session, container, translator));
         }

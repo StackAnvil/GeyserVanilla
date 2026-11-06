@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
@@ -33,14 +35,12 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class CreeperEntity extends MonsterEntity {
     /**
-     * Whether the creeper has been ignited and is using {@link #setIgnited(BooleanEntityMetadata)}.
-     * In this instance we ignore {@link #setSwelling(IntEntityMetadata)} since it's sending us -1 which confuses poor Bedrock.
+     * Whether the creeper has been ignited and is using {@link #setIgnited(DataValue<Boolean>)}.
+     * In this instance we ignore {@link #setSwelling(DataValue<Integer>)} since it's sending us -1 which confuses poor Bedrock.
      */
     private boolean ignitedByFlintAndSteel = false;
 
@@ -48,20 +48,20 @@ public class CreeperEntity extends MonsterEntity {
         super(context);
     }
 
-    public void setSwelling(IntEntityMetadata entityMetadata) {
+    public void setSwelling(DataValue<Integer> entityMetadata) {
         if (!ignitedByFlintAndSteel) {
-            setFlag(EntityFlag.IGNITED, entityMetadata.getPrimitiveValue() == 1);
+            setFlag(EntityFlag.IGNITED, entityMetadata.value() == 1);
         }
     }
 
-    public void setIgnited(BooleanEntityMetadata entityMetadata) {
-        ignitedByFlintAndSteel = entityMetadata.getPrimitiveValue();
+    public void setIgnited(DataValue<Boolean> entityMetadata) {
+        ignitedByFlintAndSteel = entityMetadata.value();
         setFlag(EntityFlag.IGNITED, ignitedByFlintAndSteel);
     }
 
     @NonNull
     @Override
-    protected InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(session, ItemTag.CREEPER_IGNITERS)) {
             return InteractiveTag.IGNITE_CREEPER;
         } else {
@@ -71,7 +71,7 @@ public class CreeperEntity extends MonsterEntity {
 
     @NonNull
     @Override
-    protected InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(session, ItemTag.CREEPER_IGNITERS)) {
             // Ignite creeper - as of 1.19.3
             session.playSoundEvent(SoundEvent.IGNITE, bedrockPosition());

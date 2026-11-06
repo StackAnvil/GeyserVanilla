@@ -54,12 +54,10 @@ import org.geysermc.geyser.translator.item.ItemTranslator;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.Holder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.recipe.display.slot.ItemStackSlotDisplay;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundUpdateRecipesPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.ClientboundUpdateRecipesPacket.SelectableRecipe;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.display.SlotDisplay.ItemStackSlotDisplay;
+import net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket;
+import net.minecraft.world.item.crafting.SelectableRecipe;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,11 +88,7 @@ public class JavaUpdateRecipesTranslator extends PacketTranslator<ClientboundUpd
             "minecraft:netherite_boots"
     );
 
-    private static final Key SMITHING_BASE = MinecraftKey.key("smithing_base");
-    private static final Key SMITHING_TEMPLATE = MinecraftKey.key("smithing_template");
-    private static final Key SMITHING_ADDITION = MinecraftKey.key("smithing_addition");
-    private static final Key BREWING_INPUT = MinecraftKey.key("brewing_input");
-    private static final Key BREWING_REAGENT = MinecraftKey.key("brewing_reagent");
+
 
     @Override
     public void translate(GeyserSession session, ClientboundUpdateRecipesPacket packet) {
@@ -120,9 +114,9 @@ public class JavaUpdateRecipesTranslator extends PacketTranslator<ClientboundUpd
         session.setCleanRecipesRequired(true);
 
         boolean oldSmithingTable;
-        int[] smithingBase = packet.getItemSets().get(SMITHING_BASE);
-        int[] smithingTemplate = packet.getItemSets().get(SMITHING_TEMPLATE);
-        int[] smithingAddition = packet.getItemSets().get(SMITHING_ADDITION);
+        var smithingBase = packet.itemSets().get(net.minecraft.world.item.crafting.RecipePropertySet.SMITHING_BASE);
+        var smithingTemplate = packet.itemSets().get(net.minecraft.world.item.crafting.RecipePropertySet.SMITHING_TEMPLATE);
+        var smithingAddition = packet.itemSets().get(net.minecraft.world.item.crafting.RecipePropertySet.SMITHING_ADDITION);
         if (smithingBase == null || smithingTemplate == null || smithingAddition == null) {
             // We're probably on a version before the smithing table got expanded functionality.
             oldSmithingTable = true;
@@ -152,34 +146,31 @@ public class JavaUpdateRecipesTranslator extends PacketTranslator<ClientboundUpd
         session.getGeyser().getLogger().debug("Using old smithing table workaround? " + oldSmithingTable);
         session.setOldSmithingTable(oldSmithingTable);
 
-        addPotionMixes(session.getItemMappings(), packet.getItemSets(), craftingDataPacket.getPotionMixData());
+        addPotionMixes(session, packet.itemSets(), craftingDataPacket.getPotionMixData());
 
-        Int2ObjectMap<List<SelectableRecipe>> rawStonecutterData = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<List<SelectableRecipe.SingleInputEntry<net.minecraft.world.item.crafting.StonecutterRecipe>>> rawStonecutterData = new Int2ObjectOpenHashMap<>();
 
-        List<SelectableRecipe> stonecutterRecipes = packet.getStonecutterRecipes();
-        for (SelectableRecipe recipe : stonecutterRecipes) {
+        var stonecutterRecipes = packet.stonecutterRecipes().entries();
+        for (var recipe : stonecutterRecipes) {
             // Hardcoding the heck out of this until we see different examples of how this works.
-            if (!(recipe.recipe() instanceof ItemStackSlotDisplay)) {
+            if (!(recipe.recipe().optionDisplay() instanceof ItemStackSlotDisplay)) {
                 session.getGeyser().getLogger().warning("Ignoring stonecutter recipe for weird output: " + recipe);
                 continue;
             }
 
-            List<Holder<Item>> ingredients = GeyserHolderSet.fromMCPL(JavaRegistries.ITEM, recipe.input().getValues()).resolveHolders(session.javaRegistries());
-            for (Holder<Item> ingredient : ingredients) {
-                rawStonecutterData.computeIfAbsent(ingredient.id(), $ -> new ArrayList<>()).add(recipe);
-            }
+            recipe.input().items().forEach(ingredient -> rawStonecutterData.computeIfAbsent(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.getId(ingredient.value()), $ -> new ArrayList<>()).add(recipe));
         }
 
         Int2ObjectMap<GeyserStonecutterData> stonecutterRecipeMap = new Int2ObjectOpenHashMap<>();
-        for (Int2ObjectMap.Entry<List<SelectableRecipe>> data : rawStonecutterData.int2ObjectEntrySet()) {
+        for (Int2ObjectMap.Entry<List<SelectableRecipe.SingleInputEntry<net.minecraft.world.item.crafting.StonecutterRecipe>>> data : rawStonecutterData.int2ObjectEntrySet()) {
             // Implementation note: data used to have to be sorted according to the item translation key.
             // This is no longer necessary as of 1.21.2, and is instead presented in the order the server sends us.
             // (Recipes are ordered differently between Paper and vanilla)
             // See #5150.
             int buttonId = 0;
-            for (SelectableRecipe recipe : data.getValue()) {
+            for (var recipe : data.getValue()) {
                 // As of 1.16.4, all stonecutter recipes have one ingredient option
-                HolderSet ingredient = recipe.input().getValues();
                 int javaInput = data.getIntKey();
                 ItemMapping mapping = session.getItemMappings().getMapping(javaInput);
                 if (mapping.getJavaItem() == Items.AIR) {
@@ -187,7 +178,7 @@ public class JavaUpdateRecipesTranslator extends PacketTranslator<ClientboundUpd
                     continue;
                 }
                 ItemDescriptorWithCount descriptor = new ItemDescriptorWithCount(new DefaultDescriptor(mapping.getBedrockDefinition(), mapping.getBedrockData()), 1);
-                ItemStack javaOutput = ((ItemStackSlotDisplay) recipe.recipe()).itemStack();
+                ItemStack javaOutput = ((ItemStackSlotDisplay) recipe.recipe().optionDisplay()).stack().create();
                 ItemData output = ItemTranslator.translateToBedrock(session, javaOutput);
                 if (!output.isValid()) {
                     // Probably modded items
@@ -223,22 +214,27 @@ public class JavaUpdateRecipesTranslator extends PacketTranslator<ClientboundUpd
         return ItemDescriptorWithCount.EMPTY;
     }
 
-    private static void addPotionMixes(ItemMappings itemMappings, Map<Key, int[]> itemSets, List<PotionMixData> mixes) {
-        int[] brewingInputs = itemSets.get(BREWING_INPUT);
-        int[] brewingReagents = itemSets.get(BREWING_REAGENT);
+    private static void addPotionMixes(GeyserSession session, Map<net.minecraft.resources.ResourceKey<net.minecraft.world.item.crafting.RecipePropertySet>, net.minecraft.world.item.crafting.RecipePropertySet> itemSets, List<PotionMixData> mixes) {
+        var brewingInputs = itemSets.get(net.minecraft.world.item.crafting.RecipePropertySet.BREWING_INPUTS);
+        var brewingReagents = itemSets.get(net.minecraft.world.item.crafting.RecipePropertySet.BREWING_REAGENTS);
 
         if (brewingInputs == null || brewingReagents == null) {
             return;
         }
 
+        ItemMappings itemMappings = session.getItemMappings();
+        var items = session.vanillaRegistries().lookupOrThrow(net.minecraft.core.registries.Registries.ITEM);
+        var inputs = items.listElements().filter(holder -> brewingInputs.test(new ItemStack(holder))).toList();
+        var reagents = items.listElements().filter(holder -> brewingReagents.test(new ItemStack(holder))).toList();
+
         // Bedrock demands an output, but Java doesn't give us one
         // It doesn't matter much what the output is, since the client doesn't display it anywhere: so a simple potion will do
         ItemMapping brewingOutput = itemMappings.getMapping(Items.POTION);
 
-        for (int input : brewingInputs) {
-            for (int reagent : brewingReagents) {
-                ItemMapping inputMapping = itemMappings.getMapping(input);
-                ItemMapping reagentMapping = itemMappings.getMapping(reagent);
+        for (var input : inputs) {
+            for (var reagent : reagents) {
+                ItemMapping inputMapping = itemMappings.getMapping(items.getId(input.value()));
+                ItemMapping reagentMapping = itemMappings.getMapping(items.getId(reagent.value()));
                 mixes.add(new PotionMixData(
                     inputMapping.getBedrockDefinition().getRuntimeId(), inputMapping.getBedrockData(),
                     reagentMapping.getBedrockDefinition().getRuntimeId(), reagentMapping.getBedrockData(),

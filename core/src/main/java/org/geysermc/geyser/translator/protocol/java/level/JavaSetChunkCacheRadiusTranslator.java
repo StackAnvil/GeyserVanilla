@@ -28,13 +28,13 @@ package org.geysermc.geyser.translator.protocol.java.level;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSetChunkCacheRadiusPacket;
+import net.minecraft.network.protocol.game.ClientboundSetChunkCacheRadiusPacket;
 
 @Translator(packet = ClientboundSetChunkCacheRadiusPacket.class)
 public class JavaSetChunkCacheRadiusTranslator extends PacketTranslator<ClientboundSetChunkCacheRadiusPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundSetChunkCacheRadiusPacket packet) {
-        session.setServerRenderDistance(packet.getViewDistance());
+        session.setServerRenderDistance(packet.getRadius());
     }
 }

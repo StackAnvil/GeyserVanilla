@@ -33,7 +33,6 @@ import org.geysermc.geyser.api.util.Identifier;
 import org.geysermc.geyser.registry.java.JavaRegistryKey;
 import org.geysermc.geyser.registry.java.JavaRegistryProvider;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,14 +40,17 @@ import java.util.Objects;
 
 public record HoldersImpl(@Nullable List<@NonNull Identifier> identifiers, @Nullable Identifier tag) implements Holders {
 
-    public HolderSet toHolderSet(JavaRegistryProvider registries, JavaRegistryKey<?> registry) {
+    public <T> net.minecraft.core.HolderSet<T> toVanilla(net.minecraft.core.RegistryAccess registries,
+                                                       net.minecraft.resources.ResourceKey<? extends net.minecraft.core.Registry<T>> key) {
+        var registry = registries.lookupOrThrow(key);
         if (identifiers != null) {
-            return new HolderSet(IntList.of(identifiers.stream()
-                .map(MinecraftKey::identifierToKey)
-                .mapToInt(key -> registry.getIdOrThrow(registries, key))
-                .toArray()));
+            return net.minecraft.core.HolderSet.direct(identifiers.stream()
+                .map(identifier -> registry.getOrThrow(net.minecraft.resources.ResourceKey.create(key,
+                    MinecraftKey.keyToVanilla(MinecraftKey.identifierToKey(identifier)))))
+                .toList());
         }
-        return new HolderSet(Objects.requireNonNull(MinecraftKey.identifierToKey(tag)));
+        return registry.getOrThrow(net.minecraft.tags.TagKey.create(key,
+            MinecraftKey.keyToVanilla(Objects.requireNonNull(MinecraftKey.identifierToKey(tag)))));
     }
 
     public static class Builder implements Holders.Builder {

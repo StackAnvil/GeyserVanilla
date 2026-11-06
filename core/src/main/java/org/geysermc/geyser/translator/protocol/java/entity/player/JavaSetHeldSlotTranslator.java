@@ -29,7 +29,7 @@ import org.cloudburstmc.protocol.bedrock.packet.PlayerHotbarPacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.player.ClientboundSetHeldSlotPacket;
+import net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket;
 
 @Translator(packet = ClientboundSetHeldSlotPacket.class)
 public class JavaSetHeldSlotTranslator extends PacketTranslator<ClientboundSetHeldSlotPacket> {
@@ -38,10 +38,10 @@ public class JavaSetHeldSlotTranslator extends PacketTranslator<ClientboundSetHe
     public void translate(GeyserSession session, ClientboundSetHeldSlotPacket packet) {
         PlayerHotbarPacket hotbarPacket = new PlayerHotbarPacket();
         hotbarPacket.setContainerId(0);
-        hotbarPacket.setSelectedHotbarSlot(packet.getSlot());
+        hotbarPacket.setSelectedHotbarSlot(packet.slot());
         hotbarPacket.setSelectHotbarSlot(true);
         session.sendUpstreamPacket(hotbarPacket);
 
-        session.getPlayerInventory().setHeldItemSlot(packet.getSlot());
+        session.getPlayerInventory().setHeldItemSlot(packet.slot());
     }
 }

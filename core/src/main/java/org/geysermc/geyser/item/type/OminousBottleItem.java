@@ -32,8 +32,8 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 public class OminousBottleItem extends Item {
     public OminousBottleItem(String javaIdentifier, Builder builder) {
@@ -41,15 +41,15 @@ public class OminousBottleItem extends Item {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, @Nullable DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, @Nullable GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         var builder = super.translateToBedrock(session, count, components, mapping, mappings);
         if (components == null) {
             // Level 1 ominous bottle is null components - Java 1.21.
             return builder;
         }
-        Integer amplifier = components.get(DataComponentTypes.OMINOUS_BOTTLE_AMPLIFIER);
+        var amplifier = components.get(DataComponents.OMINOUS_BOTTLE_AMPLIFIER);
         if (amplifier != null) {
-            builder.damage(amplifier);
+            builder.damage(amplifier.value());
         }
         return builder;
     }
@@ -62,7 +62,7 @@ public class OminousBottleItem extends Item {
         if (damage == 0) {
             return itemStack;
         }
-        itemStack.getOrCreateComponents().put(DataComponentTypes.OMINOUS_BOTTLE_AMPLIFIER, damage);
+        itemStack.getOrCreateComponents().put(DataComponents.OMINOUS_BOTTLE_AMPLIFIER, new net.minecraft.world.item.component.OminousBottleAmplifier(damage));
         return itemStack;
     }
 

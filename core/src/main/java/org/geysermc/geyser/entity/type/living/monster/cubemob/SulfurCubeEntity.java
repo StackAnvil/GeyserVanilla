@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster.cubemob;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ContainerId;
@@ -38,7 +40,6 @@ import org.geysermc.geyser.item.type.Item;
 import org.geysermc.geyser.session.cache.tags.ItemTag;
 import org.geysermc.geyser.session.cache.tags.Tag;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -105,7 +106,7 @@ public class SulfurCubeEntity extends AbstractCubeEntity {
     }
 
     @Override
-    public void setCubeScale(IntEntityMetadata entityMetadata) {
+    public void setCubeScale(DataValue<Integer> entityMetadata) {
         // Ignore, sulfur cubes use age and baby tags instead
     }
 
@@ -128,8 +129,8 @@ public class SulfurCubeEntity extends AbstractCubeEntity {
         return 1f;
     }
 
-    public void setMaxFuse(IntEntityMetadata entityMetadata) {
-        this.fuseTickTime = entityMetadata.getPrimitiveValue();
+    public void setMaxFuse(DataValue<Integer> entityMetadata) {
+        this.fuseTickTime = entityMetadata.value();
         this.metadata.put(EntityDataTypes.FUSE_TIME, fuseTickTime);
     }
 

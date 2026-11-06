@@ -33,10 +33,10 @@ import org.geysermc.geyser.item.TooltipOptions;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.Filterable;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.WritableBookContent;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
+import net.minecraft.server.network.Filterable;
+import net.minecraft.world.item.component.WritableBookContent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,20 +47,20 @@ public class WritableBookItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        WritableBookContent bookContent = components.get(DataComponentTypes.WRITABLE_BOOK_CONTENT);
+        WritableBookContent bookContent = components.get(DataComponents.WRITABLE_BOOK_CONTENT);
         if (bookContent == null) {
             return;
         }
 
         List<NbtMap> bedrockPages = new ArrayList<>();
-        for (Filterable<String> page : bookContent.getPages()) {
+        for (Filterable<String> page : bookContent.pages()) {
             NbtMapBuilder pageBuilder = NbtMap.builder();
             pageBuilder.putString("photoname", "");
             // **Writable** books don't contain text components, but their string can contain formatting codes
-            pageBuilder.putString("text", MessageTranslator.convertLegacyMessage(session, page.getRaw()));
+            pageBuilder.putString("text", MessageTranslator.convertLegacyMessage(session, page.raw()));
             bedrockPages.add(pageBuilder.build());
         }
 

@@ -32,42 +32,41 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.BlockUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.BlockBreakStage;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundBlockDestructionPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
 
 @Translator(packet = ClientboundBlockDestructionPacket.class)
 public class JavaBlockDestructionTranslator extends PacketTranslator<ClientboundBlockDestructionPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundBlockDestructionPacket packet) {
-        if (packet.getStage() == BlockBreakStage.RESET) {
+        if (packet.getProgress() < 0 || packet.getProgress() > 9) {
             // Invalidate the position now that it's not being broken anymore
-            session.getBlockBreakHandler().getDestructionStageCache().invalidate(packet.getPosition());
-            BlockUtils.sendBedrockStopBlockBreak(session, packet.getPosition().toFloat());
+            session.getBlockBreakHandler().getDestructionStageCache().invalidate(org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos()));
+            BlockUtils.sendBedrockStopBlockBreak(session, org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos()).toFloat());
             return;
         }
 
         // Bedrock wants a total destruction time, not a stage - so we estimate!
         LevelEventPacket levelEventPacket = new LevelEventPacket();
-        levelEventPacket.setPosition(packet.getPosition().toFloat());
+        levelEventPacket.setPosition(org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos()).toFloat());
 
         // First: Check if we know when the last packet for this position was sent - we'll use that for our estimation
-        Pair<Long, BlockBreakStage> lastUpdate = session.getBlockBreakHandler().getDestructionStageCache().getIfPresent(packet.getPosition());
+        Pair<Long, Integer> lastUpdate = session.getBlockBreakHandler().getDestructionStageCache().getIfPresent(org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos()));
         if (lastUpdate == null) {
             levelEventPacket.setType(LevelEvent.BLOCK_START_BREAK);
             levelEventPacket.setData(65535 / 6000); // just a high value (5 mins), we'll update this once we get a new progress update
         } else {
             // Ticks since last update
             int ticksSince = (int) (session.getClientTicks() - lastUpdate.first());
-            int stagesSince = packet.getStage().compareTo(lastUpdate.second());
+            int stagesSince = packet.getProgress() - lastUpdate.second();
             int ticksPerStage = stagesSince == 0 ? ticksSince : ticksSince / stagesSince;
-            int remainingStages = 10 - packet.getStage().ordinal();
+            int remainingStages = 10 - packet.getProgress();
 
             levelEventPacket.setType(LevelEvent.BLOCK_UPDATE_BREAK);
             levelEventPacket.setData(65535 / Math.max(remainingStages, 1) * Math.max(ticksPerStage, 1));
         }
 
-        session.getBlockBreakHandler().getDestructionStageCache().put(packet.getPosition(), Pair.of(session.getClientTicks(), packet.getStage()));
+        session.getBlockBreakHandler().getDestructionStageCache().put(org.geysermc.geyser.util.MathUtils.toVector3i(packet.getPos()), Pair.of(session.getClientTicks(), packet.getProgress()));
         session.sendUpstreamPacket(levelEventPacket);
     }
 }

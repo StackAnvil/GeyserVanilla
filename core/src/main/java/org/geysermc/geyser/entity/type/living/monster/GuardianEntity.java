@@ -25,10 +25,11 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
 import org.geysermc.geyser.entity.type.Entity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 public class GuardianEntity extends MonsterEntity {
 
@@ -36,8 +37,8 @@ public class GuardianEntity extends MonsterEntity {
         super(context);
     }
 
-    public void setGuardianTarget(IntEntityMetadata entityMetadata) {
-        int entityId = entityMetadata.getPrimitiveValue();
+    public void setGuardianTarget(DataValue<Integer> entityMetadata) {
+        int entityId = entityMetadata.value();
         Entity entity = session.getEntityCache().getEntityByJavaId(entityId);
         if (entity != null) {
             metadata.put(EntityDataTypes.TARGET_EID, entity.geyserId());

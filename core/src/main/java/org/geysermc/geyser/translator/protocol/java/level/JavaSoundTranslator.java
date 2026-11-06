@@ -32,8 +32,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.SoundUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.sound.BuiltinSound;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.level.ClientboundSoundPacket;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 
 @Translator(packet = ClientboundSoundPacket.class)
 public class JavaSoundTranslator extends PacketTranslator<ClientboundSoundPacket> {
@@ -48,9 +48,9 @@ public class JavaSoundTranslator extends PacketTranslator<ClientboundSoundPacket
         // this sound the one signal an observer gets, so pair it with the dust Java observers
         // create locally. Registry identity rather than name, so /playsound cannot fake a stroke.
         // https://github.com/GeyserMC/Geyser/issues/3844
-        if (packet.getSound() == BuiltinSound.ITEM_BRUSH_BRUSHING_GENERIC
-                || packet.getSound() == BuiltinSound.ITEM_BRUSH_BRUSHING_SAND
-                || packet.getSound() == BuiltinSound.ITEM_BRUSH_BRUSHING_GRAVEL) {
+        if (packet.getSound().value() == SoundEvents.BRUSH_GENERIC
+                || packet.getSound().value() == SoundEvents.BRUSH_SAND
+                || packet.getSound().value() == SoundEvents.BRUSH_GRAVEL) {
             LevelEventPacket dustPacket = new LevelEventPacket();
             dustPacket.setType(ParticleType.BRUSH_DUST);
             dustPacket.setPosition(position);

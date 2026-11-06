@@ -45,11 +45,10 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.translator.inventory.InventoryTranslator;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.HolderSet;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.ItemEnchantments;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundRenameItemPacket;
+import net.minecraft.world.level.GameType;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.minecraft.network.protocol.game.ServerboundRenameItemPacket;
 
 import java.util.List;
 import java.util.Map;
@@ -119,7 +118,7 @@ public class AnvilInventoryUpdater extends InventoryUpdater {
 
             // Changing the item in the input slot resets the name field on Bedrock, but
             // does not result in a FilterTextPacket
-            String originalName = MessageTranslator.convertToPlainText(input.getComponent(DataComponentTypes.CUSTOM_NAME), session.locale());
+            String originalName = MessageTranslator.convertToPlainText(MessageTranslator.fromVanilla(input.getComponent(DataComponents.CUSTOM_NAME), session.vanillaRegistries()), session.locale());
             ServerboundRenameItemPacket renameItemPacket = new ServerboundRenameItemPacket(originalName);
             session.sendDownstreamGamePacket(renameItemPacket);
 
@@ -328,7 +327,7 @@ public class AnvilInventoryUpdater extends InventoryUpdater {
                 }
             }
 
-            if (canApply || (!bedrock && session.getGameMode() == GameMode.CREATIVE)) {
+            if (canApply || (!bedrock && session.getGameMode() == GameType.CREATIVE)) {
                 int currentLevel = combinedEnchantments.getOrDefault(enchantment, 0);
                 int newLevel = entry.getIntValue();
                 if (newLevel == currentLevel) {
@@ -372,15 +371,15 @@ public class AnvilInventoryUpdater extends InventoryUpdater {
     private Object2IntMap<Enchantment> getEnchantments(JavaRegistryProvider registries, GeyserItemStack itemStack) {
         ItemEnchantments enchantmentComponent;
         if (isEnchantedBook(itemStack)) {
-            enchantmentComponent = itemStack.getComponent(DataComponentTypes.STORED_ENCHANTMENTS);
+            enchantmentComponent = itemStack.getComponent(DataComponents.STORED_ENCHANTMENTS);
         } else {
-            enchantmentComponent = itemStack.getComponent(DataComponentTypes.ENCHANTMENTS);
+            enchantmentComponent = itemStack.getComponent(DataComponents.ENCHANTMENTS);
         }
         if (enchantmentComponent != null) {
             Object2IntMap<Enchantment> enchantments = new Object2IntOpenHashMap<>();
-            for (Map.Entry<Integer, Integer> entry : enchantmentComponent.getEnchantments().entrySet()) {
-                JavaRegistries.ENCHANTMENT.get(registries, entry.getKey()).ifPresentOrElse(
-                    enchantment -> enchantments.put(enchantment, entry.getValue().intValue()),
+            for (var entry : enchantmentComponent.entrySet()) {
+                JavaRegistries.ENCHANTMENT.get(registries, org.geysermc.geyser.util.MinecraftKey.key(entry.getKey().unwrapKey().orElseThrow().identifier().toString())).ifPresentOrElse(
+                    enchantment -> enchantments.put(enchantment, entry.getIntValue()),
                     () -> GeyserImpl.getInstance().getLogger().debug("Unknown Java enchantment in anvil: " + entry.getKey())
                 );
             }
@@ -398,12 +397,12 @@ public class AnvilInventoryUpdater extends InventoryUpdater {
     }
 
     private boolean isRepairing(GeyserItemStack input, GeyserItemStack material, GeyserSession session) {
-        HolderSet repairable = input.getComponent(DataComponentTypes.REPAIRABLE);
+        var repairable = input.getComponent(DataComponents.REPAIRABLE);
         if (repairable == null) {
             return false;
         }
 
-        return material.is(session, repairable);
+        return material.is(session, repairable.items());
     }
 
     private boolean isRenaming(GeyserSession session, AnvilContainer anvilContainer, boolean bedrock) {
@@ -412,20 +411,20 @@ public class AnvilInventoryUpdater extends InventoryUpdater {
         }
         // This should really check the name field in all cases, but that requires the localized name
         // of the item which can change depending on NBT and Minecraft Edition
-        Component originalName = anvilContainer.getInput().getComponent(DataComponentTypes.CUSTOM_NAME);
+        net.minecraft.network.chat.Component originalName = anvilContainer.getInput().getComponent(DataComponents.CUSTOM_NAME);
         if (bedrock && originalName != null && anvilContainer.getNewName() != null) {
             // Check text and formatting
             String legacyOriginalName = MessageTranslator.convertMessage(originalName, session.locale());
             return !legacyOriginalName.equals(anvilContainer.getNewName());
         }
-        return !Objects.equals(originalName, anvilContainer.getResult().getComponent(DataComponentTypes.CUSTOM_NAME));
+        return !Objects.equals(originalName, anvilContainer.getResult().getComponent(DataComponents.CUSTOM_NAME));
     }
 
     private int getRepairCost(GeyserItemStack itemStack) {
-        return itemStack.getComponentElseGet(DataComponentTypes.REPAIR_COST, () -> 0);
+        return itemStack.getComponentElseGet(DataComponents.REPAIR_COST, () -> 0);
     }
 
     private int getDamage(GeyserItemStack itemStack) {
-        return itemStack.getComponentElseGet(DataComponentTypes.DAMAGE, () -> 0);
+        return itemStack.getComponentElseGet(DataComponents.DAMAGE, () -> 0);
     }
 }

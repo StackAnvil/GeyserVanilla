@@ -31,7 +31,7 @@ import org.geysermc.geyser.translator.level.block.entity.BlockEntity;
 import org.geysermc.geyser.translator.level.block.entity.BlockEntityTranslator;
 import org.geysermc.geyser.translator.level.block.entity.EmptyBlockEntityTranslator;
 import org.geysermc.geyser.util.AnnotationUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.level.block.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -39,18 +39,21 @@ import java.util.Map;
 /**
  * Loads block entities from the given classpath.
  */
-public class BlockEntityRegistryLoader implements RegistryLoader<String, Map<BlockEntityType, BlockEntityTranslator>> {
+public class BlockEntityRegistryLoader implements RegistryLoader<String, Map<BlockEntityType<?>, BlockEntityTranslator>> {
 
     @Override
-    public Map<BlockEntityType, BlockEntityTranslator> load(String input) {
+    public Map<BlockEntityType<?>, BlockEntityTranslator> load(String input) {
         // Overridden so one translator can be applied to multiple block entity types
-        Object2ObjectMap<BlockEntityType, BlockEntityTranslator> entries = new Object2ObjectOpenHashMap<>();
+        Object2ObjectMap<BlockEntityType<?>, BlockEntityTranslator> entries = new Object2ObjectOpenHashMap<>();
         entries.defaultReturnValue(new EmptyBlockEntityTranslator());
         for (Class<?> clazz : AnnotationUtils.getGeneratedClassesForAnnotation(input)) {
             try {
                 BlockEntity annotation = clazz.getAnnotation(BlockEntity.class);
                 BlockEntityTranslator translator = (BlockEntityTranslator) clazz.getConstructor().newInstance();
-                for (BlockEntityType type : annotation.type()) {
+                for (String id : annotation.type()) {
+                    var type = net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE
+                        .getOptional(net.minecraft.resources.Identifier.parse(id))
+                        .orElseThrow(() -> new IllegalStateException("Unknown Java block entity type " + id));
                     entries.put(type, translator);
                 }
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {

@@ -32,8 +32,8 @@ import org.geysermc.geyser.registry.type.ItemMapping;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.BedrockItemBuilder;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponents;
+import net.minecraft.core.component.DataComponents;
+import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 
 import java.util.Map;
 
@@ -77,7 +77,7 @@ public class MapItem extends Item {
     }
 
     @Override
-    public ItemData.Builder translateToBedrock(GeyserSession session, int count, DataComponents components, ItemMapping mapping, ItemMappings mappings) {
+    public ItemData.Builder translateToBedrock(GeyserSession session, int count, GeyserDataComponents components, ItemMapping mapping, ItemMappings mappings) {
         ItemData.Builder builder = super.translateToBedrock(session, count, components, mapping, mappings);
         if (explorerMetadata != -1) {
             builder.damage(explorerMetadata);
@@ -86,16 +86,16 @@ public class MapItem extends Item {
     }
 
     @Override
-    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull DataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
+    public void translateComponentsToBedrock(@NonNull GeyserSession session, @NonNull GeyserDataComponents components, @NonNull TooltipOptions tooltip, @NonNull BedrockItemBuilder builder) {
         super.translateComponentsToBedrock(session, components, tooltip, builder);
 
-        Integer mapValue = components.get(DataComponentTypes.MAP_ID);
+        var mapValue = components.get(DataComponents.MAP_ID);
         if (mapValue == null) {
             return;
         }
 
-        builder.putLong("map_uuid", mapValue);
-        builder.putInt("map_name_index", mapValue);
+        builder.putLong("map_uuid", mapValue.id());
+        builder.putInt("map_name_index", mapValue.id());
         builder.putByte("map_display_players", (byte) 1);
     }
 }

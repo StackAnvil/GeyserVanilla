@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.api.util.Identifier;
@@ -162,10 +164,9 @@ import org.geysermc.geyser.entity.type.player.MannequinEntity;
 import org.geysermc.geyser.entity.type.player.PlayerEntity;
 import org.geysermc.geyser.registry.Registries;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.MetadataTypes;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.FloatEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.type.EntityType;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 
 public final class VanillaEntities {
     public static final VanillaEntityType<BoatEntity> ACACIA_BOAT;
@@ -340,108 +341,108 @@ public final class VanillaEntities {
 
     static {
         EntityTypeBase<Entity> entityBase = EntityTypeDefinition.baseBuilder(Entity.class)
-                .addTranslator(MetadataTypes.BYTE, Entity::setFlags)
-                .addTranslator(MetadataTypes.INT, Entity::setAir) // Air/bubbles
-                .addTranslator(MetadataTypes.OPTIONAL_COMPONENT, Entity::setCustomName)
-                .addTranslator(MetadataTypes.BOOLEAN, Entity::setCustomNameVisible)
-                .addTranslator(MetadataTypes.BOOLEAN, Entity::setSilent)
-                .addTranslator(MetadataTypes.BOOLEAN, Entity::setGravity)
-                .addTranslator(MetadataTypes.POSE, (entity, entityMetadata) -> entity.setPose(entityMetadata.getValue()))
-                .addTranslator(MetadataTypes.INT, Entity::setFreezing)
+                .addTranslator(EntityDataSerializers.BYTE, Entity::setFlags)
+                .addTranslator(EntityDataSerializers.INT, Entity::setAir) // Air/bubbles
+                .addTranslator(EntityDataSerializers.OPTIONAL_COMPONENT, Entity::setCustomName)
+                .addTranslator(EntityDataSerializers.BOOLEAN, Entity::setCustomNameVisible)
+                .addTranslator(EntityDataSerializers.BOOLEAN, Entity::setSilent)
+                .addTranslator(EntityDataSerializers.BOOLEAN, Entity::setGravity)
+                .addTranslator(EntityDataSerializers.POSE, (entity, entityMetadata) -> entity.setPose(entityMetadata.value()))
+                .addTranslator(EntityDataSerializers.INT, Entity::setFreezing)
                 .build();
 
         // Extends entity
         {
             AREA_EFFECT_CLOUD = VanillaEntityType.inherited(AreaEffectCloudEntity::new, entityBase)
-                    .type(EntityType.AREA_EFFECT_CLOUD)
+                    .type(EntityTypes.AREA_EFFECT_CLOUD)
                     .height(0.5f).width(1.0f)
-                    .addTranslator(MetadataTypes.FLOAT, AreaEffectCloudEntity::setRadius)
+                    .addTranslator(EntityDataSerializers.FLOAT, AreaEffectCloudEntity::setRadius)
                     .addTranslator(null) // Waiting
-                    .addTranslator(MetadataTypes.PARTICLE, AreaEffectCloudEntity::setParticle)
+                    .addTranslator(EntityDataSerializers.PARTICLE, AreaEffectCloudEntity::setParticle)
                     .build();
             CUSHION = VanillaEntityType.inherited(CushionEntity::new, entityBase)
-                    .type(EntityType.CUSHION)
+                    .type(EntityTypes.CUSHION)
                     .width(1.0F).height(0.25F)
-                    .addTranslator(MetadataTypes.DYE_COLOR, CushionEntity::setDyeColor)
+                    .addTranslator(EntityDataSerializers.DYE_COLOR, CushionEntity::setDyeColor)
                     .build();
             DRAGON_FIREBALL = VanillaEntityType.inherited(FireballEntity::new, entityBase)
-                    .type(EntityType.DRAGON_FIREBALL)
+                    .type(EntityTypes.DRAGON_FIREBALL)
                     .heightAndWidth(1.0f)
                     .build();
             END_CRYSTAL = VanillaEntityType.inherited(EnderCrystalEntity::new, entityBase)
-                    .type(EntityType.END_CRYSTAL)
+                    .type(EntityTypes.END_CRYSTAL)
                     .heightAndWidth(2.0f)
                     .bedrockIdentifier("minecraft:ender_crystal")
-                    .addTranslator(MetadataTypes.OPTIONAL_BLOCK_POS, EnderCrystalEntity::setBlockTarget)
-                    .addTranslator(MetadataTypes.BOOLEAN,
-                            (enderCrystalEntity, entityMetadata) -> enderCrystalEntity.setFlag(EntityFlag.SHOW_BOTTOM, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue())) // There is a base located on the ender crystal
+                    .addTranslator(EntityDataSerializers.OPTIONAL_BLOCK_POS, EnderCrystalEntity::setBlockTarget)
+                    .addTranslator(EntityDataSerializers.BOOLEAN,
+                            (enderCrystalEntity, entityMetadata) -> enderCrystalEntity.setFlag(EntityFlag.SHOW_BOTTOM, ((DataValue<Boolean>) entityMetadata).value())) // There is a base located on the ender crystal
                     .build();
             EXPERIENCE_ORB = VanillaEntityType.inherited(ExpOrbEntity::new, entityBase)
-                    .type(EntityType.EXPERIENCE_ORB)
+                    .type(EntityTypes.EXPERIENCE_ORB)
                     .addTranslator(null) // int determining xb orb texture
                     .bedrockIdentifier("minecraft:xp_orb")
                     .build();
             EVOKER_FANGS = VanillaEntityType.inherited(EvokerFangsEntity::new, entityBase)
-                    .type(EntityType.EVOKER_FANGS)
+                    .type(EntityTypes.EVOKER_FANGS)
                     .height(0.8f).width(0.5f)
                     .bedrockIdentifier("minecraft:evocation_fang")
                     .build();
             EYE_OF_ENDER = VanillaEntityType.inherited(EnderEyeEntity::new, entityBase)
-                    .type(EntityType.EYE_OF_ENDER)
+                    .type(EntityTypes.EYE_OF_ENDER)
                     .heightAndWidth(0.25f)
                     .bedrockIdentifier("minecraft:eye_of_ender_signal")
                     .addTranslator(null)  // Item
                     .build();
             FALLING_BLOCK = VanillaEntityType.<FallingBlockEntity>inherited(null, entityBase)
-                    .type(EntityType.FALLING_BLOCK)
+                    .type(EntityTypes.FALLING_BLOCK)
                     .heightAndWidth(0.98f)
                     .addTranslator(null) // "start block position"
                     .build();
             FIREWORK_ROCKET = VanillaEntityType.inherited(FireworkEntity::new, entityBase)
-                    .type(EntityType.FIREWORK_ROCKET)
+                    .type(EntityTypes.FIREWORK_ROCKET)
                     .heightAndWidth(0.25f)
                     .bedrockIdentifier("minecraft:fireworks_rocket")
-                    .addTranslator(MetadataTypes.ITEM_STACK, FireworkEntity::setFireworkItem)
-                    .addTranslator(MetadataTypes.OPTIONAL_UNSIGNED_INT, FireworkEntity::setPlayerGliding)
-                    .addTranslator(MetadataTypes.BOOLEAN, FireworkEntity::setShotAtAngle)
+                    .addTranslator(EntityDataSerializers.ITEM_STACK, FireworkEntity::setFireworkItem)
+                    .addTranslator(EntityDataSerializers.OPTIONAL_UNSIGNED_INT, FireworkEntity::setPlayerGliding)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, FireworkEntity::setShotAtAngle)
                     .build();
             FISHING_BOBBER = VanillaEntityType.<FishingHookEntity>inherited(null, entityBase)
-                    .type(EntityType.FISHING_BOBBER)
+                    .type(EntityTypes.FISHING_BOBBER)
                     .bedrockIdentifier("minecraft:fishing_hook")
-                    .addTranslator(MetadataTypes.INT, FishingHookEntity::setHookedEntity)
+                    .addTranslator(EntityDataSerializers.INT, FishingHookEntity::setHookedEntity)
                     .addTranslator(null) // Biting TODO check
                     .build();
             ITEM = VanillaEntityType.inherited(ItemEntity::new, entityBase)
-                    .type(EntityType.ITEM)
+                    .type(EntityTypes.ITEM)
                     .heightAndWidth(0.25f)
                     .offset(0.125f)
-                    .addTranslator(MetadataTypes.ITEM_STACK, ItemEntity::setItem)
+                    .addTranslator(EntityDataSerializers.ITEM_STACK, ItemEntity::setItem)
                     .build();
             LEASH_KNOT = VanillaEntityType.inherited(LeashKnotEntity::new, entityBase)
-                    .type(EntityType.LEASH_KNOT)
+                    .type(EntityTypes.LEASH_KNOT)
                     .height(0.5f).width(0.375f)
                     .build();
             LIGHTNING_BOLT = VanillaEntityType.inherited(LightningEntity::new, entityBase)
-                    .type(EntityType.LIGHTNING_BOLT)
+                    .type(EntityTypes.LIGHTNING_BOLT)
                     .build();
             LLAMA_SPIT = VanillaEntityType.inherited(ProjectileEntity::new, entityBase)
-                    .type(EntityType.LLAMA_SPIT)
+                    .type(EntityTypes.LLAMA_SPIT)
                     .heightAndWidth(0.25f)
                     .build();
             OMINOUS_ITEM_SPAWNER = VanillaEntityType.inherited(OminousItemSpawnerEntity::new, entityBase)
-                    .type(EntityType.OMINOUS_ITEM_SPAWNER)
+                    .type(EntityTypes.OMINOUS_ITEM_SPAWNER)
                     .heightAndWidth(0.25f)
-                    .addTranslator(MetadataTypes.ITEM_STACK, OminousItemSpawnerEntity::setItem)
+                    .addTranslator(EntityDataSerializers.ITEM_STACK, OminousItemSpawnerEntity::setItem)
                     .build();
             SHULKER_BULLET = VanillaEntityType.inherited(ProjectileEntity::new, entityBase)
-                    .type(EntityType.SHULKER_BULLET)
+                    .type(EntityTypes.SHULKER_BULLET)
                     .heightAndWidth(0.3125f)
                     .build();
             TNT = VanillaEntityType.inherited(TNTEntity::new, entityBase)
-                    .type(EntityType.TNT)
+                    .type(EntityTypes.TNT)
                     .heightAndWidth(0.98f)
                     .offset(0.49f)
-                    .addTranslator(MetadataTypes.INT, TNTEntity::setFuseLength)
+                    .addTranslator(EntityDataSerializers.INT, TNTEntity::setFuseLength)
                     .addTranslator(null) // Block state id
                     .build();
 
@@ -449,7 +450,7 @@ public final class VanillaEntities {
                     .addTranslator(null) // Interpolation delay
                     .addTranslator(null) // Transformation interpolation duration
                     .addTranslator(null) // Position/Rotation interpolation duration
-                    .addTranslator(MetadataTypes.VECTOR3, DisplayBaseEntity::setTranslation) // Translation
+                    .addTranslator(EntityDataSerializers.VECTOR3, DisplayBaseEntity::setTranslation) // Translation
                     .addTranslator(null) // Scale
                     .addTranslator(null) // Left rotation
                     .addTranslator(null) // Right rotation
@@ -463,9 +464,9 @@ public final class VanillaEntities {
                     .addTranslator(null) // Glow color override
                     .build();
             TEXT_DISPLAY = VanillaEntityType.inherited(TextDisplayEntity::new, displayBase)
-                    .type(EntityType.TEXT_DISPLAY)
+                    .type(EntityTypes.TEXT_DISPLAY)
                     .bedrockDefinition(BedrockEntityDefinitions.ARMOR_STAND)
-                    .addTranslator(MetadataTypes.COMPONENT, TextDisplayEntity::setText)
+                    .addTranslator(EntityDataSerializers.COMPONENT, TextDisplayEntity::setText)
                     .addTranslator(null) // Line width
                     .addTranslator(null) // Background color
                     .addTranslator(null) // Text opacity
@@ -473,153 +474,153 @@ public final class VanillaEntities {
                     .build();
 
             INTERACTION = VanillaEntityType.inherited(InteractionEntity::new, entityBase)
-                    .type(EntityType.INTERACTION)
+                    .type(EntityTypes.INTERACTION)
                     .heightAndWidth(1.0f) // default size until server specifies otherwise
                     .bedrockDefinition(BedrockEntityDefinitions.ARMOR_STAND)
-                    .addTranslator(MetadataTypes.FLOAT, InteractionEntity::setWidth)
-                    .addTranslator(MetadataTypes.FLOAT, InteractionEntity::setHeight)
-                    .addTranslator(MetadataTypes.BOOLEAN, InteractionEntity::setResponse)
+                    .addTranslator(EntityDataSerializers.FLOAT, InteractionEntity::setWidth)
+                    .addTranslator(EntityDataSerializers.FLOAT, InteractionEntity::setHeight)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, InteractionEntity::setResponse)
                     .build();
 
             EntityTypeBase<FireballEntity> fireballBase = EntityTypeBase.baseInherited(FireballEntity.class, entityBase)
                     .addTranslator(null) // Item
                     .build();
             FIREBALL = VanillaEntityType.inherited(FireballEntity::new, fireballBase)
-                    .type(EntityType.FIREBALL)
+                    .type(EntityTypes.FIREBALL)
                     .heightAndWidth(1.0f)
                     .build();
             SMALL_FIREBALL = VanillaEntityType.inherited(FireballEntity::new, fireballBase)
-                    .type(EntityType.SMALL_FIREBALL)
+                    .type(EntityTypes.SMALL_FIREBALL)
                     .heightAndWidth(0.3125f)
                     .build();
 
             EntityTypeBase<ThrowableItemEntity> throwableItemBase = EntityTypeBase.baseInherited(ThrowableItemEntity.class, entityBase)
-                    .addTranslator(MetadataTypes.ITEM_STACK, ThrowableItemEntity::setItem)
+                    .addTranslator(EntityDataSerializers.ITEM_STACK, ThrowableItemEntity::setItem)
                     .build();
             EGG = VanillaEntityType.inherited(ThrowableEggEntity::new, throwableItemBase)
-                    .type(EntityType.EGG)
+                    .type(EntityTypes.EGG)
                     .heightAndWidth(0.25f)
                     .property(TemperatureVariantAnimal.TEMPERATE_VARIANT_PROPERTY)
                     .build();
             ENDER_PEARL = VanillaEntityType.inherited(ThrowableItemEntity::new, throwableItemBase)
-                    .type(EntityType.ENDER_PEARL)
+                    .type(EntityTypes.ENDER_PEARL)
                     .heightAndWidth(0.25f)
                     .build();
             EXPERIENCE_BOTTLE = VanillaEntityType.inherited(ThrowableItemEntity::new, throwableItemBase)
-                    .type(EntityType.EXPERIENCE_BOTTLE)
+                    .type(EntityTypes.EXPERIENCE_BOTTLE)
                     .heightAndWidth(0.25f)
                     .bedrockIdentifier("minecraft:xp_bottle")
                     .build();
             SPLASH_POTION = VanillaEntityType.inherited(ThrownPotionEntity::new, throwableItemBase)
-                    .type(EntityType.SPLASH_POTION)
+                    .type(EntityTypes.SPLASH_POTION)
                     .heightAndWidth(0.25f)
                     .bedrockDefinition(BedrockEntityDefinitions.SPLASH_POTION)
                     .build();
             LINGERING_POTION = VanillaEntityType.inherited(ThrownPotionEntity::new, throwableItemBase)
-                .type(EntityType.LINGERING_POTION)
+                .type(EntityTypes.LINGERING_POTION)
                 .heightAndWidth(0.25f)
                 .bedrockDefinition(BedrockEntityDefinitions.SPLASH_POTION)
                 .build();
             SNOWBALL = VanillaEntityType.inherited(ThrowableItemEntity::new, throwableItemBase)
-                    .type(EntityType.SNOWBALL)
+                    .type(EntityTypes.SNOWBALL)
                     .heightAndWidth(0.25f)
                     .build();
 
             EntityFactory<AbstractWindChargeEntity> windChargeSupplier = AbstractWindChargeEntity::new;
             BREEZE_WIND_CHARGE = VanillaEntityType.inherited(windChargeSupplier, entityBase)
-                    .type(EntityType.BREEZE_WIND_CHARGE)
+                    .type(EntityTypes.BREEZE_WIND_CHARGE)
                     .bedrockIdentifier("minecraft:breeze_wind_charge_projectile")
                     .heightAndWidth(0.3125f)
                     .build();
             WIND_CHARGE = VanillaEntityType.inherited(windChargeSupplier, entityBase)
-                    .type(EntityType.WIND_CHARGE)
+                    .type(EntityTypes.WIND_CHARGE)
                     .bedrockIdentifier("minecraft:wind_charge_projectile")
                     .heightAndWidth(0.3125f)
                     .build();
 
             EntityTypeBase<AbstractArrowEntity> abstractArrowBase = EntityTypeBase.baseInherited(AbstractArrowEntity.class, entityBase)
-                    .addTranslator(MetadataTypes.BYTE, AbstractArrowEntity::setArrowFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, AbstractArrowEntity::setArrowFlags)
                     .addTranslator(null) // "Piercing level"
-                    .addTranslator(MetadataTypes.BOOLEAN, AbstractArrowEntity::setInGround) // If the arrow is in the ground
+                    .addTranslator(EntityDataSerializers.BOOLEAN, AbstractArrowEntity::setInGround) // If the arrow is in the ground
                     .build();
             ARROW = VanillaEntityType.inherited(ArrowEntity::new, abstractArrowBase)
-                    .type(EntityType.ARROW)
+                    .type(EntityTypes.ARROW)
                     .heightAndWidth(0.25f)
                     .bedrockDefinition(BedrockEntityDefinitions.ARROW)
-                    .addTranslator(MetadataTypes.INT, ArrowEntity::setPotionEffectColor)
+                    .addTranslator(EntityDataSerializers.INT, ArrowEntity::setPotionEffectColor)
                     .build();
             SPECTRAL_ARROW = VanillaEntityType.inherited(AbstractArrowEntity::new, abstractArrowBase)
-                    .type(EntityType.SPECTRAL_ARROW)
+                    .type(EntityTypes.SPECTRAL_ARROW)
                     .heightAndWidth(0.25f)
                     .bedrockDefinition(BedrockEntityDefinitions.ARROW)
                     .build();
             TRIDENT = VanillaEntityType.inherited(TridentEntity::new, abstractArrowBase) // TODO remove class
-                    .type(EntityType.TRIDENT)
+                    .type(EntityTypes.TRIDENT)
                     .bedrockIdentifier("minecraft:thrown_trident")
                     .addTranslator(null) // Loyalty
-                    .addTranslator(MetadataTypes.BOOLEAN, (tridentEntity, entityMetadata) -> tridentEntity.setFlag(EntityFlag.ENCHANTED, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue()))
+                    .addTranslator(EntityDataSerializers.BOOLEAN, (tridentEntity, entityMetadata) -> tridentEntity.setFlag(EntityFlag.ENCHANTED, ((DataValue<Boolean>) entityMetadata).value()))
                     .build();
 
             EntityTypeBase<HangingEntity> hangingEntityBase = EntityTypeBase.baseInherited(HangingEntity.class, entityBase)
-                .addTranslator(MetadataTypes.DIRECTION, HangingEntity::setDirectionMetadata)
+                .addTranslator(EntityDataSerializers.DIRECTION, HangingEntity::setDirectionMetadata)
                 .build();
 
             PAINTING = VanillaEntityType.inherited(PaintingEntity::new, hangingEntityBase)
-                .type(EntityType.PAINTING)
-                .addTranslator(MetadataTypes.PAINTING_VARIANT, PaintingEntity::setPaintingType)
+                .type(EntityTypes.PAINTING)
+                .addTranslator(EntityDataSerializers.PAINTING_VARIANT, PaintingEntity::setPaintingType)
                 .build();
 
             // Item frames are handled differently as they are blocks, not items, in Bedrock
             ITEM_FRAME = VanillaEntityType.inherited(ItemFrameEntity::new, hangingEntityBase)
-                    .type(EntityType.ITEM_FRAME)
-                    .addTranslator(MetadataTypes.ITEM_STACK, ItemFrameEntity::setItemInFrame)
-                    .addTranslator(MetadataTypes.INT, ItemFrameEntity::setItemRotation)
+                    .type(EntityTypes.ITEM_FRAME)
+                    .addTranslator(EntityDataSerializers.ITEM_STACK, ItemFrameEntity::setItemInFrame)
+                    .addTranslator(EntityDataSerializers.INT, ItemFrameEntity::setItemRotation)
                     .build();
             GLOW_ITEM_FRAME = VanillaEntityType.inherited(ITEM_FRAME.factory(), ITEM_FRAME)
-                    .type(EntityType.GLOW_ITEM_FRAME)
+                    .type(EntityTypes.GLOW_ITEM_FRAME)
                     .build();
 
             MINECART = VanillaEntityType.inherited(MinecartEntity::new, entityBase)
-                    .type(EntityType.MINECART)
+                    .type(EntityTypes.MINECART)
                     .height(0.7f).width(0.98f)
                     .offset(0.35f)
                     .bedrockDefinition(BedrockEntityDefinitions.MINECART)
-                    .addTranslator(MetadataTypes.INT, (minecartEntity, entityMetadata) -> minecartEntity.getMetadata().put(EntityDataTypes.STRUCTURAL_INTEGRITY, entityMetadata.getValue()))
-                    .addTranslator(MetadataTypes.INT, (minecartEntity, entityMetadata) -> minecartEntity.getMetadata().put(EntityDataTypes.HURT_DIRECTION, entityMetadata.getValue())) // Direction in which the minecart is shaking
-                    .addTranslator(MetadataTypes.FLOAT, (minecartEntity, entityMetadata) ->
+                    .addTranslator(EntityDataSerializers.INT, (minecartEntity, entityMetadata) -> minecartEntity.getMetadata().put(EntityDataTypes.STRUCTURAL_INTEGRITY, entityMetadata.value()))
+                    .addTranslator(EntityDataSerializers.INT, (minecartEntity, entityMetadata) -> minecartEntity.getMetadata().put(EntityDataTypes.HURT_DIRECTION, entityMetadata.value())) // Direction in which the minecart is shaking
+                    .addTranslator(EntityDataSerializers.FLOAT, (minecartEntity, entityMetadata) ->
                             // Power in Java, hurt ticks in Bedrock
-                            minecartEntity.getMetadata().put(EntityDataTypes.HURT_TICKS, Math.min((int) ((FloatEntityMetadata) entityMetadata).getPrimitiveValue(), 15)))
-                    .addTranslator(MetadataTypes.OPTIONAL_BLOCK_STATE, MinecartEntity::setCustomBlock)
-                    .addTranslator(MetadataTypes.INT, MinecartEntity::setCustomBlockOffset)
+                            minecartEntity.getMetadata().put(EntityDataTypes.HURT_TICKS, Math.min(((DataValue<Float>) entityMetadata).value().intValue(), 15)))
+                    .addTranslator(EntityDataSerializers.OPTIONAL_BLOCK_STATE, MinecartEntity::setCustomBlock)
+                    .addTranslator(EntityDataSerializers.INT, MinecartEntity::setCustomBlockOffset)
                     .build();
             CHEST_MINECART = VanillaEntityType.inherited(MINECART.factory(), MINECART)
-                    .type(EntityType.CHEST_MINECART)
+                    .type(EntityTypes.CHEST_MINECART)
                     .build();
             COMMAND_BLOCK_MINECART = VanillaEntityType.inherited(CommandBlockMinecartEntity::new, MINECART)
-                    .type(EntityType.COMMAND_BLOCK_MINECART)
-                    .addTranslator(MetadataTypes.STRING, (entity, entityMetadata) -> entity.getMetadata().put(EntityDataTypes.COMMAND_BLOCK_NAME, entityMetadata.getValue()))
-                    .addTranslator(MetadataTypes.COMPONENT, (entity, entityMetadata) -> entity.getMetadata().put(EntityDataTypes.COMMAND_BLOCK_LAST_OUTPUT, MessageTranslator.convertMessage(entityMetadata.getValue())))
+                    .type(EntityTypes.COMMAND_BLOCK_MINECART)
+                    .addTranslator(EntityDataSerializers.STRING, (entity, entityMetadata) -> entity.getMetadata().put(EntityDataTypes.COMMAND_BLOCK_NAME, entityMetadata.value()))
+                    .addTranslator(EntityDataSerializers.COMPONENT, (entity, entityMetadata) -> entity.getMetadata().put(EntityDataTypes.COMMAND_BLOCK_LAST_OUTPUT, MessageTranslator.convertMessage(entityMetadata.value())))
                     .build();
             FURNACE_MINECART = VanillaEntityType.inherited(FurnaceMinecartEntity::new, MINECART)
-                    .type(EntityType.FURNACE_MINECART)
+                    .type(EntityTypes.FURNACE_MINECART)
                     .bedrockDefinition(BedrockEntityDefinitions.MINECART)
-                    .addTranslator(MetadataTypes.BOOLEAN, FurnaceMinecartEntity::setHasFuel)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, FurnaceMinecartEntity::setHasFuel)
                     .build();
             HOPPER_MINECART = VanillaEntityType.inherited(MINECART.factory(), MINECART)
-                    .type(EntityType.HOPPER_MINECART)
+                    .type(EntityTypes.HOPPER_MINECART)
                     .build();
             SPAWNER_MINECART = VanillaEntityType.inherited(SpawnerMinecartEntity::new, MINECART)
-                    .type(EntityType.SPAWNER_MINECART)
+                    .type(EntityTypes.SPAWNER_MINECART)
                     .bedrockDefinition(BedrockEntityDefinitions.MINECART)
                     .build();
             TNT_MINECART = VanillaEntityType.inherited(MINECART.factory(), MINECART)
-                    .type(EntityType.TNT_MINECART)
+                    .type(EntityTypes.TNT_MINECART)
                     .build();
 
             WITHER_SKULL = VanillaEntityType.inherited(WitherSkullEntity::new, entityBase)
-                    .type(EntityType.WITHER_SKULL)
+                    .type(EntityTypes.WITHER_SKULL)
                     .heightAndWidth(0.3125f)
-                    .addTranslator(MetadataTypes.BOOLEAN, WitherSkullEntity::setDangerous)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, WitherSkullEntity::setDangerous)
                     .build();
 
             // Bedrock exclusive entity
@@ -635,66 +636,66 @@ public final class VanillaEntities {
             EntityTypeBase<BoatEntity> boatBase = EntityTypeBase.baseInherited(BoatEntity.class, entityBase)
                 .height(0.6f).width(1.6f)
                 .offset(0.375f)
-                .addTranslator(MetadataTypes.INT, (boatEntity, entityMetadata) -> boatEntity.getMetadata().put(EntityDataTypes.HURT_TICKS, entityMetadata.getValue())) // Time since last hit
-                .addTranslator(MetadataTypes.INT, (boatEntity, entityMetadata) -> boatEntity.getMetadata().put(EntityDataTypes.HURT_DIRECTION, entityMetadata.getValue())) // Rocking direction
-                .addTranslator(MetadataTypes.FLOAT, (boatEntity, entityMetadata) ->
+                .addTranslator(EntityDataSerializers.INT, (boatEntity, entityMetadata) -> boatEntity.getMetadata().put(EntityDataTypes.HURT_TICKS, entityMetadata.value())) // Time since last hit
+                .addTranslator(EntityDataSerializers.INT, (boatEntity, entityMetadata) -> boatEntity.getMetadata().put(EntityDataTypes.HURT_DIRECTION, entityMetadata.value())) // Rocking direction
+                .addTranslator(EntityDataSerializers.FLOAT, (boatEntity, entityMetadata) ->
                     // 'Health' in Bedrock, damage taken in Java - it makes motion in Bedrock
-                    boatEntity.getMetadata().put(EntityDataTypes.STRUCTURAL_INTEGRITY, 40 - ((int) ((FloatEntityMetadata) entityMetadata).getPrimitiveValue())))
-                .addTranslator(MetadataTypes.BOOLEAN, BoatEntity::setPaddlingLeft)
-                .addTranslator(MetadataTypes.BOOLEAN, BoatEntity::setPaddlingRight)
-                .addTranslator(MetadataTypes.INT, (boatEntity, entityMetadata) -> boatEntity.getMetadata().put(EntityDataTypes.BOAT_BUBBLE_TIME, entityMetadata.getValue())) // May not actually do anything
+                    boatEntity.getMetadata().put(EntityDataTypes.STRUCTURAL_INTEGRITY, 40 - (((DataValue<Float>) entityMetadata).value().intValue())))
+                .addTranslator(EntityDataSerializers.BOOLEAN, BoatEntity::setPaddlingLeft)
+                .addTranslator(EntityDataSerializers.BOOLEAN, BoatEntity::setPaddlingRight)
+                .addTranslator(EntityDataSerializers.INT, (boatEntity, entityMetadata) -> boatEntity.getMetadata().put(EntityDataTypes.BOAT_BUBBLE_TIME, entityMetadata.value())) // May not actually do anything
                 .build();
 
-            ACACIA_BOAT = buildBoat(boatBase, EntityType.ACACIA_BOAT, BoatEntity.BoatVariant.ACACIA);
-            BAMBOO_RAFT = buildBoat(boatBase, EntityType.BAMBOO_RAFT, BoatEntity.BoatVariant.BAMBOO);
-            BIRCH_BOAT = buildBoat(boatBase, EntityType.BIRCH_BOAT, BoatEntity.BoatVariant.BIRCH);
-            CHERRY_BOAT = buildBoat(boatBase, EntityType.CHERRY_BOAT, BoatEntity.BoatVariant.CHERRY);
-            DARK_OAK_BOAT = buildBoat(boatBase, EntityType.DARK_OAK_BOAT, BoatEntity.BoatVariant.DARK_OAK);
-            JUNGLE_BOAT = buildBoat(boatBase, EntityType.JUNGLE_BOAT, BoatEntity.BoatVariant.JUNGLE);
-            MANGROVE_BOAT = buildBoat(boatBase, EntityType.MANGROVE_BOAT, BoatEntity.BoatVariant.MANGROVE);
-            OAK_BOAT = buildBoat(boatBase, EntityType.OAK_BOAT, BoatEntity.BoatVariant.OAK);
-            SPRUCE_BOAT = buildBoat(boatBase, EntityType.SPRUCE_BOAT, BoatEntity.BoatVariant.SPRUCE);
-            PALE_OAK_BOAT = buildBoat(boatBase, EntityType.PALE_OAK_BOAT, BoatEntity.BoatVariant.PALE_OAK);
-            POPLAR_BOAT = buildBoat(boatBase, EntityType.POPLAR_BOAT, BoatEntity.BoatVariant.POPLAR);
+            ACACIA_BOAT = buildBoat(boatBase, EntityTypes.ACACIA_BOAT, BoatEntity.BoatVariant.ACACIA);
+            BAMBOO_RAFT = buildBoat(boatBase, EntityTypes.BAMBOO_RAFT, BoatEntity.BoatVariant.BAMBOO);
+            BIRCH_BOAT = buildBoat(boatBase, EntityTypes.BIRCH_BOAT, BoatEntity.BoatVariant.BIRCH);
+            CHERRY_BOAT = buildBoat(boatBase, EntityTypes.CHERRY_BOAT, BoatEntity.BoatVariant.CHERRY);
+            DARK_OAK_BOAT = buildBoat(boatBase, EntityTypes.DARK_OAK_BOAT, BoatEntity.BoatVariant.DARK_OAK);
+            JUNGLE_BOAT = buildBoat(boatBase, EntityTypes.JUNGLE_BOAT, BoatEntity.BoatVariant.JUNGLE);
+            MANGROVE_BOAT = buildBoat(boatBase, EntityTypes.MANGROVE_BOAT, BoatEntity.BoatVariant.MANGROVE);
+            OAK_BOAT = buildBoat(boatBase, EntityTypes.OAK_BOAT, BoatEntity.BoatVariant.OAK);
+            SPRUCE_BOAT = buildBoat(boatBase, EntityTypes.SPRUCE_BOAT, BoatEntity.BoatVariant.SPRUCE);
+            PALE_OAK_BOAT = buildBoat(boatBase, EntityTypes.PALE_OAK_BOAT, BoatEntity.BoatVariant.PALE_OAK);
+            POPLAR_BOAT = buildBoat(boatBase, EntityTypes.POPLAR_BOAT, BoatEntity.BoatVariant.POPLAR);
 
             EntityTypeBase<ChestBoatEntity> chestBoatBase = EntityTypeBase.baseInherited(ChestBoatEntity.class, boatBase)
                 .build();
 
-            ACACIA_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.ACACIA_CHEST_BOAT, BoatEntity.BoatVariant.ACACIA);
-            BAMBOO_CHEST_RAFT = buildChestBoat(chestBoatBase, EntityType.BAMBOO_CHEST_RAFT, BoatEntity.BoatVariant.BAMBOO);
-            BIRCH_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.BIRCH_CHEST_BOAT, BoatEntity.BoatVariant.BIRCH);
-            CHERRY_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.CHERRY_CHEST_BOAT, BoatEntity.BoatVariant.CHERRY);
-            DARK_OAK_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.DARK_OAK_CHEST_BOAT, BoatEntity.BoatVariant.DARK_OAK);
-            JUNGLE_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.JUNGLE_CHEST_BOAT, BoatEntity.BoatVariant.JUNGLE);
-            MANGROVE_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.MANGROVE_CHEST_BOAT, BoatEntity.BoatVariant.MANGROVE);
-            OAK_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.OAK_CHEST_BOAT, BoatEntity.BoatVariant.OAK);
-            SPRUCE_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.SPRUCE_CHEST_BOAT, BoatEntity.BoatVariant.SPRUCE);
-            PALE_OAK_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.PALE_OAK_CHEST_BOAT, BoatEntity.BoatVariant.PALE_OAK);
-            POPLAR_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityType.POPLAR_CHEST_BOAT, BoatEntity.BoatVariant.POPLAR);
+            ACACIA_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.ACACIA_CHEST_BOAT, BoatEntity.BoatVariant.ACACIA);
+            BAMBOO_CHEST_RAFT = buildChestBoat(chestBoatBase, EntityTypes.BAMBOO_CHEST_RAFT, BoatEntity.BoatVariant.BAMBOO);
+            BIRCH_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.BIRCH_CHEST_BOAT, BoatEntity.BoatVariant.BIRCH);
+            CHERRY_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.CHERRY_CHEST_BOAT, BoatEntity.BoatVariant.CHERRY);
+            DARK_OAK_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.DARK_OAK_CHEST_BOAT, BoatEntity.BoatVariant.DARK_OAK);
+            JUNGLE_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.JUNGLE_CHEST_BOAT, BoatEntity.BoatVariant.JUNGLE);
+            MANGROVE_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.MANGROVE_CHEST_BOAT, BoatEntity.BoatVariant.MANGROVE);
+            OAK_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.OAK_CHEST_BOAT, BoatEntity.BoatVariant.OAK);
+            SPRUCE_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.SPRUCE_CHEST_BOAT, BoatEntity.BoatVariant.SPRUCE);
+            PALE_OAK_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.PALE_OAK_CHEST_BOAT, BoatEntity.BoatVariant.PALE_OAK);
+            POPLAR_CHEST_BOAT = buildChestBoat(chestBoatBase, EntityTypes.POPLAR_CHEST_BOAT, BoatEntity.BoatVariant.POPLAR);
         }
 
         EntityTypeBase<LivingEntity> livingEntityBase = EntityTypeBase.baseInherited(LivingEntity.class, entityBase)
-                .addTranslator(MetadataTypes.BYTE, LivingEntity::setLivingEntityFlags)
-                .addTranslator(MetadataTypes.FLOAT, LivingEntity::setHealth)
-                .addTranslator(MetadataTypes.PARTICLES, LivingEntity::setParticles)
-                .addTranslator(MetadataTypes.BOOLEAN,
-                        (livingEntity, entityMetadata) -> livingEntity.getMetadata().put(EntityDataTypes.EFFECT_AMBIENCE, (byte) (((BooleanEntityMetadata) entityMetadata).getPrimitiveValue() ? 1 : 0)))
+                .addTranslator(EntityDataSerializers.BYTE, LivingEntity::setLivingEntityFlags)
+                .addTranslator(EntityDataSerializers.FLOAT, LivingEntity::setHealth)
+                .addTranslator(EntityDataSerializers.PARTICLES, LivingEntity::setParticles)
+                .addTranslator(EntityDataSerializers.BOOLEAN,
+                        (livingEntity, entityMetadata) -> livingEntity.getMetadata().put(EntityDataTypes.EFFECT_AMBIENCE, (byte) (((DataValue<Boolean>) entityMetadata).value() ? 1 : 0)))
                 .addTranslator(null) // Arrow count
                 .addTranslator(null) // Stinger count
-                .addTranslator(MetadataTypes.OPTIONAL_BLOCK_POS, LivingEntity::setBedPosition)
+                .addTranslator(EntityDataSerializers.OPTIONAL_BLOCK_POS, LivingEntity::setBedPosition)
                 .build();
 
         ARMOR_STAND = VanillaEntityType.inherited(ArmorStandEntity::new, livingEntityBase)
-                .type(EntityType.ARMOR_STAND)
+                .type(EntityTypes.ARMOR_STAND)
                 .bedrockDefinition(BedrockEntityDefinitions.ARMOR_STAND)
                 .height(1.975f).width(0.5f)
-                .addTranslator(MetadataTypes.BYTE, ArmorStandEntity::setArmorStandFlags)
-                .addTranslator(MetadataTypes.ROTATIONS, ArmorStandEntity::setHeadRotation)
-                .addTranslator(MetadataTypes.ROTATIONS, ArmorStandEntity::setBodyRotation)
-                .addTranslator(MetadataTypes.ROTATIONS, ArmorStandEntity::setLeftArmRotation)
-                .addTranslator(MetadataTypes.ROTATIONS, ArmorStandEntity::setRightArmRotation)
-                .addTranslator(MetadataTypes.ROTATIONS, ArmorStandEntity::setLeftLegRotation)
-                .addTranslator(MetadataTypes.ROTATIONS, ArmorStandEntity::setRightLegRotation)
+                .addTranslator(EntityDataSerializers.BYTE, ArmorStandEntity::setArmorStandFlags)
+                .addTranslator(EntityDataSerializers.ROTATIONS, ArmorStandEntity::setHeadRotation)
+                .addTranslator(EntityDataSerializers.ROTATIONS, ArmorStandEntity::setBodyRotation)
+                .addTranslator(EntityDataSerializers.ROTATIONS, ArmorStandEntity::setLeftArmRotation)
+                .addTranslator(EntityDataSerializers.ROTATIONS, ArmorStandEntity::setRightArmRotation)
+                .addTranslator(EntityDataSerializers.ROTATIONS, ArmorStandEntity::setLeftLegRotation)
+                .addTranslator(EntityDataSerializers.ROTATIONS, ArmorStandEntity::setRightLegRotation)
                 .build();
 
         EntityTypeBase<AvatarEntity> avatarEntityBase = EntityTypeBase.baseInherited(AvatarEntity.class, livingEntityBase)
@@ -702,223 +703,223 @@ public final class VanillaEntities {
             // This is the offset sent by Bedrock in its player position. Verified on Bedrock 26.23.
             .offset(1.62001f)
             .addTranslator(null) // Player main hand
-            .addTranslator(MetadataTypes.BYTE, AvatarEntity::setSkinVisibility)
+            .addTranslator(EntityDataSerializers.BYTE, AvatarEntity::setSkinVisibility)
             .build();
 
         MANNEQUIN = VanillaEntityType.inherited(MannequinEntity::new, avatarEntityBase)
-            .type(EntityType.MANNEQUIN)
-            .addTranslator(MetadataTypes.RESOLVABLE_PROFILE, MannequinEntity::setProfile)
+            .type(EntityTypes.MANNEQUIN)
+            .addTranslator(EntityDataSerializers.RESOLVABLE_PROFILE, MannequinEntity::setProfile)
             .addTranslator(null) // Immovable
-            .addTranslator(MetadataTypes.OPTIONAL_COMPONENT, MannequinEntity::setDescription)
+            .addTranslator(EntityDataSerializers.OPTIONAL_COMPONENT, MannequinEntity::setDescription)
             .build();
 
         MARKER = VanillaEntityType.inherited(null, entityBase)
-            .type(EntityType.MARKER)
+            .type(EntityTypes.MARKER)
             .build();
 
         PLAYER = VanillaEntityType.<PlayerEntity>inherited(null, avatarEntityBase)
-                .type(EntityType.PLAYER)
-                .addTranslator(MetadataTypes.FLOAT, PlayerEntity::setAbsorptionHearts)
+                .type(EntityTypes.PLAYER)
+                .addTranslator(EntityDataSerializers.FLOAT, PlayerEntity::setAbsorptionHearts)
                 .addTranslator(null) // Player score
-                .addTranslator(MetadataTypes.OPTIONAL_UNSIGNED_INT, PlayerEntity::setLeftParrot)
-                .addTranslator(MetadataTypes.OPTIONAL_UNSIGNED_INT, PlayerEntity::setRightParrot)
+                .addTranslator(EntityDataSerializers.OPTIONAL_UNSIGNED_INT, PlayerEntity::setLeftParrot)
+                .addTranslator(EntityDataSerializers.OPTIONAL_UNSIGNED_INT, PlayerEntity::setRightParrot)
                 .build();
 
         EntityTypeBase<MobEntity> mobEntityBase = EntityTypeBase.baseInherited(MobEntity.class, livingEntityBase)
-                .addTranslator(MetadataTypes.BYTE, MobEntity::setMobFlags)
+                .addTranslator(EntityDataSerializers.BYTE, MobEntity::setMobFlags)
                 .build();
 
         // Extends mob
         {
             ALLAY = VanillaEntityType.inherited(AllayEntity::new, mobEntityBase)
-                    .type(EntityType.ALLAY)
+                    .type(EntityTypes.ALLAY)
                     .height(0.6f).width(0.35f)
-                    .addTranslator(MetadataTypes.BOOLEAN, AllayEntity::setDancing)
-                    .addTranslator(MetadataTypes.BOOLEAN, AllayEntity::setCanDuplicate)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, AllayEntity::setDancing)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, AllayEntity::setCanDuplicate)
                     .build();
             BAT = VanillaEntityType.inherited(BatEntity::new, mobEntityBase)
-                    .type(EntityType.BAT)
+                    .type(EntityTypes.BAT)
                     .height(0.9f).width(0.5f)
-                    .addTranslator(MetadataTypes.BYTE, BatEntity::setBatFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, BatEntity::setBatFlags)
                     .build();
             BOGGED = VanillaEntityType.inherited(BoggedEntity::new, mobEntityBase)
-                    .type(EntityType.BOGGED)
+                    .type(EntityTypes.BOGGED)
                     .height(1.99f).width(0.6f)
-                    .addTranslator(MetadataTypes.BOOLEAN, BoggedEntity::setSheared)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, BoggedEntity::setSheared)
                     .build();
             BLAZE = VanillaEntityType.inherited(BlazeEntity::new, mobEntityBase)
-                    .type(EntityType.BLAZE)
+                    .type(EntityTypes.BLAZE)
                     .height(1.8f).width(0.6f)
-                    .addTranslator(MetadataTypes.BYTE, BlazeEntity::setBlazeFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, BlazeEntity::setBlazeFlags)
                     .build();
             BREEZE = VanillaEntityType.inherited(BreezeEntity::new, mobEntityBase)
-                    .type(EntityType.BREEZE)
+                    .type(EntityTypes.BREEZE)
                     .height(1.77f).width(0.6f)
                     .build();
             COPPER_GOLEM = VanillaEntityType.inherited(CopperGolemEntity::new, mobEntityBase)
-                    .type(EntityType.COPPER_GOLEM)
+                    .type(EntityTypes.COPPER_GOLEM)
                     .height(0.49f).width(0.98f)
-                    .addTranslator(MetadataTypes.WEATHERING_COPPER_STATE, CopperGolemEntity::setWeatheringState)
-                    .addTranslator(MetadataTypes.COPPER_GOLEM_STATE, CopperGolemEntity::setGolemState)
+                    .addTranslator(EntityDataSerializers.WEATHERING_COPPER_STATE, CopperGolemEntity::setWeatheringState)
+                    .addTranslator(EntityDataSerializers.COPPER_GOLEM_STATE, CopperGolemEntity::setGolemState)
                     .property(CopperGolemEntity.CHEST_INTERACTION_PROPERTY)
                     .property(CopperGolemEntity.HAS_FLOWER_PROPERTY)
                     .property(CopperGolemEntity.OXIDATION_LEVEL_STATE_ENUM_PROPERTY)
                     .build();
             CREAKING = VanillaEntityType.inherited(CreakingEntity::new, mobEntityBase)
-                    .type(EntityType.CREAKING)
+                    .type(EntityTypes.CREAKING)
                     .height(2.7f).width(0.9f)
-                    .addTranslator(MetadataTypes.BOOLEAN, CreakingEntity::setCanMove)
-                    .addTranslator(MetadataTypes.BOOLEAN, CreakingEntity::setActive)
-                    .addTranslator(MetadataTypes.BOOLEAN, CreakingEntity::setIsTearingDown)
-                    .addTranslator(MetadataTypes.OPTIONAL_BLOCK_POS, CreakingEntity::setHomePos)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, CreakingEntity::setCanMove)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, CreakingEntity::setActive)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, CreakingEntity::setIsTearingDown)
+                    .addTranslator(EntityDataSerializers.OPTIONAL_BLOCK_POS, CreakingEntity::setHomePos)
                     .property(CreakingEntity.STATE_PROPERTY)
                     .property(CreakingEntity.SWAYING_TICKS_PROPERTY)
                     .build();
             CREEPER = VanillaEntityType.inherited(CreeperEntity::new, mobEntityBase)
-                    .type(EntityType.CREEPER)
+                    .type(EntityTypes.CREEPER)
                     .height(1.7f).width(0.6f)
-                    .addTranslator(MetadataTypes.INT, CreeperEntity::setSwelling)
-                    .addTranslator(MetadataTypes.BOOLEAN, (entity, entityMetadata) -> entity.setFlag(EntityFlag.POWERED, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue()))
-                    .addTranslator(MetadataTypes.BOOLEAN, CreeperEntity::setIgnited)
+                    .addTranslator(EntityDataSerializers.INT, CreeperEntity::setSwelling)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, (entity, entityMetadata) -> entity.setFlag(EntityFlag.POWERED, ((DataValue<Boolean>) entityMetadata).value()))
+                    .addTranslator(EntityDataSerializers.BOOLEAN, CreeperEntity::setIgnited)
                     .build();
             ENDERMAN = VanillaEntityType.inherited(EndermanEntity::new, mobEntityBase)
-                    .type(EntityType.ENDERMAN)
+                    .type(EntityTypes.ENDERMAN)
                     .height(2.9f).width(0.6f)
-                    .addTranslator(MetadataTypes.OPTIONAL_BLOCK_STATE, EndermanEntity::setCarriedBlock)
-                    .addTranslator(MetadataTypes.BOOLEAN, EndermanEntity::setScreaming)
-                    .addTranslator(MetadataTypes.BOOLEAN, EndermanEntity::setAngry)
+                    .addTranslator(EntityDataSerializers.OPTIONAL_BLOCK_STATE, EndermanEntity::setCarriedBlock)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, EndermanEntity::setScreaming)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, EndermanEntity::setAngry)
                     .build();
             ENDERMITE = VanillaEntityType.inherited(MonsterEntity::new, mobEntityBase)
-                    .type(EntityType.ENDERMITE)
+                    .type(EntityTypes.ENDERMITE)
                     .height(0.3f).width(0.4f)
                     .build();
             ENDER_DRAGON = VanillaEntityType.inherited(EnderDragonEntity::new, mobEntityBase)
-                    .type(EntityType.ENDER_DRAGON)
-                    .addTranslator(MetadataTypes.INT, EnderDragonEntity::setPhase)
+                    .type(EntityTypes.ENDER_DRAGON)
+                    .addTranslator(EntityDataSerializers.INT, EnderDragonEntity::setPhase)
                     .build();
             GHAST = VanillaEntityType.inherited(GhastEntity::new, mobEntityBase)
-                    .type(EntityType.GHAST)
+                    .type(EntityTypes.GHAST)
                     .heightAndWidth(4.0f)
-                    .addTranslator(MetadataTypes.BOOLEAN, GhastEntity::setGhastAttacking)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, GhastEntity::setGhastAttacking)
                     .build();
             GIANT = VanillaEntityType.inherited(GiantEntity::new, mobEntityBase)
-                    .type(EntityType.GIANT)
+                    .type(EntityTypes.GIANT)
                     .height(1.8f).width(1.6f)
                     .bedrockDefinition(BedrockEntityDefinitions.ZOMBIE)
                     .build();
             IRON_GOLEM = VanillaEntityType.inherited(IronGolemEntity::new, mobEntityBase)
-                    .type(EntityType.IRON_GOLEM)
+                    .type(EntityTypes.IRON_GOLEM)
                     .height(2.7f).width(1.4f)
                     .addTranslator(null) // "is player created", which doesn't seem to do anything clientside
                     .build();
             PHANTOM = VanillaEntityType.inherited(PhantomEntity::new, mobEntityBase)
-                    .type(EntityType.PHANTOM)
+                    .type(EntityTypes.PHANTOM)
                     .height(0.5f).width(0.9f)
-                    .addTranslator(MetadataTypes.INT, PhantomEntity::setPhantomScale)
+                    .addTranslator(EntityDataSerializers.INT, PhantomEntity::setPhantomScale)
                     .build();
             SILVERFISH = VanillaEntityType.inherited(MonsterEntity::new, mobEntityBase)
-                    .type(EntityType.SILVERFISH)
+                    .type(EntityTypes.SILVERFISH)
                     .height(0.3f).width(0.4f)
                     .build();
             SHULKER = VanillaEntityType.inherited(ShulkerEntity::new, mobEntityBase)
-                    .type(EntityType.SHULKER)
+                    .type(EntityTypes.SHULKER)
                     .heightAndWidth(1f)
-                    .addTranslator(MetadataTypes.DIRECTION, ShulkerEntity::setAttachedFace)
-                    .addTranslator(MetadataTypes.BYTE, ShulkerEntity::setShulkerHeight)
-                    .addTranslator(MetadataTypes.BYTE, ShulkerEntity::setShulkerColor)
+                    .addTranslator(EntityDataSerializers.DIRECTION, ShulkerEntity::setAttachedFace)
+                    .addTranslator(EntityDataSerializers.BYTE, ShulkerEntity::setShulkerHeight)
+                    .addTranslator(EntityDataSerializers.BYTE, ShulkerEntity::setShulkerColor)
                     .build();
             SKELETON = VanillaEntityType.inherited(SkeletonEntity::new, mobEntityBase)
-                    .type(EntityType.SKELETON)
+                    .type(EntityTypes.SKELETON)
                     .height(1.8f).width(0.6f)
-                    .addTranslator(MetadataTypes.BOOLEAN, SkeletonEntity::setConvertingToStray)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, SkeletonEntity::setConvertingToStray)
                     .build();
             SNOW_GOLEM = VanillaEntityType.inherited(SnowGolemEntity::new, mobEntityBase)
-                    .type(EntityType.SNOW_GOLEM)
+                    .type(EntityTypes.SNOW_GOLEM)
                     .height(1.9f).width(0.7f)
-                    .addTranslator(MetadataTypes.BYTE, SnowGolemEntity::setSnowGolemFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, SnowGolemEntity::setSnowGolemFlags)
                     .build();
             SPIDER = VanillaEntityType.inherited(SpiderEntity::new, mobEntityBase)
-                    .type(EntityType.SPIDER)
+                    .type(EntityTypes.SPIDER)
                     .height(0.9f).width(1.4f)
-                    .addTranslator(MetadataTypes.BYTE, SpiderEntity::setSpiderFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, SpiderEntity::setSpiderFlags)
                     .build();
             CAVE_SPIDER = VanillaEntityType.inherited(SpiderEntity::new, SPIDER)
-                    .type(EntityType.CAVE_SPIDER)
+                    .type(EntityTypes.CAVE_SPIDER)
                     .height(0.5f).width(0.7f)
                     .build();
             STRAY = VanillaEntityType.inherited(AbstractSkeletonEntity::new, mobEntityBase)
-                    .type(EntityType.STRAY)
+                    .type(EntityTypes.STRAY)
                     .height(1.8f).width(0.6f)
                     .build();
             PARCHED = VanillaEntityType.inherited(AbstractSkeletonEntity::new, mobEntityBase)
-                    .type(EntityType.PARCHED)
+                    .type(EntityTypes.PARCHED)
                     .height(1.8f).width(0.6f)
                     .build();
             VEX = VanillaEntityType.inherited(VexEntity::new, mobEntityBase)
-                    .type(EntityType.VEX)
+                    .type(EntityTypes.VEX)
                     .height(0.8f).width(0.4f)
-                    .addTranslator(MetadataTypes.BYTE, VexEntity::setVexFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, VexEntity::setVexFlags)
                     .build();
             WARDEN = VanillaEntityType.inherited(WardenEntity::new, mobEntityBase)
-                    .type(EntityType.WARDEN)
+                    .type(EntityTypes.WARDEN)
                     .height(2.9f).width(0.9f)
-                    .addTranslator(MetadataTypes.INT, WardenEntity::setAngerLevel)
+                    .addTranslator(EntityDataSerializers.INT, WardenEntity::setAngerLevel)
                     .build();
             WITHER = VanillaEntityType.inherited(WitherEntity::new, mobEntityBase)
-                    .type(EntityType.WITHER)
+                    .type(EntityTypes.WITHER)
                     .height(3.5f).width(0.9f)
-                    .addTranslator(MetadataTypes.INT, WitherEntity::setTarget1)
-                    .addTranslator(MetadataTypes.INT, WitherEntity::setTarget2)
-                    .addTranslator(MetadataTypes.INT, WitherEntity::setTarget3)
-                    .addTranslator(MetadataTypes.INT, WitherEntity::setInvulnerableTicks)
+                    .addTranslator(EntityDataSerializers.INT, WitherEntity::setTarget1)
+                    .addTranslator(EntityDataSerializers.INT, WitherEntity::setTarget2)
+                    .addTranslator(EntityDataSerializers.INT, WitherEntity::setTarget3)
+                    .addTranslator(EntityDataSerializers.INT, WitherEntity::setInvulnerableTicks)
                     .build();
             WITHER_SKELETON = VanillaEntityType.inherited(AbstractSkeletonEntity::new, mobEntityBase)
-                    .type(EntityType.WITHER_SKELETON)
+                    .type(EntityTypes.WITHER_SKELETON)
                     .height(2.4f).width(0.7f)
                     .build();
             ZOGLIN = VanillaEntityType.inherited(ZoglinEntity::new, mobEntityBase)
-                    .type(EntityType.ZOGLIN)
+                    .type(EntityTypes.ZOGLIN)
                     .height(1.4f).width(1.3965f)
-                    .addTranslator(MetadataTypes.BOOLEAN, ZoglinEntity::setBaby)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, ZoglinEntity::setBaby)
                     .build();
             ZOMBIE = VanillaEntityType.inherited(ZombieEntity::new, mobEntityBase)
-                    .type(EntityType.ZOMBIE)
+                    .type(EntityTypes.ZOMBIE)
                     .height(1.8f).width(0.6f)
                     .bedrockDefinition(BedrockEntityDefinitions.ZOMBIE)
-                    .addTranslator(MetadataTypes.BOOLEAN, ZombieEntity::setZombieBaby)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, ZombieEntity::setZombieBaby)
                     .addTranslator(null) // "set special type", doesn't do anything
-                    .addTranslator(MetadataTypes.BOOLEAN, ZombieEntity::setConvertingToDrowned)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, ZombieEntity::setConvertingToDrowned)
                     .build();
             ZOMBIE_VILLAGER = VanillaEntityType.inherited(ZombieVillagerEntity::new, ZOMBIE)
-                    .type(EntityType.ZOMBIE_VILLAGER)
+                    .type(EntityTypes.ZOMBIE_VILLAGER)
                     .height(1.8f).width(0.6f)
                     .bedrockIdentifier("minecraft:zombie_villager_v2")
-                    .addTranslator(MetadataTypes.BOOLEAN, ZombieVillagerEntity::setTransforming)
-                    .addTranslator(MetadataTypes.VILLAGER_DATA, ZombieVillagerEntity::setZombieVillagerData)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, ZombieVillagerEntity::setTransforming)
+                    .addTranslator(EntityDataSerializers.VILLAGER_DATA, ZombieVillagerEntity::setZombieVillagerData)
                     .addTranslator(null) // Villager data finalized
                     .build();
             ZOMBIFIED_PIGLIN = VanillaEntityType.inherited(ZombifiedPiglinEntity::new, ZOMBIE) //TODO test how zombie entity metadata is handled?
-                    .type(EntityType.ZOMBIFIED_PIGLIN)
+                    .type(EntityTypes.ZOMBIFIED_PIGLIN)
                     .height(1.95f).width(0.6f)
                     .bedrockIdentifier("minecraft:zombie_pigman")
                     .build();
 
             DROWNED = VanillaEntityType.inherited(ZOMBIE.factory(), ZOMBIE)
-                    .type(EntityType.DROWNED)
+                    .type(EntityTypes.DROWNED)
                     .height(1.95f).width(0.6f)
                     .build();
             HUSK = VanillaEntityType.inherited(ZOMBIE.factory(), ZOMBIE)
-                    .type(EntityType.HUSK)
+                    .type(EntityTypes.HUSK)
                     .build();
 
             GUARDIAN = VanillaEntityType.inherited(GuardianEntity::new, mobEntityBase)
-                    .type(EntityType.GUARDIAN)
+                    .type(EntityTypes.GUARDIAN)
                     .heightAndWidth(0.85f)
                     .addTranslator(null) // Moving //TODO
-                    .addTranslator(MetadataTypes.INT, GuardianEntity::setGuardianTarget)
+                    .addTranslator(EntityDataSerializers.INT, GuardianEntity::setGuardianTarget)
                     .build();
             ELDER_GUARDIAN = VanillaEntityType.inherited(ElderGuardianEntity::new, GUARDIAN)
-                    .type(EntityType.ELDER_GUARDIAN)
+                    .type(EntityTypes.ELDER_GUARDIAN)
                     .heightAndWidth(1.9975f)
                     .build();
 
@@ -926,43 +927,43 @@ public final class VanillaEntities {
                     .addTranslator(null) // From bucket
                     .build();
             COD = VanillaEntityType.inherited(AbstractFishEntity::new, abstractFishEntityBase)
-                    .type(EntityType.COD)
+                    .type(EntityTypes.COD)
                     .height(0.25f).width(0.5f)
                     .build();
             PUFFERFISH = VanillaEntityType.inherited(PufferFishEntity::new, abstractFishEntityBase)
-                    .type(EntityType.PUFFERFISH)
+                    .type(EntityTypes.PUFFERFISH)
                     .heightAndWidth(0.7f)
-                    .addTranslator(MetadataTypes.INT, PufferFishEntity::setPufferfishSize)
+                    .addTranslator(EntityDataSerializers.INT, PufferFishEntity::setPufferfishSize)
                     .build();
             SALMON = VanillaEntityType.inherited(AbstractFishEntity::new, abstractFishEntityBase)
-                    .type(EntityType.SALMON)
+                    .type(EntityTypes.SALMON)
                     .height(0.5f).width(0.7f)
                     .addTranslator(null) // Scale/variant - TODO
                     .build();
             TADPOLE = VanillaEntityType.inherited(TadpoleEntity::new, abstractFishEntityBase)
-                    .type(EntityType.TADPOLE)
+                    .type(EntityTypes.TADPOLE)
                     .height(0.3f).width(0.4f)
                     .addTranslator(null) // Age locked
                     .build();
             TROPICAL_FISH = VanillaEntityType.inherited(TropicalFishEntity::new, abstractFishEntityBase)
-                    .type(EntityType.TROPICAL_FISH)
+                    .type(EntityTypes.TROPICAL_FISH)
                     .heightAndWidth(0.6f)
                     .bedrockIdentifier("minecraft:tropicalfish")
-                    .addTranslator(MetadataTypes.INT, TropicalFishEntity::setFishVariant)
+                    .addTranslator(EntityDataSerializers.INT, TropicalFishEntity::setFishVariant)
                     .build();
 
             EntityTypeBase<BasePiglinEntity> abstractPiglinEntityBase = EntityTypeBase.baseInherited(BasePiglinEntity.class, mobEntityBase)
-                    .addTranslator(MetadataTypes.BOOLEAN, BasePiglinEntity::setImmuneToZombification)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, BasePiglinEntity::setImmuneToZombification)
                     .build();
             PIGLIN = VanillaEntityType.inherited(PiglinEntity::new, abstractPiglinEntityBase)
-                    .type(EntityType.PIGLIN)
+                    .type(EntityTypes.PIGLIN)
                     .height(1.95f).width(0.6f)
-                    .addTranslator(MetadataTypes.BOOLEAN, PiglinEntity::setBaby)
-                    .addTranslator(MetadataTypes.BOOLEAN, PiglinEntity::setChargingCrossbow)
-                    .addTranslator(MetadataTypes.BOOLEAN, PiglinEntity::setDancing)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, PiglinEntity::setBaby)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, PiglinEntity::setChargingCrossbow)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, PiglinEntity::setDancing)
                     .build();
             PIGLIN_BRUTE = VanillaEntityType.inherited(BasePiglinEntity::new, abstractPiglinEntityBase)
-                    .type(EntityType.PIGLIN_BRUTE)
+                    .type(EntityTypes.PIGLIN_BRUTE)
                     .height(1.95f).width(0.6f)
                     .build();
 
@@ -970,191 +971,191 @@ public final class VanillaEntities {
                     .addTranslator(null) // Celebrating //TODO
                     .build();
             EntityTypeBase<SpellcasterIllagerEntity> spellcasterEntityBase = EntityTypeBase.baseInherited(SpellcasterIllagerEntity.class, raidParticipantEntityBase)
-                    .addTranslator(MetadataTypes.BYTE, SpellcasterIllagerEntity::setSpellType)
+                    .addTranslator(EntityDataSerializers.BYTE, SpellcasterIllagerEntity::setSpellType)
                     .build();
             EVOKER = VanillaEntityType.inherited(SpellcasterIllagerEntity::new, spellcasterEntityBase)
-                    .type(EntityType.EVOKER)
+                    .type(EntityTypes.EVOKER)
                     .height(1.95f).width(0.6f)
                     .bedrockDefinition(BedrockEntityDefinitions.EVOCATION_ILLAGER)
                     .build();
             ILLUSIONER = VanillaEntityType.inherited(SpellcasterIllagerEntity::new, spellcasterEntityBase)
-                    .type(EntityType.ILLUSIONER)
+                    .type(EntityTypes.ILLUSIONER)
                     .height(1.95f).width(0.6f)
                     .bedrockDefinition(BedrockEntityDefinitions.EVOCATION_ILLAGER)
                     .build();
             PILLAGER = VanillaEntityType.inherited(PillagerEntity::new, raidParticipantEntityBase)
-                    .type(EntityType.PILLAGER)
+                    .type(EntityTypes.PILLAGER)
                     .height(1.8f).width(0.6f)
-                    .addTranslator(MetadataTypes.BOOLEAN, PillagerEntity::setChargingCrossbow)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, PillagerEntity::setChargingCrossbow)
                     .build();
             RAVAGER = VanillaEntityType.inherited(RavagerEntity::new, raidParticipantEntityBase)
-                    .type(EntityType.RAVAGER)
+                    .type(EntityTypes.RAVAGER)
                     .height(1.9f).width(1.2f)
                     .build();
             VINDICATOR = VanillaEntityType.inherited(VindicatorEntity::new, raidParticipantEntityBase)
-                    .type(EntityType.VINDICATOR)
+                    .type(EntityTypes.VINDICATOR)
                     .height(1.8f).width(0.6f)
                     .build();
             WITCH = VanillaEntityType.inherited(RaidParticipantEntity::new, raidParticipantEntityBase)
-                    .type(EntityType.WITCH)
+                    .type(EntityTypes.WITCH)
                     .height(1.8f).width(0.6f)
                     .addTranslator(null) // Using item
                     .build();
         }
 
         EntityTypeBase<AgeableEntity> ageableEntityBase = EntityTypeBase.baseInherited(AgeableEntity.class, mobEntityBase)
-                .addTranslator(MetadataTypes.BOOLEAN, AgeableEntity::setBaby)
+                .addTranslator(EntityDataSerializers.BOOLEAN, AgeableEntity::setBaby)
                 .addTranslator(null) // Age locked
                 .build();
 
         // Extends ageable
         {
             ARMADILLO = VanillaEntityType.inherited(ArmadilloEntity::new, ageableEntityBase)
-                    .type(EntityType.ARMADILLO)
+                    .type(EntityTypes.ARMADILLO)
                     .height(0.65f).width(0.7f)
                     .property(ArmadilloEntity.STATE_PROPERTY)
-                    .addTranslator(MetadataTypes.ARMADILLO_STATE, ArmadilloEntity::setArmadilloState)
+                    .addTranslator(EntityDataSerializers.ARMADILLO_STATE, ArmadilloEntity::setArmadilloState)
                     .build();
             AXOLOTL = VanillaEntityType.inherited(AxolotlEntity::new, ageableEntityBase)
-                    .type(EntityType.AXOLOTL)
+                    .type(EntityTypes.AXOLOTL)
                     .height(0.42f).width(0.7f)
-                    .addTranslator(MetadataTypes.INT, AxolotlEntity::setVariant)
-                    .addTranslator(MetadataTypes.BOOLEAN, AxolotlEntity::setPlayingDead)
+                    .addTranslator(EntityDataSerializers.INT, AxolotlEntity::setVariant)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, AxolotlEntity::setPlayingDead)
                     .addTranslator(null) // From bucket
                     .build();
             BEE = VanillaEntityType.inherited(BeeEntity::new, ageableEntityBase)
-                    .type(EntityType.BEE)
+                    .type(EntityTypes.BEE)
                     .heightAndWidth(0.6f)
                     .property(BeeEntity.NECTAR_PROPERTY)
-                    .addTranslator(MetadataTypes.BYTE, BeeEntity::setBeeFlags)
-                    .addTranslator(MetadataTypes.LONG, BeeEntity::setAngerTime)
+                    .addTranslator(EntityDataSerializers.BYTE, BeeEntity::setBeeFlags)
+                    .addTranslator(EntityDataSerializers.LONG, BeeEntity::setAngerTime)
                     .build();
             CHICKEN = VanillaEntityType.inherited(ChickenEntity::new, ageableEntityBase)
-                    .type(EntityType.CHICKEN)
+                    .type(EntityTypes.CHICKEN)
                     .height(0.7f).width(0.4f)
                     .property(TemperatureVariantAnimal.TEMPERATE_VARIANT_PROPERTY)
-                    .addTranslator(MetadataTypes.CHICKEN_VARIANT, ChickenEntity::setVariant)
+                    .addTranslator(EntityDataSerializers.CHICKEN_VARIANT, ChickenEntity::setVariant)
                     .addTranslator(null) // Sound variant
                     .build();
             COW = VanillaEntityType.inherited(CowEntity::new, ageableEntityBase)
-                    .type(EntityType.COW)
+                    .type(EntityTypes.COW)
                     .height(1.4f).width(0.9f)
                     .property(TemperatureVariantAnimal.TEMPERATE_VARIANT_PROPERTY)
-                    .addTranslator(MetadataTypes.COW_VARIANT, CowEntity::setVariant)
+                    .addTranslator(EntityDataSerializers.COW_VARIANT, CowEntity::setVariant)
                     .addTranslator(null) // Sound variant
                     .build();
             FOX = VanillaEntityType.inherited(FoxEntity::new, ageableEntityBase)
-                    .type(EntityType.FOX)
+                    .type(EntityTypes.FOX)
                     .height(0.7f).width(0.6f)
-                    .addTranslator(MetadataTypes.INT, FoxEntity::setFoxVariant)
-                    .addTranslator(MetadataTypes.BYTE, FoxEntity::setFoxFlags)
+                    .addTranslator(EntityDataSerializers.INT, FoxEntity::setFoxVariant)
+                    .addTranslator(EntityDataSerializers.BYTE, FoxEntity::setFoxFlags)
                     .addTranslator(null) // Trusted player 1
                     .addTranslator(null) // Trusted player 2
                     .build();
             FROG = VanillaEntityType.inherited(FrogEntity::new, ageableEntityBase)
-                    .type(EntityType.FROG)
+                    .type(EntityTypes.FROG)
                     .heightAndWidth(0.5f)
-                    .addTranslator(MetadataTypes.FROG_VARIANT, FrogEntity::setVariant)
-                    .addTranslator(MetadataTypes.OPTIONAL_UNSIGNED_INT, FrogEntity::setTongueTarget)
+                    .addTranslator(EntityDataSerializers.FROG_VARIANT, FrogEntity::setVariant)
+                    .addTranslator(EntityDataSerializers.OPTIONAL_UNSIGNED_INT, FrogEntity::setTongueTarget)
                     .build();
             HAPPY_GHAST = VanillaEntityType.inherited(HappyGhastEntity::new, ageableEntityBase)
-                    .type(EntityType.HAPPY_GHAST)
+                    .type(EntityTypes.HAPPY_GHAST)
                     .heightAndWidth(4f)
                     .property(HappyGhastEntity.CAN_MOVE_PROPERTY)
                     .addTranslator(null) // Is leash holder
-                    .addTranslator(MetadataTypes.BOOLEAN, HappyGhastEntity::setStaysStill)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, HappyGhastEntity::setStaysStill)
                     .build();
             HOGLIN = VanillaEntityType.inherited(HoglinEntity::new, ageableEntityBase)
-                    .type(EntityType.HOGLIN)
+                    .type(EntityTypes.HOGLIN)
                     .height(1.4f).width(1.3965f)
-                    .addTranslator(MetadataTypes.BOOLEAN, HoglinEntity::setImmuneToZombification)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, HoglinEntity::setImmuneToZombification)
                     .build();
             GOAT = VanillaEntityType.inherited(GoatEntity::new, ageableEntityBase)
-                    .type(EntityType.GOAT)
+                    .type(EntityTypes.GOAT)
                     .height(1.3f).width(0.9f)
-                    .addTranslator(MetadataTypes.BOOLEAN, GoatEntity::setScreamer)
-                    .addTranslator(MetadataTypes.BOOLEAN, GoatEntity::setHasLeftHorn)
-                    .addTranslator(MetadataTypes.BOOLEAN, GoatEntity::setHasRightHorn)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, GoatEntity::setScreamer)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, GoatEntity::setHasLeftHorn)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, GoatEntity::setHasRightHorn)
                     .build();
             MOOSHROOM = VanillaEntityType.inherited(MooshroomEntity::new, ageableEntityBase)
-                    .type(EntityType.MOOSHROOM)
+                    .type(EntityTypes.MOOSHROOM)
                     .height(1.4f).width(0.9f)
-                    .addTranslator(MetadataTypes.INT, MooshroomEntity::setMooshroomVariant)
+                    .addTranslator(EntityDataSerializers.INT, MooshroomEntity::setMooshroomVariant)
                     .build();
             OCELOT = VanillaEntityType.inherited(OcelotEntity::new, ageableEntityBase)
-                    .type(EntityType.OCELOT)
+                    .type(EntityTypes.OCELOT)
                     .height(0.7f).width(0.6f)
-                    .addTranslator(MetadataTypes.BOOLEAN, (ocelotEntity, entityMetadata) -> ocelotEntity.setFlag(EntityFlag.TRUSTING, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue()))
+                    .addTranslator(EntityDataSerializers.BOOLEAN, (ocelotEntity, entityMetadata) -> ocelotEntity.setFlag(EntityFlag.TRUSTING, ((DataValue<Boolean>) entityMetadata).value()))
                     .build();
             PANDA = VanillaEntityType.inherited(PandaEntity::new, ageableEntityBase)
-                    .type(EntityType.PANDA)
+                    .type(EntityTypes.PANDA)
                     .height(1.25f).width(1.125f)
                     .addTranslator(null) // Unhappy counter
                     .addTranslator(null) // Sneeze counter
-                    .addTranslator(MetadataTypes.INT, PandaEntity::setEatingCounter)
-                    .addTranslator(MetadataTypes.BYTE, PandaEntity::setMainGene)
-                    .addTranslator(MetadataTypes.BYTE, PandaEntity::setHiddenGene)
-                    .addTranslator(MetadataTypes.BYTE, PandaEntity::setPandaFlags)
+                    .addTranslator(EntityDataSerializers.INT, PandaEntity::setEatingCounter)
+                    .addTranslator(EntityDataSerializers.BYTE, PandaEntity::setMainGene)
+                    .addTranslator(EntityDataSerializers.BYTE, PandaEntity::setHiddenGene)
+                    .addTranslator(EntityDataSerializers.BYTE, PandaEntity::setPandaFlags)
                     .build();
             PIG = VanillaEntityType.inherited(PigEntity::new, ageableEntityBase)
-                    .type(EntityType.PIG)
+                    .type(EntityTypes.PIG)
                     .heightAndWidth(0.9f)
                     .property(TemperatureVariantAnimal.TEMPERATE_VARIANT_PROPERTY)
-                    .addTranslator(MetadataTypes.INT, PigEntity::setBoost)
-                    .addTranslator(MetadataTypes.PIG_VARIANT, PigEntity::setVariant)
+                    .addTranslator(EntityDataSerializers.INT, PigEntity::setBoost)
+                    .addTranslator(EntityDataSerializers.PIG_VARIANT, PigEntity::setVariant)
                     .addTranslator(null) // Sound variant
                     .build();
             POLAR_BEAR = VanillaEntityType.inherited(PolarBearEntity::new, ageableEntityBase)
-                    .type(EntityType.POLAR_BEAR)
+                    .type(EntityTypes.POLAR_BEAR)
                     .height(1.4f).width(1.3f)
-                    .addTranslator(MetadataTypes.BOOLEAN, (entity, entityMetadata) -> entity.setFlag(EntityFlag.STANDING, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue()))
+                    .addTranslator(EntityDataSerializers.BOOLEAN, (entity, entityMetadata) -> entity.setFlag(EntityFlag.STANDING, ((DataValue<Boolean>) entityMetadata).value()))
                     .build();
             RABBIT = VanillaEntityType.inherited(RabbitEntity::new, ageableEntityBase)
-                    .type(EntityType.RABBIT)
+                    .type(EntityTypes.RABBIT)
                     .height(0.5f).width(0.4f)
-                    .addTranslator(MetadataTypes.INT, RabbitEntity::setRabbitVariant)
+                    .addTranslator(EntityDataSerializers.INT, RabbitEntity::setRabbitVariant)
                     .build();
             SHEEP = VanillaEntityType.inherited(SheepEntity::new, ageableEntityBase)
-                    .type(EntityType.SHEEP)
+                    .type(EntityTypes.SHEEP)
                     .height(1.3f).width(0.9f)
-                    .addTranslator(MetadataTypes.BYTE, SheepEntity::setSheepFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, SheepEntity::setSheepFlags)
                     .build();
             SNIFFER = VanillaEntityType.inherited(SnifferEntity::new, ageableEntityBase)
-                    .type(EntityType.SNIFFER)
+                    .type(EntityTypes.SNIFFER)
                     .height(1.75f).width(1.9f)
-                    .addTranslator(MetadataTypes.SNIFFER_STATE, SnifferEntity::setSnifferState)
+                    .addTranslator(EntityDataSerializers.SNIFFER_STATE, SnifferEntity::setSnifferState)
                     .addTranslator(null) // Integer, drop seed at tick
                     .build();
             STRIDER = VanillaEntityType.inherited(StriderEntity::new, ageableEntityBase)
-                    .type(EntityType.STRIDER)
+                    .type(EntityTypes.STRIDER)
                     .height(1.7f).width(0.9f)
-                    .addTranslator(MetadataTypes.INT, StriderEntity::setBoost)
-                    .addTranslator(MetadataTypes.BOOLEAN, StriderEntity::setCold)
+                    .addTranslator(EntityDataSerializers.INT, StriderEntity::setBoost)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, StriderEntity::setCold)
                     .build();
             TURTLE = VanillaEntityType.inherited(TurtleEntity::new, ageableEntityBase)
-                    .type(EntityType.TURTLE)
+                    .type(EntityTypes.TURTLE)
                     .height(0.4f).width(1.2f)
-                    .addTranslator(MetadataTypes.BOOLEAN, TurtleEntity::setPregnant)
-                    .addTranslator(MetadataTypes.BOOLEAN, TurtleEntity::setLayingEgg)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, TurtleEntity::setPregnant)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, TurtleEntity::setLayingEgg)
                     .build();
 
             // Slime entities
             EntityTypeBase<AbstractCubeEntity> cubeEntityBase = VanillaEntityType.baseInherited(AbstractCubeEntity.class, ageableEntityBase)
                     .heightAndWidth(0.51f)
-                    .addTranslator(MetadataTypes.INT, AbstractCubeEntity::setCubeScale)
+                    .addTranslator(EntityDataSerializers.INT, AbstractCubeEntity::setCubeScale)
                     .build();
 
             SLIME = VanillaEntityType.inherited(SlimeEntity::new, cubeEntityBase)
-                    .type(EntityType.SLIME)
+                    .type(EntityTypes.SLIME)
                     .build();
             MAGMA_CUBE = VanillaEntityType.inherited(MagmaCubeEntity::new, cubeEntityBase)
-                    .type(EntityType.MAGMA_CUBE)
+                    .type(EntityTypes.MAGMA_CUBE)
                     .build();
             SULFUR_CUBE = VanillaEntityType.inherited(SulfurCubeEntity::new, cubeEntityBase)
-                    .type(EntityType.SULFUR_CUBE)
+                    .type(EntityTypes.SULFUR_CUBE)
                     .property(SulfurCubeEntity.SULFUR_CUBE_ARCHETYPE_PROPERTY)
                     .heightAndWidth(0.98f)
-                    .addTranslator(MetadataTypes.INT, SulfurCubeEntity::setMaxFuse)
+                    .addTranslator(EntityDataSerializers.INT, SulfurCubeEntity::setMaxFuse)
                     .addTranslator(null) // From bucket
                     .build();
 
@@ -1162,14 +1163,14 @@ public final class VanillaEntities {
                     .addTranslator(null) // Unhappy ticks
                     .build(false);
             VILLAGER = VanillaEntityType.inherited(VillagerEntity::new, abstractVillagerEntityBase)
-                    .type(EntityType.VILLAGER)
+                    .type(EntityTypes.VILLAGER)
                     .height(1.8f).width(0.6f)
                     .bedrockIdentifier("minecraft:villager_v2")
-                    .addTranslator(MetadataTypes.VILLAGER_DATA, VillagerEntity::setVillagerData)
+                    .addTranslator(EntityDataSerializers.VILLAGER_DATA, VillagerEntity::setVillagerData)
                     .addTranslator(null) // Villager data finalized
                     .build();
             WANDERING_TRADER = VanillaEntityType.inherited(abstractVillagerEntityBase.factory(), abstractVillagerEntityBase)
-                    .type(EntityType.WANDERING_TRADER)
+                    .type(EntityTypes.WANDERING_TRADER)
                     .height(1.8f).width(0.6f)
                     .build();
         }
@@ -1177,17 +1178,17 @@ public final class VanillaEntities {
         // Water creatures (AgeableWaterCreature)
         {
             DOLPHIN = VanillaEntityType.inherited(DolphinEntity::new, ageableEntityBase)
-                .type(EntityType.DOLPHIN)
+                .type(EntityTypes.DOLPHIN)
                 .height(0.6f).width(0.9f)
                 .addTranslator(null) // "got fish"
                 .addTranslator(null) // "moistness level"
                 .build();
             SQUID = VanillaEntityType.inherited(SquidEntity::new, ageableEntityBase)
-                .type(EntityType.SQUID)
+                .type(EntityTypes.SQUID)
                 .heightAndWidth(0.8f)
                 .build();
             GLOW_SQUID = VanillaEntityType.inherited(GlowSquidEntity::new, SQUID)
-                .type(EntityType.GLOW_SQUID)
+                .type(EntityTypes.GLOW_SQUID)
                 .addTranslator(null) // Set dark ticks remaining, possible TODO
                 .build();
         }
@@ -1195,99 +1196,99 @@ public final class VanillaEntities {
         // Horses
         {
             EntityTypeBase<AbstractHorseEntity> abstractHorseEntityBase = EntityTypeBase.baseInherited(AbstractHorseEntity.class, ageableEntityBase)
-                    .addTranslator(MetadataTypes.BYTE, AbstractHorseEntity::setHorseFlags)
+                    .addTranslator(EntityDataSerializers.BYTE, AbstractHorseEntity::setHorseFlags)
                     .build();
             CAMEL = VanillaEntityType.inherited(CamelEntity::new, abstractHorseEntityBase)
-                    .type(EntityType.CAMEL)
+                    .type(EntityTypes.CAMEL)
                     .height(2.375f).width(1.7f)
-                    .addTranslator(MetadataTypes.BOOLEAN, CamelEntity::setDashing)
-                    .addTranslator(MetadataTypes.LONG, CamelEntity::setLastPoseTick)
+                    .addTranslator(EntityDataSerializers.BOOLEAN, CamelEntity::setDashing)
+                    .addTranslator(EntityDataSerializers.LONG, CamelEntity::setLastPoseTick)
                     .build();
             CAMEL_HUSK = VanillaEntityType.inherited(CamelHuskEntity::new, CAMEL)
-                    .type(EntityType.CAMEL_HUSK)
+                    .type(EntityTypes.CAMEL_HUSK)
                     .build();
             HORSE = VanillaEntityType.inherited(HorseEntity::new, abstractHorseEntityBase)
-                    .type(EntityType.HORSE)
+                    .type(EntityTypes.HORSE)
                     .height(1.6f).width(1.3965f)
-                    .addTranslator(MetadataTypes.INT, HorseEntity::setHorseVariant)
+                    .addTranslator(EntityDataSerializers.INT, HorseEntity::setHorseVariant)
                     .build();
             SKELETON_HORSE = VanillaEntityType.inherited(SkeletonHorseEntity::new, abstractHorseEntityBase)
-                    .type(EntityType.SKELETON_HORSE)
+                    .type(EntityTypes.SKELETON_HORSE)
                     .height(1.6f).width(1.3965f)
                     .build();
             ZOMBIE_HORSE = VanillaEntityType.inherited(ZombieHorseEntity::new, abstractHorseEntityBase)
-                    .type(EntityType.ZOMBIE_HORSE)
+                    .type(EntityTypes.ZOMBIE_HORSE)
                     .height(1.6f).width(1.3965f)
                     .build();
             EntityTypeBase<ChestedHorseEntity> chestedHorseEntityBase = EntityTypeBase.baseInherited(ChestedHorseEntity.class, abstractHorseEntityBase)
-                    .addTranslator(MetadataTypes.BOOLEAN, (horseEntity, entityMetadata) -> horseEntity.setFlag(EntityFlag.CHESTED, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue()))
+                    .addTranslator(EntityDataSerializers.BOOLEAN, (horseEntity, entityMetadata) -> horseEntity.setFlag(EntityFlag.CHESTED, ((DataValue<Boolean>) entityMetadata).value()))
                     .build();
             DONKEY = VanillaEntityType.inherited(ChestedHorseEntity::new, chestedHorseEntityBase)
-                    .type(EntityType.DONKEY)
+                    .type(EntityTypes.DONKEY)
                     .height(1.6f).width(1.3965f)
                     .build();
             MULE = VanillaEntityType.inherited(ChestedHorseEntity::new, chestedHorseEntityBase)
-                    .type(EntityType.MULE)
+                    .type(EntityTypes.MULE)
                     .height(1.6f).width(1.3965f)
                     .build();
             LLAMA = VanillaEntityType.inherited(LlamaEntity::new, chestedHorseEntityBase)
-                    .type(EntityType.LLAMA)
+                    .type(EntityTypes.LLAMA)
                     .height(1.87f).width(0.9f)
                     .bedrockDefinition(BedrockEntityDefinitions.LLAMA)
-                    .addTranslator(MetadataTypes.INT, LlamaEntity::setStrength)
-                    .addTranslator(MetadataTypes.INT, (entity, entityMetadata) -> entity.getMetadata().put(EntityDataTypes.VARIANT, entityMetadata.getValue()))
+                    .addTranslator(EntityDataSerializers.INT, LlamaEntity::setStrength)
+                    .addTranslator(EntityDataSerializers.INT, (entity, entityMetadata) -> entity.getMetadata().put(EntityDataTypes.VARIANT, entityMetadata.value()))
                     .build();
             TRADER_LLAMA = VanillaEntityType.inherited(TraderLlamaEntity::new, LLAMA)
-                    .type(EntityType.TRADER_LLAMA)
+                    .type(EntityTypes.TRADER_LLAMA)
                     .bedrockDefinition(BedrockEntityDefinitions.LLAMA)
                     .build();
         }
 
         EntityTypeBase<TameableEntity> tameableEntityBase = EntityTypeBase.baseInherited(TameableEntity.class, ageableEntityBase)
-                .addTranslator(MetadataTypes.BYTE, TameableEntity::setTameableFlags)
-                .addTranslator(MetadataTypes.OPTIONAL_LIVING_ENTITY_REFERENCE, TameableEntity::setOwner)
+                .addTranslator(EntityDataSerializers.BYTE, TameableEntity::setTameableFlags)
+                .addTranslator(EntityDataSerializers.OPTIONAL_LIVING_ENTITY_REFERENCE, TameableEntity::setOwner)
                 .build();
 
         {
             EntityTypeBase<AbstractNautilusEntity> abstractNautilusBase = EntityTypeBase.<AbstractNautilusEntity>baseInherited(null, tameableEntityBase) // No factory, is abstract
                 .width(0.95f).height(0.875f)
-                .addTranslator(MetadataTypes.BOOLEAN, AbstractNautilusEntity::setDashing)
+                .addTranslator(EntityDataSerializers.BOOLEAN, AbstractNautilusEntity::setDashing)
                 .build();
 
             NAUTILUS = VanillaEntityType.inherited(NautilusEntity::new, abstractNautilusBase)
-                .type(EntityType.NAUTILUS)
+                .type(EntityTypes.NAUTILUS)
                 .build();
 
             ZOMBIE_NAUTILUS = VanillaEntityType.inherited(ZombieNautilusEntity::new, abstractNautilusBase)
-                .type(EntityType.ZOMBIE_NAUTILUS)
+                .type(EntityTypes.ZOMBIE_NAUTILUS)
                 .property(ZombieNautilusEntity.VARIANT_ENUM_PROPERTY)
-                .addTranslator(MetadataTypes.ZOMBIE_NAUTILUS_VARIANT, ZombieNautilusEntity::setVariant)
+                .addTranslator(EntityDataSerializers.ZOMBIE_NAUTILUS_VARIANT, ZombieNautilusEntity::setVariant)
                 .build();
         }
 
         CAT = VanillaEntityType.inherited(CatEntity::new, tameableEntityBase)
-                .type(EntityType.CAT)
+                .type(EntityTypes.CAT)
                 .height(0.35f).width(0.3f)
-                .addTranslator(MetadataTypes.CAT_VARIANT, CatEntity::setVariant)
-                .addTranslator(MetadataTypes.BOOLEAN, CatEntity::setResting)
+                .addTranslator(EntityDataSerializers.CAT_VARIANT, CatEntity::setVariant)
+                .addTranslator(EntityDataSerializers.BOOLEAN, CatEntity::setResting)
                 .addTranslator(null) // "resting state one" //TODO
-                .addTranslator(MetadataTypes.INT, CatEntity::setCollarColor)
+                .addTranslator(EntityDataSerializers.INT, CatEntity::setCollarColor)
                 .addTranslator(null) // Sound variant
                 .build();
         PARROT = VanillaEntityType.inherited(ParrotEntity::new, tameableEntityBase)
-                .type(EntityType.PARROT)
+                .type(EntityTypes.PARROT)
                 .height(0.9f).width(0.5f)
-                .addTranslator(MetadataTypes.INT, (parrotEntity, entityMetadata) -> parrotEntity.getMetadata().put(EntityDataTypes.VARIANT, entityMetadata.getValue())) // Parrot color
+                .addTranslator(EntityDataSerializers.INT, (parrotEntity, entityMetadata) -> parrotEntity.getMetadata().put(EntityDataTypes.VARIANT, entityMetadata.value())) // Parrot color
                 .build();
         WOLF = VanillaEntityType.inherited(WolfEntity::new, tameableEntityBase)
-                .type(EntityType.WOLF)
+                .type(EntityTypes.WOLF)
                 .height(0.85f).width(0.6f)
                 .property(WolfEntity.SOUND_VARIANT)
                 // "Begging" on wiki.vg, "Interested" in Nukkit - the tilt of the head
-                .addTranslator(MetadataTypes.BOOLEAN, (wolfEntity, entityMetadata) -> wolfEntity.setFlag(EntityFlag.INTERESTED, ((BooleanEntityMetadata) entityMetadata).getPrimitiveValue()))
-                .addTranslator(MetadataTypes.INT, WolfEntity::setCollarColor)
-                .addTranslator(MetadataTypes.LONG, WolfEntity::setWolfAngerTime)
-                .addTranslator(MetadataTypes.WOLF_VARIANT, WolfEntity::setVariant)
+                .addTranslator(EntityDataSerializers.BOOLEAN, (wolfEntity, entityMetadata) -> wolfEntity.setFlag(EntityFlag.INTERESTED, ((DataValue<Boolean>) entityMetadata).value()))
+                .addTranslator(EntityDataSerializers.INT, WolfEntity::setCollarColor)
+                .addTranslator(EntityDataSerializers.LONG, WolfEntity::setWolfAngerTime)
+                .addTranslator(EntityDataSerializers.WOLF_VARIANT, WolfEntity::setVariant)
                 .addTranslator(null) // sound variant; these aren't clientsided anyways... right??
                 .build();
 

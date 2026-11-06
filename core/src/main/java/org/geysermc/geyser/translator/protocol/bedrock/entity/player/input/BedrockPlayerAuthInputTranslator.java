@@ -51,15 +51,13 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.CooldownUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.Pose;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.PlayerState;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.ServerboundClientTickEndPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.level.ServerboundMoveVehiclePacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerAbilitiesPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPlayerCommandPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundPunchPacket;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.player.ServerboundSpectatorActionPacket;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.level.GameType;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.network.protocol.game.ServerboundClientTickEndPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ServerboundPunchPacket;
+import net.minecraft.network.protocol.game.ServerboundSpectatorActionPacket;
 
 import java.util.HashSet;
 import java.util.List;
@@ -108,7 +106,7 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                 case START_SPRINTING -> {
                     if (!leftOverInputData.contains(PlayerAuthInputData.STOP_SPRINTING)) {
                         if (!session.isSprinting()) {
-                            sprintPacket = new ServerboundPlayerCommandPacket(entity.javaId(), PlayerState.START_SPRINTING);
+                            sprintPacket = org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerCommand(entity.javaId(), ServerboundPlayerCommandPacket.Action.START_SPRINTING);
                             session.setSprinting(true);
                         }
                     }
@@ -116,13 +114,13 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                 case STOP_SPRINTING -> {
                     // Don't send sprinting update when we weren't sprinting
                     if (!leftOverInputData.contains(PlayerAuthInputData.START_SPRINTING) && session.isSprinting()) {
-                        sprintPacket = new ServerboundPlayerCommandPacket(entity.javaId(), PlayerState.STOP_SPRINTING);
+                        sprintPacket = org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerCommand(entity.javaId(), ServerboundPlayerCommandPacket.Action.STOP_SPRINTING);
                         session.setSprinting(false);
                     }
                 }
                 case START_FLYING -> { // Since 1.20.30
                     if (session.isCanFly()) {
-                        if (session.getGameMode() == GameMode.SPECTATOR) {
+                        if (session.getGameMode() == GameType.SPECTATOR) {
                             // should already be flying
                             session.sendAdventureSettings();
                             break;
@@ -136,7 +134,7 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                         }
 
                         session.setFlying(true);
-                        session.sendDownstreamGamePacket(new ServerboundPlayerAbilitiesPacket(true));
+                        session.sendDownstreamGamePacket(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerAbilities(true));
                     } else {
                         // Stop flying & remind the client about not trying to fly :)
                         session.setFlying(false);
@@ -145,7 +143,7 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                 }
                 case STOP_FLYING -> {
                     session.setFlying(false);
-                    session.sendDownstreamGamePacket(new ServerboundPlayerAbilitiesPacket(false));
+                    session.sendDownstreamGamePacket(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerAbilities(false));
                 }
                 case START_GLIDING -> {
                     // Bedrock can send both start_glide and stop_glide in the same packet.
@@ -156,10 +154,10 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                             // On Java you can't start gliding while flying
                             if (session.isFlying()) {
                                 session.setFlying(false);
-                                session.sendDownstreamGamePacket(new ServerboundPlayerAbilitiesPacket(false));
+                                session.sendDownstreamGamePacket(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerAbilities(false));
                             }
                             entity.setFlag(EntityFlag.GLIDING, true);
-                            session.sendDownstreamGamePacket(new ServerboundPlayerCommandPacket(entity.getEntityId(), PlayerState.START_ELYTRA_FLYING));
+                            session.sendDownstreamGamePacket(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerCommand(entity.getEntityId(), ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
                         } else {
                             entity.forceFlagUpdate();
                             entity.setFlag(EntityFlag.GLIDING, false);
@@ -182,7 +180,7 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                 case MISSED_SWING -> {
                     session.setLastAirHitTick(session.getTicks());
 
-                    if (session.getGameMode() == GameMode.SPECTATOR) {
+                    if (session.getGameMode() == GameType.SPECTATOR) {
                         session.sendDownstreamGamePacket(new ServerboundSpectatorActionPacket(OptionalInt.empty()));
                     } else if (session.getArmAnimationTicks() != 0 && session.getArmAnimationTicks() != 1) {
                         session.sendDownstreamGamePacket(ServerboundPunchPacket.INSTANCE);
@@ -297,8 +295,8 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
                 // Jump released
                 // Yes, I'm fairly certain that entity ID is correct.
                 int finalVehicleJumpStrength = GenericMath.floor(session.getInputCache().getJumpScale() * 100f);
-                session.sendDownstreamGamePacket(new ServerboundPlayerCommandPacket(session.getPlayerEntity().getEntityId(),
-                    PlayerState.START_HORSE_JUMP, finalVehicleJumpStrength));
+                session.sendDownstreamGamePacket(org.geysermc.geyser.vanilla.protocol.VanillaPacketAccess.playerCommand(session.getPlayerEntity().getEntityId(),
+                    ServerboundPlayerCommandPacket.Action.START_RIDING_JUMP, finalVehicleJumpStrength));
                 session.getInputCache().setJumpingTicks(-10);
                 session.getPlayerEntity().setVehicleJumpStrength(finalVehicleJumpStrength);
 
@@ -350,11 +348,7 @@ public final class BedrockPlayerAuthInputTranslator extends PacketTranslator<Pla
             }
 
             vehicle.setPosition(vehiclePosition);
-            ServerboundMoveVehiclePacket moveVehiclePacket = new ServerboundMoveVehiclePacket(
-                vehiclePosition.toDouble(),
-                vehicle instanceof BoatEntity ? vehicleRotation.getY() - 90 : vehicleRotation.getY(), vehiclePosition.getX(),
-                vehicle.isOnGround()
-            );
+            ServerboundMoveVehiclePacket moveVehiclePacket = new ServerboundMoveVehiclePacket(net.minecraft.core.PositionAndRotation.of(org.geysermc.geyser.util.MathUtils.toVec3(vehiclePosition.toDouble()), vehicle instanceof BoatEntity ? vehicleRotation.getY() - 90 : vehicleRotation.getY(), vehiclePosition.getX()), vehicle.isOnGround());
             session.sendDownstreamGamePacket(moveVehiclePacket);
         }
     }

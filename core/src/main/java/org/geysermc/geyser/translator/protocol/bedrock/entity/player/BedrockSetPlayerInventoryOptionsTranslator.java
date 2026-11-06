@@ -25,9 +25,9 @@
 
 package org.geysermc.geyser.translator.protocol.bedrock.entity.player;
 
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.GameMode;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.CraftingBookStateType;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundRecipeBookChangeSettingsPacket;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.inventory.RecipeBookType;
+import net.minecraft.network.protocol.game.ServerboundRecipeBookChangeSettingsPacket;
 import org.cloudburstmc.protocol.bedrock.data.inventory.InventoryTabLeft;
 import org.cloudburstmc.protocol.bedrock.data.inventory.InventoryTabRight;
 import org.cloudburstmc.protocol.bedrock.packet.SetPlayerInventoryOptionsPacket;
@@ -44,7 +44,7 @@ public class BedrockSetPlayerInventoryOptionsTranslator extends PacketTranslator
 
         // This should ensure that we never send these packets when the player inventory is opened while in creative
         // Java edition can't craft in the 2x2 grid in creative, and subsequently doesn't have a recipe book
-        if (session.getGameMode() == GameMode.CREATIVE && session.getPlayerInventoryHolder() == session.getInventoryHolder()) {
+        if (session.getGameMode() == GameType.CREATIVE && session.getPlayerInventoryHolder() == session.getInventoryHolder()) {
             return;
         }
 
@@ -52,7 +52,7 @@ public class BedrockSetPlayerInventoryOptionsTranslator extends PacketTranslator
         boolean bookOpen = isBookOpen(packet.getLeftTab(), packet.getRightTab());
 
         // Hardcoded to crafting; bedrock does not have any furnace recipe books
-        session.sendDownstreamPacket(new ServerboundRecipeBookChangeSettingsPacket(CraftingBookStateType.CRAFTING, bookOpen, filtered));
+        session.sendDownstreamPacket(new ServerboundRecipeBookChangeSettingsPacket(RecipeBookType.CRAFTING, bookOpen, filtered));
     }
 
     private boolean isBookOpen(InventoryTabLeft leftTab, InventoryTabRight rightTab) {

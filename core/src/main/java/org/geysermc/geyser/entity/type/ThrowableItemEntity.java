@@ -25,12 +25,13 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataTypes;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Used as a class for any projectile entity that looks like an item
@@ -86,6 +87,6 @@ public class ThrowableItemEntity extends ProjectileEntity {
         invisible = value;
     }
 
-    public void setItem(EntityMetadata<ItemStack, ?> entityMetadata) {
+    public void setItem(DataValue<ItemStack> entityMetadata) {
     }
 }

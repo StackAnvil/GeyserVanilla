@@ -30,7 +30,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.translator.text.MessageTranslator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.title.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 
 @Translator(packet = ClientboundSetSubtitleTextPacket.class)
 public class JavaSetSubtitleTextTranslator extends PacketTranslator<ClientboundSetSubtitleTextPacket> {
@@ -38,10 +38,10 @@ public class JavaSetSubtitleTextTranslator extends PacketTranslator<ClientboundS
     @Override
     public void translate(GeyserSession session, ClientboundSetSubtitleTextPacket packet) {
         String text;
-        if (packet.getText() == null) { //TODO 1.17 can this happen?
+        if (packet.text() == null) { //TODO 1.17 can this happen?
             text = " ";
         } else {
-            text = MessageTranslator.convertMessage(packet.getText(), session.locale());
+            text = MessageTranslator.convertMessage(packet.text(), session.locale());
         }
 
         SetTitlePacket titlePacket = new SetTitlePacket();

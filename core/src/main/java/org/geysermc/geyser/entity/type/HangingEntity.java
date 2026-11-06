@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.entity.type;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.EntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.object.Direction;
+import net.minecraft.core.Direction;
 
 public abstract class HangingEntity extends Entity {
 
@@ -35,8 +36,8 @@ public abstract class HangingEntity extends Entity {
         super(context);
     }
 
-    public void setDirectionMetadata(EntityMetadata<Direction, ?> direction) {
-        setDirection(direction.getValue());
+    public void setDirectionMetadata(DataValue<Direction> direction) {
+        setDirection(direction.value());
     }
 
     public abstract void setDirection(Direction direction);

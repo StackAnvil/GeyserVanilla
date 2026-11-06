@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.monster;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.spawn.EntitySpawnContext;
@@ -32,8 +34,7 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.util.InteractionResult;
 import org.geysermc.geyser.util.InteractiveTag;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.BooleanEntityMetadata;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.player.Hand;
+import net.minecraft.world.InteractionHand;
 
 public class BoggedEntity extends AbstractSkeletonEntity {
     private boolean sheared = false;
@@ -42,13 +43,13 @@ public class BoggedEntity extends AbstractSkeletonEntity {
         super(context);
     }
 
-    public void setSheared(BooleanEntityMetadata entityMetadata) {
-        this.sheared = entityMetadata.getPrimitiveValue();
+    public void setSheared(DataValue<Boolean> entityMetadata) {
+        this.sheared = entityMetadata.value();
         setFlag(EntityFlag.SHEARED, this.sheared);
     }
 
     @Override
-    protected @NonNull InteractiveTag testMobInteraction(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected @NonNull InteractiveTag testMobInteraction(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(Items.SHEARS) && readyForShearing()) {
             return InteractiveTag.SHEAR;
         }
@@ -56,7 +57,7 @@ public class BoggedEntity extends AbstractSkeletonEntity {
     }
 
     @Override
-    protected @NonNull InteractionResult mobInteract(@NonNull Hand hand, @NonNull GeyserItemStack itemInHand) {
+    protected @NonNull InteractionResult mobInteract(@NonNull InteractionHand hand, @NonNull GeyserItemStack itemInHand) {
         if (itemInHand.is(Items.SHEARS) && readyForShearing()) {
             return InteractionResult.SUCCESS;
         }

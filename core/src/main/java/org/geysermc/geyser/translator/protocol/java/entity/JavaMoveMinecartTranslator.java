@@ -30,15 +30,15 @@ import org.geysermc.geyser.entity.type.MinecartEntity;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
-import org.geysermc.mcprotocollib.protocol.packet.ingame.clientbound.entity.ClientboundMoveMinecartPacket;
+import net.minecraft.network.protocol.game.ClientboundMoveMinecartPacket;
 
 @Translator(packet = ClientboundMoveMinecartPacket.class)
 public class JavaMoveMinecartTranslator extends PacketTranslator<ClientboundMoveMinecartPacket> {
 
     @Override
     public void translate(GeyserSession session, ClientboundMoveMinecartPacket packet) {
-        if (!packet.getLerpSteps().isEmpty()) {
-            Entity entity = session.getEntityCache().getEntityByJavaId(packet.getEntityId());
+        if (!packet.lerpSteps().isEmpty()) {
+            Entity entity = session.getEntityCache().getEntityByJavaId(packet.entityId());
             if (entity instanceof MinecartEntity minecart) {
                 minecart.handleMinecartMovePacket(packet);
             }

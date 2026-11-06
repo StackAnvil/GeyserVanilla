@@ -37,8 +37,8 @@ import org.geysermc.geyser.inventory.click.ClickPlan;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.item.ItemTranslator;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.ContainerType;
-import org.geysermc.mcprotocollib.protocol.data.game.item.component.DataComponentTypes;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.core.component.DataComponents;
 import org.jetbrains.annotations.Range;
 
 import java.util.Arrays;
@@ -73,7 +73,7 @@ public abstract class Inventory {
      * Used for smooth transitions between two windows of the same type.
      */
     @Getter
-    protected final @Nullable ContainerType containerType;
+    protected final @Nullable MenuType<?> containerType;
 
     @Getter
     protected final String title;
@@ -102,11 +102,11 @@ public abstract class Inventory {
     @Setter
     private boolean displayed;
 
-    protected Inventory(GeyserSession session, int id, int size, @Nullable ContainerType containerType) {
+    protected Inventory(GeyserSession session, int id, int size, @Nullable MenuType<?> containerType) {
         this(session, "Inventory", id, size, containerType);
     }
 
-    protected Inventory(GeyserSession session, String title, int javaId, int size, @Nullable ContainerType containerType) {
+    protected Inventory(GeyserSession session, String title, int javaId, int size, @Nullable MenuType<?> containerType) {
         this.javaId = javaId;
         this.size = size;
         this.containerType = containerType;
@@ -150,7 +150,7 @@ public abstract class Inventory {
 
         // Lodestone caching
         if (newItem.is(Items.COMPASS)) {
-            var tracker = newItem.getComponent(DataComponentTypes.LODESTONE_TRACKER);
+            var tracker = newItem.getComponent(DataComponents.LODESTONE_TRACKER);
             if (tracker != null) {
                 session.getLodestoneCache().cacheInventoryItem(newItem, tracker);
             }
@@ -188,7 +188,7 @@ public abstract class Inventory {
     }
 
     /**
-     * Whether we should be sending a {@link org.geysermc.mcprotocollib.protocol.packet.ingame.serverbound.inventory.ServerboundContainerClosePacket}
+     * Whether we should be sending a {@link net.minecraft.network.protocol.game.ServerboundContainerClosePacket}
      * when closing the inventory.
      */
     public boolean shouldConfirmContainerClose() {

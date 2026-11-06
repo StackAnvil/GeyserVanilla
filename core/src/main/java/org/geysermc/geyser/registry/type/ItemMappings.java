@@ -44,7 +44,7 @@ import org.geysermc.geyser.inventory.GeyserItemStack;
 import org.geysermc.geyser.inventory.item.StoredItemMappings;
 import org.geysermc.geyser.item.Items;
 import org.geysermc.geyser.item.type.Item;
-import org.geysermc.mcprotocollib.protocol.data.game.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 import java.util.Map;
@@ -103,7 +103,7 @@ public class ItemMappings implements DefinitionRegistry<ItemDefinition> {
      */
     @NonNull
     public ItemMapping getMapping(@NonNull ItemStack itemStack) {
-        return this.getMapping(itemStack.getId());
+        return this.getMapping(org.geysermc.geyser.vanilla.protocol.VanillaItems.id(itemStack));
     }
 
     /**

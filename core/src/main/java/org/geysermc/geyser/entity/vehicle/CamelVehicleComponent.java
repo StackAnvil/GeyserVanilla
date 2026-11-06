@@ -31,7 +31,7 @@ import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.entity.EntityFlag;
 import org.geysermc.geyser.entity.type.living.animal.horse.CamelEntity;
 import org.geysermc.geyser.entity.type.player.SessionPlayerEntity;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.Effect;
+import org.geysermc.geyser.level.EffectType;
 
 public class CamelVehicleComponent extends VehicleComponent<CamelEntity> {
     private static final int STANDING_TICKS = 52;
@@ -133,8 +133,8 @@ public class CamelVehicleComponent extends VehicleComponent<CamelEntity> {
     }
 
     @Override
-    public void setEffect(Effect effect, int effectAmplifier) {
-        if (effect == Effect.JUMP_BOOST) {
+    public void setEffect(EffectType effect, int effectAmplifier) {
+        if (effect == EffectType.JUMP_BOOST) {
             effectJumpBoost = effectAmplifier + 1;
         } else {
             super.setEffect(effect, effectAmplifier);
@@ -142,8 +142,8 @@ public class CamelVehicleComponent extends VehicleComponent<CamelEntity> {
     }
 
     @Override
-    public void removeEffect(Effect effect) {
-        if (effect == Effect.JUMP_BOOST) {
+    public void removeEffect(EffectType effect) {
+        if (effect == EffectType.JUMP_BOOST) {
             effectJumpBoost = 0;
         } else {
             super.removeEffect(effect);

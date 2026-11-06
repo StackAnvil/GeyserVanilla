@@ -25,6 +25,8 @@
 
 package org.geysermc.geyser.entity.type.living.animal;
 
+import net.minecraft.network.syncher.SynchedEntityData.DataValue;
+
 import net.kyori.adventure.key.Key;
 import org.geysermc.geyser.registry.java.JavaRegistries;
 import org.geysermc.geyser.registry.java.reader.JavaRegistryReaders;
@@ -32,7 +34,6 @@ import org.geysermc.geyser.registry.java.reader.KeyDependentJavaRegistryReader;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.registry.java.JavaRegistryKey;
 import org.geysermc.geyser.util.MinecraftKey;
-import org.geysermc.mcprotocollib.protocol.data.game.entity.metadata.type.IntEntityMetadata;
 
 import java.util.Locale;
 
@@ -49,8 +50,9 @@ import java.util.Locale;
  */
 public interface VariantHolder<BedrockVariant extends VariantHolder.BuiltIn> {
 
-    default void setVariant(IntEntityMetadata variant) {
-        setVariantFromJavaId(variant.getPrimitiveValue());
+    default void setVariant(DataValue<? extends net.minecraft.core.Holder<?>> variant) {
+        var key = variant.value().unwrapKey().orElseThrow().identifier();
+        setBedrockVariant(variantRegistry().getOrThrow(getSession().javaRegistries(), MinecraftKey.vanillaToKey(key)));
     }
 
     /**

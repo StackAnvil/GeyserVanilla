@@ -32,8 +32,8 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
 import org.geysermc.geyser.translator.protocol.Translator;
 import org.geysermc.geyser.util.StructureBlockUtils;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.UpdateStructureBlockAction;
-import org.geysermc.mcprotocollib.protocol.data.game.inventory.UpdateStructureBlockMode;
+import net.minecraft.world.level.block.entity.StructureBlockEntity.UpdateType;
+import net.minecraft.world.level.block.state.properties.StructureMode;
 
 @Translator(packet = StructureBlockUpdatePacket.class)
 public class BedrockStructureBlockUpdateTranslator extends PacketTranslator<StructureBlockUpdatePacket> {
@@ -42,20 +42,20 @@ public class BedrockStructureBlockUpdateTranslator extends PacketTranslator<Stru
     public void translate(GeyserSession session, StructureBlockUpdatePacket packet) {
         StructureEditorData data = packet.getEditorData();
 
-        UpdateStructureBlockAction action = UpdateStructureBlockAction.UPDATE_DATA;
+        UpdateType action = UpdateType.UPDATE_DATA;
         if (packet.isPowered()) {
             if (data.getType() == StructureBlockType.LOAD) {
-                action = UpdateStructureBlockAction.LOAD_STRUCTURE;
+                action = UpdateType.LOAD_AREA;
             } else if (data.getType() == StructureBlockType.SAVE) {
-                action = UpdateStructureBlockAction.SAVE_STRUCTURE;
+                action = UpdateType.SAVE_AREA;
             }
         }
 
-        UpdateStructureBlockMode mode = switch (data.getType()) {
-            case CORNER -> UpdateStructureBlockMode.CORNER;
-            case DATA -> UpdateStructureBlockMode.DATA;
-            case LOAD -> UpdateStructureBlockMode.LOAD;
-            default -> UpdateStructureBlockMode.SAVE;
+        StructureMode mode = switch (data.getType()) {
+            case CORNER -> StructureMode.CORNER;
+            case DATA -> StructureMode.DATA;
+            case LOAD -> StructureMode.LOAD;
+            default -> StructureMode.SAVE;
         };
 
         StructureBlockUtils.sendJavaStructurePacket(session, packet.getBlockPosition(), data.getSettings().getSize(), mode, action, data.getSettings(),
