@@ -11,6 +11,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.RegistrySynchronization;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket;
 import net.minecraft.network.protocol.configuration.ClientboundRegistryDataPacket;
 import net.minecraft.resources.RegistryDataLoader;
@@ -19,6 +20,7 @@ import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.tags.TagKey;
 import net.minecraft.tags.TagLoader;
 import net.minecraft.tags.TagNetworkSerialization.NetworkPayload;
+import net.minecraft.world.item.Item;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,14 +79,20 @@ public final class VanillaRegistryContext {
             registries = new RegistryAccess.ImmutableRegistryAccess(Stream.concat(staticAccess.registries(), remote.registries())).freeze();
         }
 
-        BuiltInRegistries.DATA_COMPONENT_INITIALIZERS.build(registries).forEach(pending -> pending.apply());
+        VanillaCustomItems.initializeComponents(registries);
         return registries;
     }
 
+    @SuppressWarnings("unchecked")
     private <T> Registry<T> copyStaticRegistry(Registry<T> original) {
-        MappedRegistry<T> copy = new MappedRegistry<>(original.key(), original.registryLifecycle());
-        original.listElements().forEach(holder -> copy.register(holder.key(), holder.value(),
-            original.registrationInfo(holder.key()).orElse(RegistrationInfo.BUILT_IN)));
+        MappedRegistry<T> copy;
+        if (original.key().equals(Registries.ITEM)) {
+            copy = (MappedRegistry<T>) VanillaCustomItems.registry((Registry<Item>) original);
+        } else {
+            copy = new MappedRegistry<>(original.key(), original.registryLifecycle());
+            original.listElements().forEach(holder -> copy.register(holder.key(), holder.value(),
+                original.registrationInfo(holder.key()).orElse(RegistrationInfo.BUILT_IN)));
+        }
         NetworkPayload networkTags = tags.get(original.key());
         if (networkTags != null) {
             copy.bindTags(TagLoader.loadTagsFromNetwork(networkTags, copy));

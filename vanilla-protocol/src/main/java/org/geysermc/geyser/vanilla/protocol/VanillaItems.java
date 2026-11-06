@@ -6,7 +6,6 @@ package org.geysermc.geyser.vanilla.protocol;
 
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponentPatch;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.ItemStack;
 
@@ -15,7 +14,7 @@ public final class VanillaItems {
     }
 
     public static int id(ItemStack stack) {
-        return BuiltInRegistries.ITEM.getId(stack.getItem());
+        return VanillaCustomItems.id(stack.getItem());
     }
 
     public static ItemStack stack(RegistryAccess registries, int id, int count, GeyserDataComponents components) {
