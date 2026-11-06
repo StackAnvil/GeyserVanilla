@@ -25,295 +25,101 @@
 
 package org.geysermc.geyser.util;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.network.bedrock.GameProtocol;
 import org.geysermc.geyser.text.GeyserLocale;
+import org.geysermc.geyser.vanilla.protocol.VanillaBootstrap;
+import org.geysermc.geyser.vanilla.runtime.VanillaRuntime;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.zip.ZipFile;
 
-/**
- * Implementation note: try to design processes to fail softly if the client jar can't be downloaded,
- * either if Mojang is down or internet access to Mojang is spotty.
- */
+/** Loads local assets from the verified client and indexes additional language downloads. */
 public final class AssetUtils {
     private static final String CLIENT_JAR_HASH_FILE = "client_jar.hash";
-
-    private static final Map<String, Asset> ASSET_MAP = new HashMap<>();
-
-    private static VersionDownload CLIENT_JAR_INFO;
-
+    private static volatile Map<String, Asset> assetMap = Map.of();
     private static final Queue<ClientJarTask> CLIENT_JAR_TASKS = new ArrayDeque<>();
-    /**
-     * Download the client jar even if the hash is correct
-     */
-    private static boolean FORCE_DOWNLOAD_JAR = false;
+    private static boolean extractClientAssets;
 
     public static Asset getAsset(String name) {
-        return ASSET_MAP.get(name);
+        return assetMap.get(name);
     }
 
     public static boolean isAssetKnown(String name) {
-        return ASSET_MAP.containsKey(name);
+        return assetMap.containsKey(name);
     }
 
-    /**
-     * Add task to be ran after the client jar is downloaded or found to be cached.
-     *
-     * @param required if set to true, the client jar will always be downloaded, even if a pre-existing hash is matched.
-     *                 This means an asset or texture is missing.
-     */
+    /** Queues extraction from the local client when an asset is missing or the client changed. */
     public static void addTask(boolean required, ClientJarTask task) {
         CLIENT_JAR_TASKS.add(task);
-        FORCE_DOWNLOAD_JAR |= required;
+        extractClientAssets |= required;
     }
 
-    /**
-     * Fetch the latest versions asset cache from Mojang so we can grab the locale files later
-     */
-    public static CompletableFuture<Void> generateAssetCache() {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // Get the version manifest from Mojang
-                VersionManifest versionManifest = GeyserImpl.GSON.fromJson(
-                        WebUtils.getBody("https://launchermeta.mojang.com/mc/game/version_manifest.json"), VersionManifest.class);
-
-                // Get the url for the latest version of the games manifest
-                String latestInfoURL = "";
-                for (Version version : versionManifest.getVersions()) {
-                    if (version.getId().equals(GameProtocol.getJavaMinecraftVersion())) {
-                        latestInfoURL = version.getUrl();
-                        break;
-                    }
-                }
-
-                // Make sure we definitely got a version
-                if (latestInfoURL.isEmpty()) {
-                    throw new Exception(GeyserLocale.getLocaleStringLog("geyser.locale.fail.latest_version"));
-                }
-
-                // Get the individual version manifest
-                VersionInfo versionInfo = GeyserImpl.GSON.fromJson(WebUtils.getBody(latestInfoURL), VersionInfo.class);
-
-                // Get the client jar for use when downloading the en_us locale
-                GeyserImpl.getInstance().getLogger().debug(versionInfo.getDownloads()); // Was previously a Jackson call for writeValueToString
-                CLIENT_JAR_INFO = versionInfo.getDownloads().get("client");
-                GeyserImpl.getInstance().getLogger().debug(CLIENT_JAR_INFO); // Was previously a Jackson call for writeValueToString
-
-                // Get the assets list
-                JsonObject assets = ((JsonObject) new JsonParser().parse(WebUtils.getBody(versionInfo.getAssetIndex().getUrl()))).getAsJsonObject("objects");
-
-                // Put each asset into an array for use later
-                for (Map.Entry<String, JsonElement> entry : assets.entrySet()) {
-                    if (!entry.getKey().startsWith("minecraft/lang/")) {
-                        // No need to cache non-language assets as we don't use them
-                        continue;
-                    }
-
-                    Asset asset = GeyserImpl.GSON.fromJson(entry.getValue(), Asset.class);
-                    ASSET_MAP.put(entry.getKey(), asset);
-                }
-
-            } catch (Exception e) {
-                GeyserImpl.getInstance().getLogger().error(GeyserLocale.getLocaleStringLog("geyser.locale.fail.asset_cache", (!e.getMessage().isEmpty() ? e.getMessage() : e.getStackTrace())));
-            }
-            return null;
-        });
+    public static AssetIndexLoader generateAssetCache() {
+        return new AssetIndexLoader(URI.create("https://launchermeta.mojang.com/mc/game/version_manifest.json"),
+            GameProtocol.getJavaMinecraftVersion(), WebUtils.getUserAgent(), assets -> assetMap = assets,
+            failure -> GeyserImpl.getInstance().getLogger().error(
+                GeyserLocale.getLocaleStringLog("geyser.locale.fail.asset_cache", failure.toString()), failure));
     }
 
-    public static void downloadAndRunClientJarTasks() {
-        if (CLIENT_JAR_INFO == null) {
-            // Likely failed to download
-            GeyserImpl.getInstance().getLogger().debug("Skipping en_US hash check as client jar is null.");
-            return;
-        }
-
-        if (!FORCE_DOWNLOAD_JAR) { // Don't bother checking the hash if we need to download new files anyway.
-            String curHash = null;
-            try {
-                File hashFile = GeyserImpl.getInstance().getBootstrap().getConfigFolder().resolve("cache").resolve(CLIENT_JAR_HASH_FILE).toFile();
-                if (hashFile.exists()) {
-                    try (BufferedReader br = new BufferedReader(new FileReader(hashFile))) {
-                        curHash = br.readLine().trim();
-                    }
-                }
-            } catch (IOException ignored) { }
-            String targetHash = CLIENT_JAR_INFO.getSha1();
-            if (targetHash.equals(curHash)) {
-                // Just run all tasks - no new download required
-                ClientJarTask task;
-                while ((task = CLIENT_JAR_TASKS.poll()) != null) {
-                    task.whenDone.run();
-                }
-                return;
-            }
-        }
-
+    public static void runClientJarTasks() {
+        Path cache = GeyserImpl.getInstance().getBootstrap().getConfigFolder().resolve("cache");
         try {
-            // Let the user know we are downloading the JAR
-            GeyserImpl.getInstance().getLogger().info(GeyserLocale.getLocaleStringLog("geyser.locale.download.en_us"));
-            GeyserImpl.getInstance().getLogger().debug("Download URL: " + CLIENT_JAR_INFO.getUrl());
-
-            Path tmpFilePath = GeyserImpl.getInstance().getBootstrap().getConfigFolder().resolve("tmp_locale.jar");
-            WebUtils.downloadFile(CLIENT_JAR_INFO.getUrl(), tmpFilePath.toString());
-
-            // Load in the JAR as a zip and extract the files
-            try (ZipFile localeJar = new ZipFile(tmpFilePath.toString())) {
-                ClientJarTask task;
-                while ((task = CLIENT_JAR_TASKS.poll()) != null) {
-                    try (InputStream fileStream = localeJar.getInputStream(localeJar.getEntry(task.asset))) {
-                        task.ifNewDownload.accept(fileStream);
-                        task.whenDone.run();
+            var manifest = VanillaRuntime.manifest();
+            String hash = manifest.artifacts().stream()
+                .filter(artifact -> artifact.name().equals("minecraft-client:" + manifest.version()))
+                .findFirst().orElseThrow().sha1();
+            Path marker = cache.resolve(CLIENT_JAR_HASH_FILE);
+            boolean extract = extractClientAssets || !Files.isRegularFile(marker)
+                || !Files.readString(marker).trim().equals(hash);
+            ClientJarTask task;
+            while ((task = CLIENT_JAR_TASKS.poll()) != null) {
+                if (extract) {
+                    // The private engine loader resolves the pinned client before host resources.
+                    try (InputStream input = VanillaBootstrap.class.getClassLoader().getResourceAsStream(task.asset())) {
+                        if (input == null) {
+                            throw new IOException("Missing asset in the pinned Minecraft client: " + task.asset());
+                        }
+                        task.ifNewDownload().accept(input);
                     }
                 }
+                task.whenDone().run();
             }
-
-            // Store the latest jar hash
-            Path cache = GeyserImpl.getInstance().getBootstrap().getConfigFolder().resolve("cache");
             Files.createDirectories(cache);
-            FileUtils.writeFile(cache.resolve(CLIENT_JAR_HASH_FILE).toString(), CLIENT_JAR_INFO.getSha1().toCharArray());
-
-            // Delete the nolonger needed client/server jar
-            Files.delete(tmpFilePath);
-
-            GeyserImpl.getInstance().getLogger().info(GeyserLocale.getLocaleStringLog("geyser.locale.download.en_us.done"));
-        } catch (Exception e) {
-            GeyserImpl.getInstance().getLogger().error(GeyserLocale.getLocaleStringLog("geyser.locale.fail.en_us"), e);
+            Files.writeString(marker, hash);
+            extractClientAssets = false;
+        } catch (Exception | AssertionError failure) {
+            try {
+                Files.deleteIfExists(cache.resolve(CLIENT_JAR_HASH_FILE));
+            } catch (IOException cleanup) {
+                failure.addSuppressed(cleanup);
+            }
+            GeyserImpl.getInstance().getLogger().error(GeyserLocale.getLocaleStringLog("geyser.locale.fail.en_us"), failure);
         }
     }
 
     public static void saveFile(Path location, InputStream fileStream) throws IOException {
-        try (OutputStream outStream = Files.newOutputStream(location)) {
-            fileStream.transferTo(outStream);
+        Files.createDirectories(location.toAbsolutePath().getParent());
+        try (OutputStream output = Files.newOutputStream(location)) {
+            fileStream.transferTo(output);
         }
     }
 
-    /**
-     * A process that requires we download the client jar.
-     * Designed to accommodate Geyser updates that require more assets from the jar.
-     */
     public record ClientJarTask(String asset, InputStreamConsumer ifNewDownload, Runnable whenDone) {
     }
 
     @FunctionalInterface
     public interface InputStreamConsumer {
         void accept(InputStream stream) throws IOException;
-    }
-
-    /* Classes that map to JSON files served by Mojang */
-
-    @Getter
-    static class VersionManifest {
-        @SerializedName("latest")
-        private LatestVersion latestVersion;
-
-        @SerializedName("versions")
-        private List<Version> versions;
-    }
-
-    @Getter
-    static class LatestVersion {
-        @SerializedName("release")
-        private String release;
-
-        @SerializedName("snapshot")
-        private String snapshot;
-    }
-
-    @Getter
-    static class Version {
-        @SerializedName("id")
-        private String id;
-
-        @SerializedName("type")
-        private String type;
-
-        @SerializedName("url")
-        private String url;
-
-        @SerializedName("time")
-        private String time;
-
-        @SerializedName("releaseTime")
-        private String releaseTime;
-    }
-
-    @Getter
-    static class VersionInfo {
-        @SerializedName("id")
-        private String id;
-
-        @SerializedName("type")
-        private String type;
-
-        @SerializedName("time")
-        private String time;
-
-        @SerializedName("releaseTime")
-        private String releaseTime;
-
-        @SerializedName("assetIndex")
-        private AssetIndex assetIndex;
-
-        @SerializedName("downloads")
-        private Map<String, VersionDownload> downloads;
-    }
-
-    @Getter
-    static class VersionDownload {
-        @SerializedName("sha1")
-        private String sha1;
-
-        @SerializedName("size")
-        private int size;
-
-        @SerializedName("url")
-        private String url;
-
-        @Override
-        public String toString() {
-            return "VersionDownload{" +
-                "sha1='" + sha1 + '\'' +
-                ", size=" + size +
-                ", url='" + url + '\'' +
-                '}';
-        }
-    }
-
-    @Getter
-    static class AssetIndex {
-        @SerializedName("id")
-        private String id;
-
-        @SerializedName("sha1")
-        private String sha1;
-
-        @SerializedName("size")
-        private int size;
-
-        @SerializedName("totalSize")
-        private int totalSize;
-
-        @SerializedName("url")
-        private String url;
     }
 
     @Getter

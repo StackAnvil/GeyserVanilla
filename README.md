@@ -4,6 +4,8 @@ GeyserVanilla is a development fork of [Geyser](https://github.com/GeyserMC/Geys
 It replaces MCProtocolLib with the vanilla Minecraft client, including its networking, packet codecs, registries, and item components.
 The launcher downloads the pinned Java 26.3 client and libraries into a local cache and checks their sizes and SHA-1 hashes.
 The built Geyser jar does not contain Minecraft classes.
+English locale files and default skins load from the cached client.
+Shutdown cancels pending requests for the remote language index.
 
 The standalone jar starts and stops successfully with the downloaded client.
 The plugins for Velocity 4.3.1, BungeeCord build 2111, and ViaProxy 3.4.14 also pass startup and shutdown checks.

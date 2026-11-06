@@ -101,6 +101,7 @@ import org.geysermc.geyser.skin.SkinProvider;
 import org.geysermc.geyser.text.GeyserLocale;
 import org.geysermc.geyser.text.MinecraftLocale;
 import org.geysermc.geyser.translator.text.MessageTranslator;
+import org.geysermc.geyser.util.AssetIndexLoader;
 import org.geysermc.geyser.util.AssetUtils;
 import org.geysermc.geyser.util.CodeOfConductManager;
 import org.geysermc.geyser.util.InternalPlatformType;
@@ -128,7 +129,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -169,6 +169,7 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
     private volatile boolean shuttingDown = false;
 
     private ScheduledExecutorService scheduledThread;
+    private AssetIndexLoader assetIndexLoader;
 
     private ScoreboardUpdater scoreboardUpdater;
 
@@ -255,19 +256,12 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
         /* Initialize translators */
         MessageTranslator.init();
 
-        // Download the latest asset list and cache it
-        AssetUtils.generateAssetCache().whenComplete((aVoid, ex) -> {
-            if (ex != null) {
-                return;
-            }
-
-            MinecraftLocale.downloadDeprecations();
-            MinecraftLocale.ensureEN_US();
-
-            ProvidedSkins.init();
-
-            CompletableFuture.runAsync(AssetUtils::downloadAndRunClientJarTasks);
-        });
+        // Local client assets remain available even if Mojang's language index is offline.
+        MinecraftLocale.ensureDeprecations();
+        MinecraftLocale.ensureEN_US();
+        ProvidedSkins.init();
+        AssetUtils.runClientJarTasks();
+        assetIndexLoader = AssetUtils.generateAssetCache();
 
         // Register our general permissions when possible
         eventBus.subscribe(this, GeyserRegisterPermissionsEvent.class, Permissions::register);
@@ -708,6 +702,7 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
 
     public void shutdown() {
         shuttingDown = true;
+        closeAssetIndex();
         if (isEnabled) {
             this.disable();
         }
@@ -720,6 +715,12 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
         org.geysermc.geyser.vanilla.protocol.VanillaBootstrap.shutdown();
 
         bootstrap.getGeyserLogger().info(GeyserLocale.getLocaleStringLog("geyser.core.shutdown.done"));
+    }
+
+    private void closeAssetIndex() {
+        AssetIndexLoader loading = assetIndexLoader;
+        assetIndexLoader = null;
+        runIfNonNull(loading, AssetIndexLoader::close);
     }
 
     public void reloadGeyser() {
@@ -851,6 +852,13 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
             // Startup can allocate workers and listeners before the enabled flag is set.
             try {
                 instance.disable();
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) {
+                    failure.addSuppressed(cleanup);
+                }
+            }
+            try {
+                instance.closeAssetIndex();
             } catch (RuntimeException | Error cleanup) {
                 if (cleanup != failure) {
                     failure.addSuppressed(cleanup);

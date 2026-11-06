@@ -79,16 +79,14 @@ public class MinecraftLocale {
                 () -> loadLocale("en_us")));
     }
 
-    public static void downloadDeprecations() {
-        if (!loadDeprecations()) {
-            AssetUtils.addTask(!Files.exists(DEPRECATED), new AssetUtils.ClientJarTask("assets/minecraft/lang/deprecated.json",
-                stream -> AssetUtils.saveFile(DEPRECATED, stream),
-                () -> {
-                    if (!loadDeprecations()) {
-                        GeyserImpl.getInstance().getLogger().warning("Failed to load deprecated locale file: it doesn't exist?");
-                    }
-                }));
-        }
+    public static void ensureDeprecations() {
+        AssetUtils.addTask(!Files.exists(DEPRECATED), new AssetUtils.ClientJarTask("assets/minecraft/lang/deprecated.json",
+            stream -> AssetUtils.saveFile(DEPRECATED, stream),
+            () -> {
+                if (!loadDeprecations()) {
+                    GeyserImpl.getInstance().getLogger().warning("Failed to load deprecated locale file: it doesn't exist?");
+                }
+            }));
     }
 
     /**
