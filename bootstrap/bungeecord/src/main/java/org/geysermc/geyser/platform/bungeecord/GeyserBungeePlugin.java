@@ -25,9 +25,10 @@
 
 package org.geysermc.geyser.platform.bungeecord;
 
-import io.netty.channel.Channel;
-import net.md_5.bungee.BungeeCord;
 import net.md_5.bungee.Util;
+import net.md_5.bungee.api.ProxyServer;
+import org.geysermc.geyser.platform.bungeecord.host.BungeeHost;
+import java.io.File;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.api.plugin.Plugin;
@@ -59,23 +60,32 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
+public class GeyserBungeePlugin implements GeyserBootstrap {
+    private final Plugin plugin;
+    private final BungeeHost host;
 
     private CommandRegistry commandRegistry;
     private GeyserPluginConfig geyserConfig;
     private GeyserBungeeInjector geyserInjector;
-    private final GeyserBungeeLogger geyserLogger = new GeyserBungeeLogger(getLogger());
+    private final GeyserBungeeLogger geyserLogger;
     private IGeyserPingPassthrough geyserBungeePingPassthrough;
     private GeyserImpl geyser;
 
-    @Override
-    public void onLoad() {
-        onGeyserInitialize();
+    public GeyserBungeePlugin(Plugin plugin, BungeeHost host) {
+        this.plugin = plugin;
+        this.host = host;
+        this.geyserLogger = new GeyserBungeeLogger(plugin.getLogger());
+    }
+
+    private ProxyServer getProxy() {
+        return plugin.getProxy();
+    }
+
+    private File getDataFolder() {
+        return plugin.getDataFolder();
     }
 
     @Override
@@ -107,13 +117,12 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
             return;
         }
         this.geyser = GeyserImpl.load(this);
-        this.geyserInjector = new GeyserBungeeInjector(this);
+        this.geyserInjector = new GeyserBungeeInjector(host);
 
         // Registration of listeners occurs only once
-        this.getProxy().getPluginManager().registerListener(this, new GeyserBungeeUpdateListener());
+        this.getProxy().getPluginManager().registerListener(plugin, new GeyserBungeeUpdateListener());
     }
 
-    @Override
     public void onEnable() {
         if (geyser == null) {
             return; // Config did not load properly!
@@ -127,45 +136,19 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
             BungeeCommandSource::new
         );
         CommandManager<GeyserCommandSource> cloud = new BungeeCommandManager<>(
-            this,
+            plugin,
             ExecutionCoordinator.simpleCoordinator(),
             sourceConverter
         );
         this.commandRegistry = new CommandRegistry(geyser, cloud, false); // applying root permission would be a breaking change because we can't register permission defaults
 
-        // Big hack - Bungee does not provide us an event to listen to, so schedule a repeating
-        // task that waits for a field to be filled which is set after the plugin enable
-        // process is complete
-        this.awaitStartupCompletion(0);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void awaitStartupCompletion(int tries) {
-        // After 20 tries give up waiting. This will happen just after 3 minutes approximately
-        if (tries >= 20) {
-            this.geyserLogger.warning("BungeeCord plugin startup is taking abnormally long, so Geyser is starting now. " +
-                    "If all your plugins are loaded properly, this is a bug! " +
-                    "If not, consider cutting down the amount of plugins on your proxy as it is causing abnormally slow starting times.");
-            this.onGeyserEnable();
-            return;
-        }
-
-        try {
-            Field listenersField = BungeeCord.getInstance().getClass().getDeclaredField("listeners");
-            listenersField.setAccessible(true);
-
-            Collection<Channel> listeners = (Collection<Channel>) listenersField.get(BungeeCord.getInstance());
-            if (listeners.isEmpty()) {
-                this.getProxy().getScheduler().schedule(this, this::onGeyserEnable, tries, TimeUnit.SECONDS);
-            } else {
-                this.awaitStartupCompletion(++tries);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException ex) {
-            ex.printStackTrace();
-        }
+        disableConflictingQuery();
     }
 
     public void onGeyserEnable() {
+        if (geyser == null) {
+            return;
+        }
         if (GeyserImpl.getInstance().isReloading()) {
             geyserConfig = loadConfig(GeyserPluginConfig.class);
             if (geyserConfig == null) {
@@ -173,6 +156,25 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
             }
         }
 
+        disableConflictingQuery();
+
+        GeyserImpl.start();
+
+        if (!geyserConfig.motd().integratedPingPassthrough()) {
+            this.geyserBungeePingPassthrough = GeyserLegacyPingPassthrough.init(geyser);
+        } else {
+            this.geyserBungeePingPassthrough = new GeyserBungeePingPassthrough(getProxy());
+        }
+
+        // No need to re-register commands or re-init injector when reloading
+        if (GeyserImpl.getInstance().isReloading()) {
+            return;
+        }
+
+        this.geyserInjector.initializeLocalChannel(this);
+    }
+
+    private void disableConflictingQuery() {
         // Force-disable query if enabled, or else Geyser won't enable
         for (ListenerInfo info : getProxy().getConfig().getListeners()) {
             if (info.isQueryEnabled() && info.getQueryPort() == geyserConfig.bedrock().port()) {
@@ -191,20 +193,6 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
             }
         }
 
-        GeyserImpl.start();
-
-        if (!geyserConfig.motd().integratedPingPassthrough()) {
-            this.geyserBungeePingPassthrough = GeyserLegacyPingPassthrough.init(geyser);
-        } else {
-            this.geyserBungeePingPassthrough = new GeyserBungeePingPassthrough(getProxy());
-        }
-
-        // No need to re-register commands or re-init injector when reloading
-        if (GeyserImpl.getInstance().isReloading()) {
-            return;
-        }
-
-        this.geyserInjector.initializeLocalChannel(this);
     }
 
     @Override
@@ -217,16 +205,15 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
     @Override
     public void onGeyserShutdown() {
         if (geyser != null) {
-            geyser.shutdown();
+            try {
+                geyser.shutdown();
+            } finally {
+                geyser = null;
+            }
         }
         if (geyserInjector != null) {
             geyserInjector.shutdown();
         }
-    }
-
-    @Override
-    public void onDisable() {
-        this.onGeyserShutdown();
     }
 
     @Override
@@ -308,7 +295,7 @@ public class GeyserBungeePlugin extends Plugin implements GeyserBootstrap {
     @Override
     public MetricsPlatform createMetricsPlatform() {
         try {
-            return new BungeeMetrics(this);
+            return new BungeeMetrics(plugin);
         } catch (IOException e) {
             this.geyserLogger.debug("Integrated bStats support failed to load.");
             if (this.config().debugMode()) {

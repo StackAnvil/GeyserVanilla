@@ -13,19 +13,22 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.local.LocalAddress;
 import org.geysermc.geyser.vanilla.runtime.VanillaLocalTransport;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @Timeout(15)
 class HostLocalConnectorTest {
-    @Test
-    void forwardsBytesAndTheClientIpThroughTheHostLocalChannel() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void forwardsBytesAndTheClientIpThroughTheHostLocalChannel(boolean directBuffers) throws Exception {
         var group = new DefaultEventLoopGroup(1);
         var remoteAddress = new CompletableFuture<java.net.SocketAddress>();
         var serverChannel = new ServerBootstrap().group(group).channel(LocalServerChannelWrapper.class)
@@ -36,20 +39,21 @@ class HostLocalConnectorTest {
                     channel.pipeline().addLast(new SimpleChannelInboundHandler<ByteBuf>(ByteBuf.class) {
                         @Override
                         protected void channelRead0(ChannelHandlerContext context, ByteBuf bytes) {
+                            assertEquals(directBuffers, bytes.isDirect());
                             context.writeAndFlush(bytes.retain());
                         }
                     });
                 }
             }).bind(LocalAddress.ANY).sync().channel();
-        try (var connector = new HostLocalConnector(serverChannel.localAddress())) {
-            var bytes = new CompletableFuture<byte[]>();
+        try (var connector = new HostLocalConnector(serverChannel.localAddress(), directBuffers)) {
+            var bytes = new LinkedBlockingQueue<byte[]>();
             var closed = new CompletableFuture<Void>();
             var acknowledgement = new CompletableFuture<Void>();
             var client = new InetSocketAddress("192.0.2.43", 54321);
             var connection = connector.connect(client, new VanillaLocalTransport.Receiver() {
                 @Override
                 public CompletableFuture<Void> receive(byte[] message) {
-                    bytes.complete(message);
+                    bytes.add(message);
                     return acknowledgement;
                 }
 
@@ -64,10 +68,25 @@ class HostLocalConnectorTest {
             }).toCompletableFuture().get(5, TimeUnit.SECONDS);
             assertEquals(client, remoteAddress.get(5, TimeUnit.SECONDS));
             connection.write(new byte[] {1, 3, 5, 7}).toCompletableFuture().get(5, TimeUnit.SECONDS);
-            assertArrayEquals(new byte[] {1, 3, 5, 7}, bytes.get(5, TimeUnit.SECONDS));
+            assertArrayEquals(new byte[] {1, 3, 5, 7}, bytes.poll(5, TimeUnit.SECONDS));
             acknowledgement.complete(null);
+            var retired = connector.retire().toCompletableFuture();
+            assertFalse(retired.isDone());
+            assertTrue(connector.connect(client, new VanillaLocalTransport.Receiver() {
+                @Override
+                public CompletableFuture<Void> receive(byte[] message) {
+                    return CompletableFuture.completedFuture(null);
+                }
+
+                @Override
+                public void closed(Throwable failure) {
+                }
+            }).toCompletableFuture().isCompletedExceptionally());
+            connection.write(new byte[] {2, 4, 6}).toCompletableFuture().get(5, TimeUnit.SECONDS);
+            assertArrayEquals(new byte[] {2, 4, 6}, bytes.poll(5, TimeUnit.SECONDS));
             connection.close();
             closed.get(5, TimeUnit.SECONDS);
+            retired.get(5, TimeUnit.SECONDS);
             var failure = assertThrows(java.util.concurrent.ExecutionException.class,
                 () -> connection.write(new byte[] {0}).toCompletableFuture().get(5, TimeUnit.SECONDS));
             assertInstanceOf(java.nio.channels.ClosedChannelException.class, failure.getCause());

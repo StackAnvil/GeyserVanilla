@@ -29,12 +29,26 @@ import java.util.concurrent.TimeUnit;
 /** Host-side connector. This class must use the host's Netty classes, never the client's copies. */
 public final class HostLocalConnector implements VanillaLocalTransport, AutoCloseable {
     private final SocketAddress target;
+    private final boolean directBuffers;
     private final EventLoopGroup group = new DefaultEventLoopGroup(0, new DefaultThreadFactory("Geyser host bridge", true));
     private final Set<Channel> channels = ConcurrentHashMap.newKeySet();
+    private final CompletableFuture<Void> terminated = new CompletableFuture<>();
     private volatile boolean closed;
 
     public HostLocalConnector(SocketAddress target) {
+        this(target, false);
+    }
+
+    public HostLocalConnector(SocketAddress target, boolean directBuffers) {
         this.target = target;
+        this.directBuffers = directBuffers;
+        group.terminationFuture().addListener(future -> {
+            if (future.isSuccess()) {
+                terminated.complete(null);
+            } else {
+                terminated.completeExceptionally(future.cause());
+            }
+        });
     }
 
     @Override
@@ -82,7 +96,10 @@ public final class HostLocalConnector implements VanillaLocalTransport, AutoClos
             }).connect(target);
         Channel channel = connect.channel();
         channels.add(channel);
-        channel.closeFuture().addListener(ignored -> channels.remove(channel));
+        channel.closeFuture().addListener(ignored -> {
+            channels.remove(channel);
+            stopRetiredGroupIfEmpty();
+        });
         if (closed) {
             channel.close();
         }
@@ -95,8 +112,13 @@ public final class HostLocalConnector implements VanillaLocalTransport, AutoClos
             result.complete(new Connection() {
                 @Override
                 public CompletionStage<Void> write(byte[] bytes) {
+                    if (!channel.isActive()) {
+                        return CompletableFuture.failedFuture(new ClosedChannelException());
+                    }
                     var written = new CompletableFuture<Void>();
-                    channel.writeAndFlush(Unpooled.wrappedBuffer(bytes)).addListener(write -> {
+                    ByteBuf buffer = directBuffers ? channel.alloc().directBuffer(bytes.length).writeBytes(bytes)
+                        : Unpooled.wrappedBuffer(bytes);
+                    channel.writeAndFlush(buffer).addListener(write -> {
                         if (write.isSuccess()) {
                             written.complete(null);
                         } else {
@@ -113,6 +135,19 @@ public final class HostLocalConnector implements VanillaLocalTransport, AutoClos
             });
         });
         return result;
+    }
+
+    /** Stops accepting connections while existing sessions finish on their original listener. */
+    public CompletionStage<Void> retire() {
+        closed = true;
+        stopRetiredGroupIfEmpty();
+        return terminated;
+    }
+
+    private void stopRetiredGroupIfEmpty() {
+        if (closed && channels.isEmpty()) {
+            group.shutdownGracefully(0, 5, TimeUnit.SECONDS);
+        }
     }
 
     @Override

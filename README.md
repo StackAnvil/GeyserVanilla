@@ -5,8 +5,9 @@ It replaces MCProtocolLib with the vanilla Minecraft client, including its netwo
 The launcher downloads the pinned Java 26.3 client and libraries into a local cache and checks their sizes and SHA-1 hashes.
 The built Geyser jar does not contain Minecraft classes.
 
-The standalone jar and the Velocity 4.3.1 plugin start and stop successfully with the downloaded client.
+The standalone jar, Velocity 4.3.1 plugin, and BungeeCord build 2111 plugin start and stop successfully with the downloaded client.
 Velocity tests cover injected status requests, styled chat conversion, console commands, and shutdown without stopping the proxy's network workers.
+BungeeCord tests cover injected status requests, console commands, reload with an existing connection, and shutdown without stopping the proxy's network workers.
 Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, components, and core translation behavior.
 Runtime loading for the other hosted platforms is still under development.
 Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
@@ -69,6 +70,7 @@ The build and the first launch need network access to download the pinned client
 Later launches use the cache after the launcher checks each artifact.
 Standalone uses `cache/vanilla` as its runtime cache, relative to the launch directory.
 Velocity uses `plugins/Geyser-Velocity/cache/vanilla`.
+BungeeCord uses `plugins/Geyser-BungeeCord/cache/vanilla`.
 To change it, pass `-Dgeyser.vanilla.cache=/path/to/cache` before `-jar`.
 
 ## Contributing

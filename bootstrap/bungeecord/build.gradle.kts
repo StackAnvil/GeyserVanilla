@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api(projects.core)
+    api(projects.vanillaHost)
 
     implementation(libs.cloud.bungee)
     compileOnlyApi(libs.bungeecord.proxy) {
@@ -33,7 +34,7 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
 
     dependencies {
         exclude(dependency("com.google.*:.*"))
-        exclude(dependency("io.netty.*:.*"))
+        // Keep engine-only Netty modules. Host helpers resolve BungeeCord's Netty separately.
     }
 }
 
