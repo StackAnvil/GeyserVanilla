@@ -67,5 +67,6 @@ tasks.test {
     systemProperty("java.awt.headless", "true")
     doFirst {
         systemProperty("geyser.test.host.classpath", hostFixtureRuntime.asPath)
+        systemProperty("geyser.test.runtime.classpath", classpath.asPath)
     }
 }

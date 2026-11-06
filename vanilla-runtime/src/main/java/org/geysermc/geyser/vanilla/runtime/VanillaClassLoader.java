@@ -7,6 +7,9 @@ package org.geysermc.geyser.vanilla.runtime;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.net.JarURLConnection;
+import java.security.CodeSource;
+import java.security.cert.Certificate;
 import java.net.URLClassLoader;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -56,6 +59,38 @@ public final class VanillaClassLoader extends URLClassLoader {
                 resolveClass(loaded);
             }
             return loaded;
+        }
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        if (!name.equals("net.minecraft.core.IdMapper")) {
+            return super.findClass(name);
+        }
+        URL resource = findResource("net/minecraft/core/IdMapper.class");
+        if (resource == null) {
+            throw new ClassNotFoundException(name);
+        }
+        try {
+            var connection = resource.openConnection();
+            connection.setUseCaches(false);
+            byte[] original;
+            URL source = resource;
+            Certificate[] certificates = null;
+            try (var input = connection.getInputStream()) {
+                // Complete the signed JAR read before retaining its signer certificates.
+                original = input.readAllBytes();
+                if (connection instanceof JarURLConnection jar) {
+                    source = jar.getJarFileURL();
+                    certificates = jar.getCertificates();
+                }
+            }
+            Class<?> transforms = Class.forName("org.geysermc.geyser.vanilla.protocol.VanillaClassTransforms", true, this);
+            byte[] transformed = (byte[]) transforms.getMethod("idMapper", byte[].class).invoke(null, (Object) original);
+            return defineClass(name, transformed, 0, transformed.length, new CodeSource(source, certificates));
+        } catch (java.io.IOException | ReflectiveOperationException failure) {
+            Throwable cause = failure instanceof InvocationTargetException invocation ? invocation.getCause() : failure;
+            throw new ClassNotFoundException("Could not extend the private vanilla block ID lookup", cause);
         }
     }
 

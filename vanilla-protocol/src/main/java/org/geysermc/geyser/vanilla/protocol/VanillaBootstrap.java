@@ -44,6 +44,7 @@ public final class VanillaBootstrap {
             System.setOut(stdout);
             System.setErr(stderr);
         }
+        VanillaBlockStates.initialize();
         initialized = true;
     }
 

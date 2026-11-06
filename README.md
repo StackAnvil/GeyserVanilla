@@ -6,6 +6,8 @@ The launcher downloads the pinned Java 26.3 client and libraries into a local ca
 The built Geyser jar does not contain Minecraft classes.
 English locale files and default skins load from the cached client.
 Shutdown cancels pending requests for the remote language index.
+The private loader extends vanilla block-state lookups to preserve custom Java IDs.
+Vanilla codecs still handle block updates, particles, and entity metadata.
 
 The standalone jar starts and stops successfully with the downloaded client.
 The plugins for Velocity 4.3.1, BungeeCord build 2111, and ViaProxy 3.4.14 also pass startup and shutdown checks.
@@ -18,6 +20,7 @@ Automated tests cover native networking, codecs, registry isolation, sparse cust
 Fabric 0.19.5 and NeoForge 26.3.0.1-beta dedicated servers also pass runtime isolation checks.
 These tests cover injected status requests, offline Java login, configuration, chunks, inventory packets, world reads, commands, ping, reload, and independent shutdown.
 Client LAN startup is wired to the isolated runtime but still needs a live test.
+Game-test startup currently fails while initializing host registry tags.
 Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
 
 Build and run the standalone jar with Java 25 or newer.
