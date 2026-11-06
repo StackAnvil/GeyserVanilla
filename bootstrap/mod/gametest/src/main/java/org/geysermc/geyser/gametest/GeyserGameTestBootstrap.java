@@ -30,6 +30,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerPlayer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.geysermc.geyser.GeyserImpl;
@@ -42,9 +43,12 @@ import org.geysermc.geyser.platform.mod.command.ModCommandSource;
 import org.geysermc.geyser.platform.mod.host.ModCommandSender;
 import org.geysermc.geyser.platform.mod.host.ServerCommandSender;
 import org.geysermc.geyser.util.metrics.MetricsPlatform;
+import org.geysermc.geyser.vanilla.protocol.VanillaBootstrap;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.fabric.FabricServerCommandManager;
+
+import java.lang.invoke.MethodHandles;
 
 public class GeyserGameTestBootstrap extends GeyserModBootstrap implements ModInitializer {
 
@@ -86,8 +90,19 @@ public class GeyserGameTestBootstrap extends GeyserModBootstrap implements ModIn
         );
         this.setCommandRegistry(new CommandRegistry(GeyserImpl.getInstance(), cloud, false)); // applying root permission would be a breaking change because we can't register permission defaults
 
-        // Have to manually start Geyser for game test environment
-        GeyserImpl.start();
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            this.setServer(server);
+            try {
+                // These tests run in the host loader and must use the server's test
+                // datapack registries without reloading vanilla tags into the host.
+                MethodHandles.privateLookupIn(VanillaBootstrap.class, MethodHandles.lookup())
+                    .findStaticVarHandle(VanillaBootstrap.class, "defaultRegistries", RegistryAccess.Frozen.class)
+                    .set(server.registryAccess());
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException("Could not prepare the game-test registry context", failure);
+            }
+            this.onGeyserEnable();
+        });
     }
 
     @Override

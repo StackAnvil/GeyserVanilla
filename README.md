@@ -20,7 +20,8 @@ Automated tests cover native networking, codecs, registry isolation, sparse cust
 Fabric 0.19.5 and NeoForge 26.3.0.1-beta dedicated servers also pass runtime isolation checks.
 These tests cover injected status requests, offline Java login, configuration, chunks, inventory packets, world reads, commands, ping, reload, and independent shutdown.
 Client LAN startup is wired to the isolated runtime but still needs a live test.
-Game-test startup currently fails while initializing host registry tags.
+The game-test suite runs against the host test registries and passes its required cases, including native item defaults and packet coverage.
+Two optional entity metadata cases still fail for unsupported block and item displays.
 Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
 
 Build and run the standalone jar with Java 25 or newer.

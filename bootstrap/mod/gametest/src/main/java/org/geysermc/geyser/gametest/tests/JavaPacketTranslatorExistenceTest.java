@@ -40,6 +40,8 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.PacketType;
 import net.minecraft.network.protocol.common.CommonPacketTypes;
+import net.minecraft.network.protocol.cookie.CookiePacketTypes;
+import net.minecraft.network.protocol.ping.PingPacketTypes;
 import net.minecraft.network.protocol.configuration.ConfigurationPacketTypes;
 import net.minecraft.network.protocol.configuration.ConfigurationProtocols;
 import net.minecraft.network.protocol.game.GamePacketTypes;
@@ -108,7 +110,7 @@ public class JavaPacketTranslatorExistenceTest extends GeyserTestInstance {
 
     @SuppressWarnings("unchecked")
     private static Class<? extends Packet> packetClass(PacketInfo packet) {
-        for (var owner : List.of(CommonPacketTypes.class, ConfigurationPacketTypes.class, GamePacketTypes.class)) {
+        for (var owner : List.of(CommonPacketTypes.class, CookiePacketTypes.class, PingPacketTypes.class, ConfigurationPacketTypes.class, GamePacketTypes.class)) {
             for (var field : owner.getFields()) {
                 if (field.getType() != PacketType.class) continue;
                 try {

@@ -80,6 +80,8 @@ public class PacketTranslatorRegistry<T> extends AbstractMappedRegistry<Class<? 
 
         /// Unnecessary for us
 
+        // Vanilla consumes these framing markers while assembling its bundle packet.
+        IGNORED_PACKETS.add(net.minecraft.network.protocol.game.ClientboundBundleDelimiterPacket.class);
         IGNORED_PACKETS.add(ClientboundChunkBatchStartPacket.class); // we don't track chunk batch sizes/periods
         IGNORED_PACKETS.add(ClientboundLightUpdatePacket.class); // Light is handled on Bedrock for us
         IGNORED_PACKETS.add(ClientboundSetSimulationDistancePacket.class);

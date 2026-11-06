@@ -34,12 +34,18 @@ import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
 import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
 import org.geysermc.geyser.vanilla.protocol.VanillaCustomItems;
 
+import java.util.function.Supplier;
+
 public class ComponentCache implements ResolvableComponentGetter {
-    private final org.geysermc.geyser.session.GeyserSession session;
+    private final Supplier<net.minecraft.core.RegistryAccess> registries;
     private final Reference2ObjectMap<Item, GeyserDataComponents> resolvedComponents = new Reference2ObjectOpenHashMap<>();
 
     public ComponentCache(org.geysermc.geyser.session.GeyserSession session) {
-        this.session = session;
+        this(session::vanillaRegistries);
+    }
+
+    public ComponentCache(Supplier<net.minecraft.core.RegistryAccess> registries) {
+        this.registries = registries;
     }
 
     @Override
@@ -49,7 +55,7 @@ public class ComponentCache implements ResolvableComponentGetter {
 
     @Override
     public net.minecraft.core.RegistryAccess vanillaRegistries() {
-        return session.vanillaRegistries();
+        return registries.get();
     }
 
     public void resolveComponents() {

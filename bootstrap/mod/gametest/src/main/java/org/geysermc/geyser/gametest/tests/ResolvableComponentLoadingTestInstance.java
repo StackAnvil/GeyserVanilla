@@ -35,12 +35,8 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
-import org.geysermc.geyser.item.components.resolvable.ResolvableComponent;
 import org.geysermc.geyser.registry.java.BuiltInJavaRegistries;
-import org.geysermc.geyser.registry.java.JavaRegistryProvider;
-import org.geysermc.geyser.vanilla.protocol.GeyserDataComponents;
-
-import java.util.HashMap;
+import org.geysermc.geyser.session.cache.ComponentCache;
 
 public class ResolvableComponentLoadingTestInstance extends GeyserTestInstance {
     public static final MapCodec<ResolvableComponentLoadingTestInstance> MAP_CODEC = RecordCodecBuilder.mapCodec(instance ->
@@ -60,16 +56,15 @@ public class ResolvableComponentLoadingTestInstance extends GeyserTestInstance {
         var registries = helper.getLevel().registryAccess();
         var geyserItem = BuiltInJavaRegistries.ITEM.getOrThrow(BuiltInRegistries.ITEM.getId(item.value()));
 
-        helper.assertFalse(geyserItem.resolvableComponents().isEmpty(), "a test was created for this item but it does not have any resolvable components loaded");
-
-        GeyserDataComponents components = new GeyserDataComponents();
-        for (ResolvableComponent<?> component : geyserItem.resolvableComponents()) {
-            try {
-                // Have to resolve into map to make sure casts and stuff are checked
-                component.resolve(registries, components);
-            } catch (Exception exception) {
-                helper.fail("component " + component + " failed to resolve: " + exception);
-            }
+        var cache = new ComponentCache(() -> registries);
+        cache.resolveComponents();
+        var actual = geyserItem.gatherComponents(cache, null);
+        var expected = item.components();
+        helper.assertFalse(expected.isEmpty(), "the fixture must have default components to resolve");
+        helper.assertValueEqual(expected.size(), actual.size(), "resolved default component count");
+        for (var component : expected) {
+            helper.assertValueEqual(component.value(), actual.get(component.type()),
+                "resolved default component " + component.type());
         }
         helper.succeed();
     }
