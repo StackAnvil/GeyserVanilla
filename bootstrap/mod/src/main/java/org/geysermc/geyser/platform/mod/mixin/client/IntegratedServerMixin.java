@@ -57,6 +57,14 @@ public class IntegratedServerMixin implements GeyserServerPortGetter {
         }
     }
 
+    @Inject(method = "unpublishServer()Z", at = @At("RETURN"))
+    private void onCloseToLan(CallbackInfoReturnable<Boolean> cir) {
+        ModRuntime runtime = ModRuntime.instance();
+        if (cir.getReturnValueZ() && runtime != null) {
+            runtime.serverStopped();
+        }
+    }
+
     @Override
     public int geyser$getServerPort() {
         return this.publishedPort;
