@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+
 plugins {
     id("geyser.platform-conventions")
     id("architectury-plugin")
@@ -127,7 +129,12 @@ afterEvaluate {
             and !providedDependencies.contains("${dep.moduleVersion.id.group}:.*")
         ) {
             println("Including dependency via JiJ: ${dep.id}")
-            dependencies.add("include", dep.moduleVersion.id.toString())
+            val component = dep.id.componentIdentifier
+            if (component is ProjectComponentIdentifier) {
+                dependencies.add("include", dependencies.project(mapOf("path" to component.projectPath)))
+            } else {
+                dependencies.add("include", dep.moduleVersion.id.toString())
+            }
         } else {
             println("Not including ${dep.id} for ${project.name}!")
         }
