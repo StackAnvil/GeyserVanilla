@@ -55,6 +55,62 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 class VanillaClientSessionTest {
+    @org.junit.jupiter.api.Test
+    @Timeout(15)
+    void performsNativeStatusHandshakeAndClosesTheQueryChannel() throws Exception {
+        VanillaBootstrap.initialize();
+        try (var server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+            var status = new net.minecraft.network.protocol.status.ServerStatus(Component.literal("native status"),
+                java.util.Optional.empty(), java.util.Optional.empty(), java.util.Optional.empty(), false);
+            var accepted = CompletableFuture.runAsync(() -> {
+                try (var socket = server.accept()) {
+                    socket.setSoTimeout(5000);
+                    var transport = new FixtureTransport(socket.getInputStream(), socket.getOutputStream());
+                    var intention = assertInstanceOf(ClientIntentionPacket.class, transport.read(HandshakeProtocols.SERVERBOUND));
+                    assertEquals("vanilla.example", intention.hostName());
+                    assertEquals(25570, intention.port());
+                    assertEquals(net.minecraft.network.protocol.handshake.ClientIntent.STATUS, intention.intention());
+                    assertInstanceOf(net.minecraft.network.protocol.status.ServerboundStatusRequestPacket.class,
+                        transport.read(net.minecraft.network.protocol.status.StatusProtocols.SERVERBOUND));
+                    transport.write(net.minecraft.network.protocol.status.StatusProtocols.CLIENTBOUND,
+                        new net.minecraft.network.protocol.status.ClientboundStatusResponsePacket(status));
+                    assertEquals(-1, socket.getInputStream().read());
+                } catch (Exception e) {
+                    throw new java.util.concurrent.CompletionException(e);
+                }
+            });
+            var group = net.minecraft.server.network.EventLoopGroupHolder.remote(false);
+            var query = VanillaStatusQuery.query(new io.netty.bootstrap.Bootstrap().group(group.eventLoopGroup()).channel(group.channelCls()),
+                new InetSocketAddress(InetAddress.getLoopbackAddress(), server.getLocalPort()), "vanilla.example", 25570, ignored -> {});
+            assertEquals(status, query.get(5, TimeUnit.SECONDS));
+            accepted.get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @org.junit.jupiter.api.Test
+    @Timeout(15)
+    void failsStatusQueryWhenTheServerClosesBeforeReplying() throws Exception {
+        VanillaBootstrap.initialize();
+        try (var server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+            var accepted = CompletableFuture.runAsync(() -> {
+                try (var socket = server.accept()) {
+                    socket.setSoTimeout(5000);
+                    var transport = new FixtureTransport(socket.getInputStream(), socket.getOutputStream());
+                    transport.read(HandshakeProtocols.SERVERBOUND);
+                    transport.read(net.minecraft.network.protocol.status.StatusProtocols.SERVERBOUND);
+                } catch (Exception e) {
+                    throw new java.util.concurrent.CompletionException(e);
+                }
+            });
+            var group = net.minecraft.server.network.EventLoopGroupHolder.remote(false);
+            var query = VanillaStatusQuery.query(new io.netty.bootstrap.Bootstrap().group(group.eventLoopGroup()).channel(group.channelCls()),
+                new InetSocketAddress(InetAddress.getLoopbackAddress(), server.getLocalPort()), "vanilla.example", 25570, ignored -> {});
+            var failure = assertThrows(java.util.concurrent.ExecutionException.class, () -> query.get(5, TimeUnit.SECONDS));
+            assertInstanceOf(java.nio.channels.ClosedChannelException.class, failure.getCause());
+            accepted.get(5, TimeUnit.SECONDS);
+        }
+    }
+
     private static final GameProtocols.Context CONTEXT = new GameProtocols.Context() {
         public boolean hasInfiniteMaterials() {
             return true;
