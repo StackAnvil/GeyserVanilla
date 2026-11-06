@@ -42,7 +42,6 @@ import net.minecraft.network.protocol.login.LoginProtocols;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
 import net.minecraft.network.protocol.login.ServerboundKeyPacket;
 import net.minecraft.network.protocol.login.ServerboundLoginAcknowledgedPacket;
-import net.minecraft.server.network.EventLoopGroupHolder;
 import net.minecraft.util.Crypt;
 
 import javax.crypto.Cipher;
@@ -89,8 +88,7 @@ public final class VanillaClientSession {
 
     /** The handshake hostname can include Floodgate forwarding data independently of the TCP target. */
     public ChannelFuture connect(InetSocketAddress target, String hostname, int port, boolean transferring) {
-        var transport = EventLoopGroupHolder.remote(false);
-        return connect(new Bootstrap().group(transport.eventLoopGroup()).channel(transport.channelCls()), target,
+        return connect(VanillaNetwork.tcpBootstrap(), target,
             hostname, port, transferring, ignored -> {}, ignored -> {});
     }
 

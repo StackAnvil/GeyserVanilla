@@ -6,7 +6,6 @@ package org.geysermc.geyser.vanilla.runtime;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
@@ -26,14 +25,18 @@ public final class VanillaLauncher {
         for (String entry : System.getProperty("java.class.path").split(File.pathSeparator)) {
             classpath.add(Path.of(entry));
         }
-        var loader = new URLClassLoader("GeyserVanilla", VanillaRuntime.urls(classpath),
-            ClassLoader.getPlatformClassLoader());
+        var loader = new VanillaClassLoader(VanillaRuntime.urls(classpath),
+            VanillaLauncher.class.getClassLoader(), java.util.List.of("org.geysermc.geyser.vanilla.runtime."));
         Thread thread = Thread.currentThread();
         ClassLoader previous = thread.getContextClassLoader();
         thread.setContextClassLoader(loader);
         try {
             Class<?> bootstrap = Class.forName("org.geysermc.geyser.platform.standalone.GeyserStandaloneBootstrap", true, loader);
-            bootstrap.getMethod("main", String[].class).invoke(null, (Object) args);
+            try {
+                bootstrap.getMethod("main", String[].class).invoke(null, (Object) args);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            }
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
                     loader.close();
@@ -41,11 +44,12 @@ public final class VanillaLauncher {
                     System.err.println("Could not close the vanilla runtime: " + e.getMessage());
                 }
             }, "GeyserVanilla runtime shutdown"));
-        } catch (InvocationTargetException e) {
-            loader.close();
-            throw e.getCause();
         } catch (Throwable e) {
-            loader.close();
+            try {
+                loader.close();
+            } catch (java.io.IOException cleanup) {
+                e.addSuppressed(cleanup);
+            }
             throw e;
         } finally {
             thread.setContextClassLoader(previous);

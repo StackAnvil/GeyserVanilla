@@ -13,6 +13,8 @@ import net.minecraft.server.packs.repository.ServerPacksSource;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.MultiPackResourceManager;
 import net.minecraft.tags.TagLoader;
+import net.minecraft.util.Util;
+import org.geysermc.geyser.vanilla.runtime.VanillaClassLoader;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -23,6 +25,7 @@ import java.io.PrintStream;
 public final class VanillaBootstrap {
     private static boolean initialized;
     private static RegistryAccess.Frozen defaultRegistries;
+    private static boolean stopped;
 
     private VanillaBootstrap() {
     }
@@ -62,5 +65,20 @@ public final class VanillaBootstrap {
             defaultRegistries = loaded;
         }
         return defaultRegistries;
+    }
+
+    public static synchronized void shutdown() {
+        VanillaNetwork.shutdown();
+        if (stopped) {
+            return;
+        }
+        stopped = true;
+        // Util executors belong to the game classes. Only stop them when those classes
+        // came from our isolated runtime, never when a mod loader supplied the host's copy.
+        ClassLoader loader = VanillaBootstrap.class.getClassLoader();
+        if (initialized && loader instanceof VanillaClassLoader && Util.class.getClassLoader() == loader) {
+            Util.shutdownExecutors();
+            Util.shutdownTimeSource();
+        }
     }
 }
