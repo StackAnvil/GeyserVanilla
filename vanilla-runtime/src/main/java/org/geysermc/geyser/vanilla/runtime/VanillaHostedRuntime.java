@@ -6,7 +6,9 @@ package org.geysermc.geyser.vanilla.runtime;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,14 +33,23 @@ public final class VanillaHostedRuntime implements AutoCloseable {
             throw new IllegalStateException("GeyserVanilla requires Java " + manifest.javaVersion() + " or newer");
         }
         var classpath = new ArrayList<>(VanillaRuntime.prepare(cache, logger));
-        try {
-            classpath.add(Path.of(entrypoint.getProtectionDomain().getCodeSource().getLocation().toURI()));
-        } catch (URISyntaxException e) {
-            throw new IOException("Invalid GeyserVanilla plugin location", e);
-        }
+        classpath.add(pluginLocation(entrypoint.getProtectionDomain().getCodeSource().getLocation()));
         var shared = new ArrayList<>(SHARED_APIS);
         shared.addAll(hostApis);
         return new VanillaHostedRuntime(new VanillaClassLoader(VanillaRuntime.urls(classpath), entrypoint.getClassLoader(), shared));
+    }
+
+    static Path pluginLocation(URL location) throws IOException {
+        try {
+            URI uri = location.toURI();
+            // ViaProxy marks each plugin's code source with a class-loader fragment.
+            if (uri.getFragment() != null) {
+                uri = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), uri.getQuery(), null);
+            }
+            return Path.of(uri);
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            throw new IOException("Invalid GeyserVanilla plugin location: " + location, e);
+        }
     }
 
     public Object create(String name, Class<?>[] parameters, Object... arguments) throws Exception {

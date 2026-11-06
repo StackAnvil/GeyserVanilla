@@ -24,20 +24,9 @@
  */
 package org.geysermc.geyser.platform.viaproxy;
 
-import io.netty.channel.AbstractChannel;
-import net.lenni0451.lambdaevents.EventHandler;
-import net.lenni0451.reflect.stream.RStream;
 import net.raphimc.vialegacy.api.LegacyProtocolVersion;
 import net.raphimc.viaproxy.ViaProxy;
 import net.raphimc.viaproxy.plugins.PluginManager;
-import net.raphimc.viaproxy.plugins.ViaProxyPlugin;
-import net.raphimc.viaproxy.plugins.events.Client2ProxyChannelInitializeEvent;
-import net.raphimc.viaproxy.plugins.events.ConsoleCommandEvent;
-import net.raphimc.viaproxy.plugins.events.ProxyStartEvent;
-import net.raphimc.viaproxy.plugins.events.ProxyStopEvent;
-import net.raphimc.viaproxy.plugins.events.ShouldVerifyOnlineModeEvent;
-import net.raphimc.viaproxy.plugins.events.ViaProxyLoadedEvent;
-import net.raphimc.viaproxy.plugins.events.types.ITyped;
 import net.raphimc.viaproxy.protocoltranslator.viaproxy.ViaProxyConfig;
 import org.apache.logging.log4j.LogManager;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -67,7 +56,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-public class GeyserViaProxyPlugin extends ViaProxyPlugin implements GeyserBootstrap, EventRegistrar {
+public class GeyserViaProxyPlugin implements GeyserBootstrap, EventRegistrar {
 
     private static final File ROOT_FOLDER = new File(PluginManager.PLUGINS_DIR, "Geyser");
 
@@ -78,77 +67,39 @@ public class GeyserViaProxyPlugin extends ViaProxyPlugin implements GeyserBootst
     private CommandRegistry commandRegistry;
     private IGeyserPingPassthrough pingPassthrough;
 
-    @Override
-    public void onEnable() {
+    public void onViaProxyLoaded() {
         ROOT_FOLDER.mkdirs();
-        ViaProxy.EVENT_MANAGER.register(this);
-    }
-
-    @Override
-    public void onDisable() {
-        this.onGeyserShutdown();
-    }
-
-    @EventHandler
-    private void onViaProxyLoaded(ViaProxyLoadedEvent event) {
         GeyserLocale.init(this);
         this.onGeyserInitialize();
     }
 
-    @EventHandler
-    private void onConsoleCommand(final ConsoleCommandEvent event) {
-        final String command = event.getCommand().startsWith("/") ? event.getCommand().substring(1) : event.getCommand();
+    public boolean runConsoleCommand(String command, String[] args) {
+        if (command.startsWith("/")) {
+            command = command.substring(1);
+        }
         CommandRegistry registry = this.getCommandRegistry();
-        if (registry.rootCommands().contains(command)) {
-            registry.runCommand(this.getGeyserLogger(), command + " " + String.join(" ", event.getArgs()));
-            event.setCancelled(true);
+        if (registry != null && registry.rootCommands().contains(command)) {
+            registry.runCommand(this.getGeyserLogger(), command + " " + String.join(" ", args));
+            return true;
         }
+        return false;
     }
 
-    @EventHandler
-    private void onShouldVerifyOnlineModeEvent(final ShouldVerifyOnlineModeEvent event) {
-        final UUID uuid = event.getProxyConnection().getGameProfile().getId();
-        if (uuid == null) return;
-
-        final GeyserSession connection = GeyserImpl.getInstance().onlineConnections().stream().filter(s -> s.javaUuid().equals(uuid)).findAny().orElse(null);
-        if (connection == null) return;
-
-        if (connection.javaUsername().equals(event.getProxyConnection().getGameProfile().getName())) {
-            event.setCancelled(true);
-        }
+    public boolean isBedrockPlayer(UUID uuid, String name) {
+        return geyser != null && uuid != null && geyser.onlineConnections().stream()
+            .anyMatch(session -> uuid.equals(session.javaUuid()) && name.equals(session.javaUsername()));
     }
 
-    @EventHandler
-    private void onClient2ProxyChannelInitialize(Client2ProxyChannelInitializeEvent event) {
-        if (event.getType() != ITyped.Type.POST || event.isLegacyPassthrough()) {
-            return;
+    public SocketAddress realAddress(SocketAddress localAddress) {
+        if (geyser == null) {
+            return null;
         }
-        // TODO remove
-        if (System.getProperty("geyser.viaproxy.disableIpPassthrough") != null) { // Temporary until Configurate branch is merged
-            return;
-        }
-
-        final GeyserSession session = GeyserImpl.getInstance().onlineConnections().stream()
-            .filter(c -> c.getDownstream() != null)
-            .filter(c -> c.getDownstream().getSession().channel() != null
-                && event.getChannel().remoteAddress().equals(c.getDownstream().getSession().channel().localAddress()))
+        return geyser.onlineConnections().stream()
+            .filter(session -> session.getDownstream() != null)
+            .filter(session -> session.getDownstream().getSession().channel() != null
+                && localAddress.equals(session.getDownstream().getSession().channel().localAddress()))
+            .map(GeyserSession::getSocketAddress)
             .findAny().orElse(null);
-        if (session != null) {
-            final SocketAddress realAddress = session.getSocketAddress();
-            if (event.getChannel() instanceof AbstractChannel) {
-                RStream.of(AbstractChannel.class, event.getChannel()).fields().by("remoteAddress").set(realAddress);
-            }
-        }
-    }
-
-    @EventHandler
-    private void onProxyStart(final ProxyStartEvent event) {
-        this.onGeyserEnable();
-    }
-
-    @EventHandler
-    private void onProxyStop(final ProxyStopEvent event) {
-        this.onGeyserDisable();
     }
 
     @Override
@@ -174,7 +125,7 @@ public class GeyserViaProxyPlugin extends ViaProxyPlugin implements GeyserBootst
             if (geyserConfig == null) {
                 return;
             }
-        } else {
+        } else if (this.cloud == null) {
             // Only initialized once - documented in the Geyser-Standalone bootstrap
             this.cloud = new StandaloneCloudCommandManager(geyser);
             this.commandRegistry = new CommandRegistry(geyser, cloud);
@@ -199,12 +150,17 @@ public class GeyserViaProxyPlugin extends ViaProxyPlugin implements GeyserBootst
 
     @Override
     public void onGeyserDisable() {
-        this.geyser.disable();
+        if (geyser != null) {
+            geyser.disable();
+        }
     }
 
     @Override
     public void onGeyserShutdown() {
-        this.geyser.shutdown();
+        if (geyser != null) {
+            geyser.shutdown();
+            geyser = null;
+        }
     }
 
     @Override

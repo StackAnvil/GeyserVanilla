@@ -61,15 +61,28 @@ public final class VanillaClassLoader extends URLClassLoader {
 
     @Override
     public URL getResource(String name) {
+        if (hostLoggingConfiguration(name)) {
+            return getParent().getResource(name);
+        }
         URL own = findResource(name);
         return own == null ? getParent().getResource(name) : own;
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
+        if (hostLoggingConfiguration(name)) {
+            return getParent().getResources(name);
+        }
         Set<URL> resources = new LinkedHashSet<>(Collections.list(findResources(name)));
         resources.addAll(Collections.list(getParent().getResources(name)));
         return Collections.enumeration(resources);
+    }
+
+    private boolean hostLoggingConfiguration(String name) {
+        // Mojang's logging library supplies a graphical-client configuration. A shared
+        // host logging framework must retain its own appenders and configuration.
+        return name.equals("log4j2.xml") && sharedPackages.stream()
+            .anyMatch("org.apache.logging.log4j.LogManager"::startsWith);
     }
 
     @Override

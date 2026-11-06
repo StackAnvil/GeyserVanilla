@@ -24,6 +24,34 @@ class VanillaClassLoaderTest {
     Path temporary;
 
     @Test
+    void resolvesPluginCodeSourcesWithLoaderFragmentsAndEscapedPaths() throws Exception {
+        Path plugin = temporary.resolve("plugin + name.jar");
+        var location = plugin.toUri().toURL();
+        assertEquals(plugin, VanillaHostedRuntime.pluginLocation(location));
+        assertEquals(plugin, VanillaHostedRuntime.pluginLocation(new URL(location + "#loader-123")));
+        assertThrows(java.io.IOException.class,
+            () -> VanillaHostedRuntime.pluginLocation(new URL(location + "?unsupported=query#loader-123")));
+    }
+
+    @Test
+    void retainsHostLoggingConfigurationWhenTheLoggingFrameworkIsShared() throws Exception {
+        Path host = Files.createDirectory(temporary.resolve("host-logging"));
+        Path client = Files.createDirectory(temporary.resolve("client-logging"));
+        Files.writeString(host.resolve("log4j2.xml"), "host appenders");
+        Files.writeString(client.resolve("log4j2.xml"), "graphical client appenders");
+        try (var parent = new URLClassLoader(new URL[] {host.toUri().toURL()}, null);
+             var loader = new VanillaClassLoader(new URL[] {client.toUri().toURL()}, parent,
+                 List.of("org.apache.logging.log4j."))) {
+            assertEquals(host.resolve("log4j2.xml").toUri().toURL(), loader.getResource("log4j2.xml"));
+            assertEquals(List.of(host.resolve("log4j2.xml").toUri().toURL()),
+                Collections.list(loader.getResources("log4j2.xml")));
+            Files.delete(host.resolve("log4j2.xml"));
+            assertNull(loader.getResource("log4j2.xml"));
+            assertFalse(loader.getResources("log4j2.xml").hasMoreElements());
+        }
+    }
+
+    @Test
     void prefersClientLibrariesAndResourcesWhileSharingSelectedHostApis() throws Exception {
         Path host = compile("host", fixtures("host"));
         Path client = compile("client", fixtures("client"));
