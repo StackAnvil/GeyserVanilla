@@ -24,6 +24,7 @@ dependencies {
     api(project(":mod"))
     shadowBundle(project(path = ":mod", configuration = "transformProductionFabric"))
     shadowBundle(projects.core)
+    shadowBundle(projects.vanillaHost)
     includeTransitive(projects.core)
 
     // These are NOT transitively included, and instead shadowed (+ relocated, if not under the org.geyser namespace).

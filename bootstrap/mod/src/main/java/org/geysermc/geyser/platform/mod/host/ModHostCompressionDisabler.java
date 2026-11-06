@@ -23,7 +23,7 @@
  * @link https://github.com/GeyserMC/Geyser
  */
 
-package org.geysermc.geyser.platform.mod;
+package org.geysermc.geyser.platform.mod.host;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -38,7 +38,7 @@ import net.minecraft.network.protocol.login.ClientboundLoginFinishedPacket;
  * As of 1.8 - 1.17.1, compression is enabled in the Netty pipeline by adding a listener after a packet is written.
  * If we simply "cancel" or don't forward the packet, then the listener is never called.
  */
-public class GeyserModCompressionDisabler extends ChannelOutboundHandlerAdapter {
+public class ModHostCompressionDisabler extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {

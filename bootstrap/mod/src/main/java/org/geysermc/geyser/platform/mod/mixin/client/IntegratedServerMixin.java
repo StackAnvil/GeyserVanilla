@@ -29,11 +29,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.level.GameType;
-import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.platform.mod.GeyserModBootstrap;
+import org.geysermc.geyser.platform.mod.host.ModRuntime;
 import org.geysermc.geyser.platform.mod.GeyserServerPortGetter;
-import org.geysermc.geyser.text.GeyserLocale;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -41,7 +38,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Objects;
 
 @Mixin(IntegratedServer.class)
 public class IntegratedServerMixin implements GeyserServerPortGetter {
@@ -52,17 +48,12 @@ public class IntegratedServerMixin implements GeyserServerPortGetter {
 
     @Inject(method = "publishServer(Lnet/minecraft/server/MinecraftServer$MultiplayerScope;I)Z", at = @At("RETURN"))
     private void onOpenToLan(MinecraftServer.MultiplayerScope scope, int port, CallbackInfoReturnable<Boolean> cir) {
-        if (cir.getReturnValueZ()) {
-            // If the LAN is opened, starts Geyser.
-            GeyserModBootstrap instance = GeyserModBootstrap.getInstance();
-            instance.setServer((MinecraftServer) (Object) this);
-            instance.onGeyserEnable();
-            // Ensure player locale has been loaded, in case it's different from Java system language
-            GeyserLocale.loadGeyserLocale(this.minecraft.options.languageCode);
-            // Give indication that Geyser is loaded
-            Objects.requireNonNull(this.minecraft.player);
-            this.minecraft.player.sendSystemMessage(Component.literal(GeyserLocale.getPlayerLocaleString("geyser.core.start.ip_suppressed",
-                    this.minecraft.options.languageCode, String.valueOf(GeyserImpl.getInstance().bedrockListener().port()))));
+        ModRuntime runtime = ModRuntime.instance();
+        if (cir.getReturnValueZ() && runtime != null) {
+            String message = runtime.lanStarted((MinecraftServer) (Object) this, minecraft.options.languageCode);
+            if (minecraft.player != null && message != null) {
+                minecraft.player.sendSystemMessage(Component.literal(message));
+            }
         }
     }
 

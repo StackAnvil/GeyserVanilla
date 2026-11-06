@@ -13,7 +13,9 @@ BungeeCord tests cover injected status requests, console commands, reload with a
 ViaProxy tests cover native status requests, console commands, host authentication profiles, proxy restart, and shutdown without stopping the proxy's network workers.
 Paper tests cover injected status requests, commands, styled chat, integrated ping, world block IDs, biome names, decorated-pot components, Geyser reload, and independent plugin shutdown.
 Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, custom block palettes, components, and core translation behavior.
-Runtime loading for Fabric and NeoForge is still under development.
+Fabric 0.19.5 and NeoForge 26.3.0.1-beta dedicated servers also pass runtime isolation checks.
+These tests cover injected status requests, offline Java login, configuration, chunks, inventory packets, world reads, commands, ping, reload, and independent shutdown.
+Client LAN startup is wired to the isolated runtime but still needs a live test.
 Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
 
 Build and run the standalone jar with Java 25 or newer.

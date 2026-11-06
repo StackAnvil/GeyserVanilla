@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 public final class VanillaHostedRuntime implements AutoCloseable {
     private static final List<String> SHARED_APIS = List.of(
         "org.geysermc.geyser.vanilla.runtime.", "org.geysermc.geyser.vanilla.host.",
-        "org.geysermc.geyser.api.", "org.geysermc.api.", "org.geysermc.event.", "org.cloudburstmc.math.");
+        "org.geysermc.geyser.api.", "org.geysermc.api.", "org.geysermc.cumulus.", "org.geysermc.event.", "org.cloudburstmc.math.");
 
     private final VanillaClassLoader loader;
 

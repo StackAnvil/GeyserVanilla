@@ -35,6 +35,7 @@ dependencies {
     api(project(":mod"))
     shadowBundle(project(path = ":mod", configuration = "transformProductionNeoForge"))
     shadowBundle(projects.core)
+    shadowBundle(projects.vanillaHost)
 
     // Let's shade in our own api
     shadowBundle(projects.api)

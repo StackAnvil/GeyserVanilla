@@ -31,71 +31,71 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.level.ServerPlayer;
-import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.command.CommandRegistry;
-import org.geysermc.geyser.command.CommandSourceConverter;
-import org.geysermc.geyser.command.GeyserCommandSource;
-import org.geysermc.geyser.platform.mod.GeyserModBootstrap;
+import net.fabricmc.loader.api.metadata.Person;
+import org.geysermc.geyser.api.util.PlatformType;
 import org.geysermc.geyser.platform.mod.GeyserModUpdateListener;
-import org.geysermc.geyser.platform.mod.command.ModCommandSource;
 import org.geysermc.geyser.platform.mod.host.ModCommandSender;
+import org.geysermc.geyser.platform.mod.host.ModRuntime;
 import org.geysermc.geyser.platform.mod.host.ServerCommandSender;
-import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.fabric.FabricServerCommandManager;
 
-public class GeyserFabricBootstrap extends GeyserModBootstrap implements ModInitializer {
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.function.Function;
 
-    public GeyserFabricBootstrap() {
-        super(new GeyserFabricPlatform());
-    }
-
+public class GeyserFabricBootstrap extends ModRuntime implements ModInitializer {
     @Override
     public void onInitialize() {
-        if (isServer()) {
-            // Set as an event, so we can get the proper IP and port if needed
-            ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
-                this.setServer(server);
-                onGeyserEnable();
-            });
+        if (dedicated()) {
+            ServerLifecycleEvents.SERVER_STARTED.register(this::serverStarted);
         } else {
-            ClientLifecycleEvents.CLIENT_STOPPING.register((_)-> {
-                onGeyserShutdown();
-            });
+            ClientLifecycleEvents.CLIENT_STOPPING.register(client -> close());
         }
-
-        // These are only registered once
-        ServerLifecycleEvents.SERVER_STOPPING.register((_) -> {
-            if (isServer()) {
-                onGeyserShutdown();
-            } else {
-                onGeyserDisable();
-            }
-        });
-
-        ServerPlayConnectionEvents.JOIN.register((handler, _, _) -> GeyserModUpdateListener.onPlayReady(handler.getPlayer()));
-
-        this.onGeyserInitialize();
-
-        var sourceConverter = new CommandSourceConverter<>(
-                ModCommandSender.class,
-                id -> {
-                    ServerPlayer player = getServer().getPlayerList().getPlayer(id);
-                    return player == null ? null : new ServerCommandSender(player.createCommandSourceStack());
-                },
-                () -> new ServerCommandSender(getServer().createCommandSourceStack()),
-                ModCommandSource::new
-        );
-        CommandManager<GeyserCommandSource> cloud = new FabricServerCommandManager<>(
-                ExecutionCoordinator.simpleCoordinator(),
-                ServerCommandSender.mapper(sourceConverter::map, sourceConverter::reverse)
-        );
-        this.setCommandRegistry(new CommandRegistry(GeyserImpl.getInstance(), cloud, false)); // applying root permission would be a breaking change because we can't register permission defaults
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> serverStopped());
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> GeyserModUpdateListener.onPlayReady(handler.getPlayer()));
+        initialize();
     }
 
+    public PlatformType platformType() { return PlatformType.FABRIC; }
+    public boolean dedicated() { return FabricLoader.getInstance().getEnvironmentType() == EnvType.SERVER; }
+    public Path dataFolder() { return FabricLoader.getInstance().getConfigDir().resolve("Geyser-Fabric"); }
+    public Path floodgateFolder() {
+        return FabricLoader.getInstance().isModLoaded("floodgate")
+            ? FabricLoader.getInstance().getConfigDir().resolve("floodgate") : null;
+    }
+
+    public InputStream resource(String resource) {
+        var path = FabricLoader.getInstance().getModContainer("geyser-fabric").orElseThrow().findPath(resource);
+        try {
+            return path.isPresent() ? Files.newInputStream(path.get()) : null;
+        } catch (IOException failure) {
+            return null;
+        }
+    }
+
+    public Object commandManager(Function<ModCommandSender, Object> map, Function<Object, ModCommandSender> reverse) {
+        return new FabricServerCommandManager<>(ExecutionCoordinator.simpleCoordinator(), ServerCommandSender.mapper(map, reverse));
+    }
+
+    public String commandRegistryType() { return ""; }
+
     @Override
-    public boolean isServer() {
-        return FabricLoader.getInstance().getEnvironmentType().equals(EnvType.SERVER);
+    public Map<String, Object> metadata() {
+        var info = super.metadata();
+        var loader = FabricLoader.getInstance();
+        loader.getModContainer("fabricloader").ifPresent(mod ->
+            info.put("platformVersion", mod.getMetadata().getVersion().getFriendlyString()));
+        info.put("environmentType", loader.getEnvironmentType().name());
+        info.put("mods", loader.getAllMods().stream().map(mod -> {
+            var meta = mod.getMetadata();
+            return Map.of("enabled", loader.isModLoaded(meta.getId()), "name", meta.getId(),
+                "version", meta.getVersion().getFriendlyString(),
+                "authors", meta.getAuthors().stream().map(Person::getName).toList());
+        }).toList());
+        return info;
     }
 }

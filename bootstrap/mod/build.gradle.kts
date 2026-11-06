@@ -27,6 +27,7 @@ val vanillaTestRuntime by configurations.creating
 
 dependencies {
     api(projects.core)
+    api(projects.vanillaHost)
     compileOnly(libs.mixin)
     compileOnly(libs.mixinextras)
 

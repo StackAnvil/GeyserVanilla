@@ -25,7 +25,6 @@
 
 package org.geysermc.geyser.platform.neoforge;
 
-import net.neoforged.neoforge.server.permission.events.PermissionGatherEvent;
 import org.geysermc.geyser.GeyserImpl;
 import org.geysermc.geyser.api.event.lifecycle.GeyserRegisterPermissionsEvent;
 import org.geysermc.geyser.api.util.TriState;
@@ -38,6 +37,7 @@ import org.incendo.cloud.neoforge.PermissionNotRegisteredException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public class GeyserNeoForgeCommandRegistry extends CommandRegistry {
 
@@ -46,7 +46,8 @@ public class GeyserNeoForgeCommandRegistry extends CommandRegistry {
      * NeoForge requires that all permissions are registered, and cloud-neoforge follows that.
      * This is unlike most platforms, on which we wouldn't register a permission if no default was provided.
      */
-    private final Set<String> undefinedPermissions = new HashSet<>();
+    // CommandRegistry registers extension commands during its constructor.
+    private Set<String> undefinedPermissions;
 
     public GeyserNeoForgeCommandRegistry(GeyserImpl geyser, CommandManager<GeyserCommandSource> cloud) {
         super(geyser, cloud);
@@ -59,6 +60,9 @@ public class GeyserNeoForgeCommandRegistry extends CommandRegistry {
         // FIRST STAGE: Collect all permissions that may have undefined defaults.
         if (!command.permission().isBlank() && command.permissionDefault() == null) {
             // Permission requirement exists but no default value specified.
+            if (undefinedPermissions == null) {
+                undefinedPermissions = new HashSet<>();
+            }
             undefinedPermissions.add(command.permission());
         }
     }
@@ -70,20 +74,21 @@ public class GeyserNeoForgeCommandRegistry extends CommandRegistry {
         // SECOND STAGE
         // Now that we are aware of all commands, we can eliminate some incorrect assumptions.
         // Example: two commands may have the same permission, but only of them defines a permission default.
-        undefinedPermissions.removeAll(permissionDefaults.keySet());
+        if (undefinedPermissions != null) {
+            undefinedPermissions.removeAll(permissionDefaults.keySet());
+        }
     }
 
     /**
      * Registers permissions with possibly undefined defaults.
      * Should be subscribed late to allow extensions and mods to register a desired permission default first.
      */
-    void onPermissionGatherForUndefined(PermissionGatherEvent.Nodes event) {
-        // THIRD STAGE
+    public void gatherUndefinedPermissions(BiConsumer<String, TriState> registrar) {
+        if (undefinedPermissions == null) {
+            return;
+        }
         for (String permission : undefinedPermissions) {
-            if (PermissionUtils.register(permission, TriState.NOT_SET, event)) {
-                // The permission was not already registered
-                geyser.getLogger().debug("Registered permission " + permission + " with fallback default value of NOT_SET");
-            }
+            registrar.accept(permission, TriState.NOT_SET);
         }
     }
 

@@ -26,27 +26,36 @@ import java.util.function.Supplier;
 
 /** UDP transport selection for Bedrock's RakNet and signaling listeners. */
 public enum BedrockTransport {
-    NIO(NioDatagramChannel.class, NioIoHandler::newFactory),
-    EPOLL(EpollDatagramChannel.class, EpollIoHandler::newFactory),
-    KQUEUE(KQueueDatagramChannel.class, KQueueIoHandler::newFactory),
-    IO_URING(IoUringDatagramChannel.class, IoUringIoHandler::newFactory);
+    NIO(() -> NioDatagramChannel.class, NioIoHandler::newFactory),
+    EPOLL(() -> EpollDatagramChannel.class, EpollIoHandler::newFactory),
+    KQUEUE(() -> KQueueDatagramChannel.class, KQueueIoHandler::newFactory),
+    IO_URING(() -> IoUringDatagramChannel.class, () -> IoUringIoHandler.newFactory());
 
     public static final BedrockTransport PREFERRED = select();
 
-    private final Class<? extends DatagramChannel> datagramChannelClass;
+    private final Supplier<Class<? extends DatagramChannel>> datagramChannelClass;
     private final Supplier<IoHandlerFactory> ioHandlerFactory;
 
-    BedrockTransport(Class<? extends DatagramChannel> datagramChannelClass, Supplier<IoHandlerFactory> ioHandlerFactory) {
+    BedrockTransport(Supplier<Class<? extends DatagramChannel>> datagramChannelClass, Supplier<IoHandlerFactory> ioHandlerFactory) {
         this.datagramChannelClass = datagramChannelClass;
         this.ioHandlerFactory = ioHandlerFactory;
     }
 
     public Class<? extends DatagramChannel> datagramChannelClass() {
-        return datagramChannelClass;
+        return datagramChannelClass.get();
     }
 
     public BiFunction<Integer, ThreadFactory, EventLoopGroup> eventLoopGroupFactory() {
         return (threads, factory) -> new MultiThreadIoEventLoopGroup(threads, factory, ioHandlerFactory.get());
+    }
+
+    private static boolean ioUringAvailable() {
+        try {
+            return IoUring.isAvailable();
+        } catch (NoClassDefFoundError unavailable) {
+            // Minecraft's client runtime does not include the optional io_uring transport.
+            return false;
+        }
     }
 
     private static BedrockTransport select() {
@@ -54,7 +63,7 @@ public enum BedrockTransport {
             return NIO;
         }
         // Keep the previous JVM flag working for existing installations.
-        if ((Boolean.getBoolean("Geyser.io_uring") || Boolean.getBoolean("Mcpl.io_uring")) && IoUring.isAvailable()) {
+        if ((Boolean.getBoolean("Geyser.io_uring") || Boolean.getBoolean("Mcpl.io_uring")) && ioUringAvailable()) {
             return IO_URING;
         }
         if (Epoll.isAvailable()) {

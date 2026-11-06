@@ -126,7 +126,7 @@ public abstract class GeyserModBootstrap implements GeyserBootstrap {
 
         // We want to do this late in the server startup process to allow other mods
         // To do their job injecting, then connect into *that*
-        this.geyserInjector = new GeyserModInjector(server, this.platform);
+        this.geyserInjector = new GeyserModInjector(server);
         if (isServer()) {
             this.geyserInjector.initializeLocalChannel(this);
         }
