@@ -22,7 +22,8 @@ These tests cover injected status requests, offline Java login, configuration, c
 Client LAN startup is wired to the isolated runtime but still needs a live test.
 The game-test suite runs against the host test registries and passes its required cases, including native item defaults and packet coverage.
 Two optional entity metadata cases still fail for unsupported block and item displays.
-Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
+Bedrock gameplay checks on the standalone jar cover encrypted offline login, spawning, chunks, item and creative inventories, recipes, live block changes, cow metadata, chat, server kick messages, and reconnects.
+Broader gameplay and client LAN testing remain incomplete, and these development builds are not ready for deployment.
 
 Build and run the standalone jar with Java 25 or newer.
 The upstream information below describes Geyser's features and protocol targets, rather than a completed compatibility claim for this fork.

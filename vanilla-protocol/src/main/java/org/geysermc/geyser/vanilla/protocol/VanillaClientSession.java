@@ -190,7 +190,8 @@ public final class VanillaClientSession {
 
     private VanillaPacketListener listener(ConnectionProtocol phase) {
         return new VanillaPacketListener(phase, this::receiveNetwork,
-            this::notifyDisconnect, () -> !closed);
+            // Process a queued server rejection before the transport's generic close reason.
+            details -> executor.execute(() -> notifyDisconnect(details)), () -> !closed);
     }
 
     private void receiveNetwork(Packet<?> packet) {

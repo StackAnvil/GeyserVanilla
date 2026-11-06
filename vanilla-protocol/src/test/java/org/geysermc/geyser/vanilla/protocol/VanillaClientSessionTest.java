@@ -25,6 +25,7 @@ import net.minecraft.network.protocol.game.GameProtocols;
 import net.minecraft.network.protocol.handshake.HandshakeProtocols;
 import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
 import net.minecraft.network.protocol.login.ClientboundLoginFinishedPacket;
+import net.minecraft.network.protocol.login.ClientboundLoginDisconnectPacket;
 import net.minecraft.network.protocol.login.ClientboundHelloPacket;
 import net.minecraft.network.protocol.login.ClientboundLoginCompressionPacket;
 import net.minecraft.network.protocol.login.LoginProtocols;
@@ -36,6 +37,7 @@ import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.Test;
 
 import java.io.EOFException;
 import java.io.InputStream;
@@ -120,6 +122,53 @@ class VanillaClientSessionTest {
             return true;
         }
     };
+
+    @Test
+    @Timeout(20)
+    void preservesServerRejectionWhenTransportClosesBeforeQueuedPacketsRun() throws Exception {
+        var tasks = new java.util.concurrent.LinkedBlockingQueue<Runnable>();
+        var reason = new AtomicReference<String>();
+        var error = new AtomicReference<Throwable>();
+        var notifications = new java.util.concurrent.atomic.AtomicInteger();
+        var client = new VanillaClientSession(new GameProfile(UUID.randomUUID(), "RejectedPlayer"), null,
+            tasks::add, CONTEXT, ignored -> {}, details -> {
+                reason.set(details.reason().getString());
+                notifications.incrementAndGet();
+            }, error::set);
+        try (var server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+            var fixture = CompletableFuture.runAsync(() -> {
+                try (var socket = server.accept()) {
+                    socket.setSoTimeout(10000);
+                    var transport = new FixtureTransport(socket.getInputStream(), socket.getOutputStream());
+                    assertInstanceOf(ClientIntentionPacket.class, transport.read(HandshakeProtocols.SERVERBOUND));
+                    assertInstanceOf(ServerboundHelloPacket.class, transport.read(LoginProtocols.SERVERBOUND));
+                    transport.write(LoginProtocols.CLIENTBOUND,
+                        new ClientboundLoginDisconnectPacket(Component.literal("You are not white-listed on this server!")));
+                } catch (Exception failure) {
+                    throw new RuntimeException(failure);
+                }
+            });
+            try {
+                client.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), server.getLocalPort()),
+                    "localhost", server.getLocalPort(), false).sync();
+                var connected = tasks.poll(5, TimeUnit.SECONDS);
+                assertNotNull(connected);
+                connected.run();
+                fixture.get(10, TimeUnit.SECONDS);
+                assertTrue(client.channel().closeFuture().await(5, TimeUnit.SECONDS));
+                // The application executor has not yet processed the server's rejection.
+                client.tick();
+                Runnable task;
+                while ((task = tasks.poll()) != null) task.run();
+                assertNull(error.get(), () -> String.valueOf(error.get()));
+                assertEquals("You are not white-listed on this server!", reason.get());
+                assertEquals(1, notifications.get());
+                assertTrue(client.isClosed());
+            } finally {
+                client.disconnect(Component.literal("Test cleanup"));
+            }
+        }
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
