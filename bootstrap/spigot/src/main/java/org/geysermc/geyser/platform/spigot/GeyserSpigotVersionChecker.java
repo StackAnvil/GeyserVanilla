@@ -60,12 +60,12 @@ public final class GeyserSpigotVersionChecker {
         // It isn't present in all server versions, but if we can't find it, then we're probably not in the latest version
         Class<?> sharedConstants;
         try {
-            sharedConstants = Class.forName("net.minecraft.SharedConstants");
+            sharedConstants = Class.forName("net.minecraft.SharedConstants", true, Bukkit.getServer().getClass().getClassLoader());
         } catch (ClassNotFoundException e) {
             // We're using pre-1.17
             String prefix = Bukkit.getServer().getClass().getPackage().getName().replace("org.bukkit.craftbukkit", "net.minecraft.server");
             try {
-                sharedConstants = Class.forName(prefix + ".SharedConstants");
+                sharedConstants = Class.forName(prefix + ".SharedConstants", true, Bukkit.getServer().getClass().getClassLoader());
             } catch (ClassNotFoundException e2) {
                 sendOutdatedMessage(logger);
                 return;

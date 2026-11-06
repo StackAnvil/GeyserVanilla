@@ -7,11 +7,13 @@ The built Geyser jar does not contain Minecraft classes.
 
 The standalone jar starts and stops successfully with the downloaded client.
 The plugins for Velocity 4.3.1, BungeeCord build 2111, and ViaProxy 3.4.14 also pass startup and shutdown checks.
+The Spigot plugin passes these checks on Paper 26.3 build 243.
 Velocity tests cover injected status requests, styled chat conversion, console commands, and shutdown without stopping the proxy's network workers.
 BungeeCord tests cover injected status requests, console commands, reload with an existing connection, and shutdown without stopping the proxy's network workers.
 ViaProxy tests cover native status requests, console commands, host authentication profiles, proxy restart, and shutdown without stopping the proxy's network workers.
+Paper tests cover injected status requests, commands, styled chat, integrated ping, world block IDs, biome names, decorated-pot components, Geyser reload, and independent plugin shutdown.
 Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, custom block palettes, components, and core translation behavior.
-Runtime loading for Spigot/Paper, Fabric, and NeoForge is still under development.
+Runtime loading for Fabric and NeoForge is still under development.
 Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
 
 Build and run the standalone jar with Java 25 or newer.
@@ -74,6 +76,7 @@ Standalone uses `cache/vanilla` as its runtime cache, relative to the launch dir
 Velocity uses `plugins/Geyser-Velocity/cache/vanilla`.
 BungeeCord uses `plugins/Geyser-BungeeCord/cache/vanilla`.
 ViaProxy uses `plugins/Geyser/cache/vanilla`.
+Spigot/Paper uses `plugins/Geyser-Spigot/cache/vanilla`.
 To change it, pass `-Dgeyser.vanilla.cache=/path/to/cache` before `-jar`.
 
 ## Contributing

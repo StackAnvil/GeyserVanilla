@@ -4,8 +4,16 @@ plugins {
     alias(libs.plugins.runpaper)
 }
 
+val vanillaTestRuntime by configurations.creating
+
+tasks.test {
+    useJUnitPlatform()
+    classpath = vanillaTestRuntime + classpath
+}
+
 dependencies {
     api(projects.core)
+    api(projects.vanillaHost)
     api(libs.erosion.bukkit.common) {
         isTransitive = false
     }
@@ -34,6 +42,13 @@ dependencies {
     implementation(libs.gson.record.factory) {
         isTransitive = false
     }
+
+    vanillaTestRuntime(project(path = ":vanilla-protocol", configuration = "vanillaClient"))
+    testImplementation(libs.folia.api)
+    testImplementation(platform("org.junit:junit-bom:6.0.0"))
+    testImplementation(libs.junit)
+    testImplementation(libs.mockito)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 // Relocate net.kyori but exclude the component logger
@@ -64,10 +79,6 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
 
     dependencies {
         exclude(dependency("com.google.*:.*"))
-
-        // Netty is provided by the server, except for the haproxy module (missing on older Spigot builds)
-        // and the http codec (needed for built-in signaling)
-        exclude("io.netty", libs.netty.codec.haproxy, libs.netty.codec.http)
 
         // Commodore includes Brigadier
         exclude(dependency("com.mojang:.*"))

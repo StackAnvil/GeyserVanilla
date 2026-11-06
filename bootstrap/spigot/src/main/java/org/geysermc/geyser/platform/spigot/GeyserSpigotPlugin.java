@@ -29,13 +29,9 @@ import com.viaversion.viaversion.api.Via;
 import com.viaversion.viaversion.api.data.MappingData;
 import com.viaversion.viaversion.api.protocol.ProtocolPathEntry;
 import com.viaversion.viaversion.api.protocol.version.ProtocolVersion;
-import io.netty.buffer.ByteBuf;
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.Plugin;
@@ -45,8 +41,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.geysermc.geyser.FloodgateKeyLoader;
 import org.geysermc.geyser.GeyserBootstrap;
 import org.geysermc.geyser.GeyserImpl;
-import org.geysermc.geyser.adapters.paper.PaperAdapters;
-import org.geysermc.geyser.adapters.spigot.SpigotAdapters;
 import org.geysermc.geyser.api.event.lifecycle.GeyserRegisterPermissionsEvent;
 import org.geysermc.geyser.api.util.PlatformType;
 import org.geysermc.geyser.command.CommandRegistry;
@@ -58,6 +52,7 @@ import org.geysermc.geyser.level.WorldManager;
 import org.geysermc.geyser.network.bedrock.GameProtocol;
 import org.geysermc.geyser.ping.GeyserLegacyPingPassthrough;
 import org.geysermc.geyser.ping.IGeyserPingPassthrough;
+import org.geysermc.geyser.platform.spigot.host.SpigotHost;
 import org.geysermc.geyser.platform.spigot.command.SpigotCommandRegistry;
 import org.geysermc.geyser.platform.spigot.command.SpigotCommandSource;
 import org.geysermc.geyser.platform.spigot.world.GeyserPistonListener;
@@ -76,13 +71,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
+public class GeyserSpigotPlugin implements GeyserBootstrap {
+    private final JavaPlugin plugin;
+    private final SpigotHost host;
 
     private CommandRegistry commandRegistry;
     private GeyserPluginConfig geyserConfig;
     private GeyserSpigotInjector geyserInjector;
-    private final GeyserSpigotLogger geyserLogger = GeyserPaperLogger.supported() ?
-            new GeyserPaperLogger(this, getLogger()) : new GeyserSpigotLogger(getLogger());
+    private final GeyserSpigotLogger geyserLogger;
     private IGeyserPingPassthrough geyserSpigotPingPassthrough;
     private GeyserSpigotWorldManager geyserWorldManager;
 
@@ -93,9 +89,15 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
      */
     private String minecraftVersion;
 
-    @Override
-    public void onLoad() {
-        onGeyserInitialize();
+    public GeyserSpigotPlugin(JavaPlugin plugin, SpigotHost host) {
+        this.plugin = plugin;
+        this.host = host;
+        this.geyserLogger = GeyserPaperLogger.supported()
+            ? new GeyserPaperLogger(plugin, plugin.getLogger()) : new GeyserSpigotLogger(plugin.getLogger());
+    }
+
+    public JavaPlugin plugin() {
+        return plugin;
     }
 
     @Override
@@ -104,7 +106,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
         try {
             // AvailableCommandsSerializer_v291 complains otherwise - affects at least 1.8
-            ByteBuf.class.getMethod("writeShortLE", int.class);
+            Class.forName("io.netty.buffer.ByteBuf", false, plugin.getClass().getClassLoader()).getMethod("writeShortLE", int.class);
             // Only available in 1.13.x
             Class.forName("org.bukkit.event.server.ServerLoadEvent");
             // We depend on this as a fallback in certain scenarios
@@ -125,7 +127,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
             if (!PaperAdventure.canSendMessageUsingComponent()) { // Prepare for Paper eventually removing Bungee chat
                 geyserLogger.error("*********************************************");
                 geyserLogger.error("");
-                geyserLogger.error(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server_type.header", getServer().getName()));
+                geyserLogger.error(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server_type.header", plugin.getServer().getName()));
                 geyserLogger.error(GeyserLocale.getLocaleStringLog("geyser.bootstrap.unsupported_server_type.message", "Paper"));
                 geyserLogger.error("");
                 geyserLogger.error("*********************************************");
@@ -134,7 +136,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         }
 
         try {
-            Class.forName("io.netty.util.internal.ObjectPool$ObjectCreator");
+            Class.forName("io.netty.util.internal.ObjectPool$ObjectCreator", false, plugin.getClass().getClassLoader());
         } catch (ClassNotFoundException e) {
             geyserLogger.error("*********************************************");
             geyserLogger.error("");
@@ -172,11 +174,10 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         this.geyser = GeyserImpl.load(this);
     }
 
-    @Override
     public void onEnable() {
         // Disabling the plugin in onLoad() is not supported; we need to manually stop here and disable ourselves
         if (geyser == null) {
-            Bukkit.getPluginManager().disablePlugin(this);
+            Bukkit.getPluginManager().disablePlugin(plugin);
             return;
         }
 
@@ -191,7 +192,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         try {
             // LegacyPaperCommandManager works for spigot too, see https://cloud.incendo.org/minecraft/paper
             cloud = new LegacyPaperCommandManager<>(
-                    this,
+                    plugin,
                     ExecutionCoordinator.simpleCoordinator(),
                     sourceConverter
             );
@@ -208,17 +209,16 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         }
 
         this.commandRegistry = new SpigotCommandRegistry(geyser, cloud);
+    }
 
-        // Needs to be an anonymous inner class otherwise Bukkit complains about missing classes
-        Bukkit.getPluginManager().registerEvents(new Listener() {
-            @EventHandler
-            public void onServerLoaded(ServerLoadEvent event) {
-                if (event.getType() == ServerLoadEvent.LoadType.RELOAD) {
-                    geyser.setShuttingDown(false);
-                }
-                onGeyserEnable();
-            }
-        }, this);
+    public void onServerLoaded(boolean reloading) {
+        if (geyser == null) {
+            return;
+        }
+        if (reloading) {
+            geyser.setShuttingDown(false);
+        }
+        onGeyserEnable();
     }
 
     public void onGeyserEnable() {
@@ -227,7 +227,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
         if (GeyserImpl.getInstance().isReloading()) {
             geyserConfig = loadConfig(GeyserPluginConfig.class);
             if (geyserConfig == null) {
-                Bukkit.getPluginManager().disablePlugin(this);
+                Bukkit.getPluginManager().disablePlugin(plugin);
                 return;
             }
         }
@@ -260,31 +260,18 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
         // We want to do this late in the server startup process to allow plugins such as ViaVersion and ProtocolLib
         // To do their job injecting, then connect into *that*
-        this.geyserInjector = new GeyserSpigotInjector(isViaVersion);
+        this.geyserInjector = new GeyserSpigotInjector(host);
         this.geyserInjector.initializeLocalChannel(this);
 
         if (Boolean.parseBoolean(System.getProperty("Geyser.UseDirectAdapters", "true"))) {
             try {
-                boolean isPaper = false;
-                try {
-                    String name = Bukkit.getServer().getClass().getPackage().getName();
-                    String nmsVersion = name.substring(name.lastIndexOf('.') + 1);
-                    SpigotAdapters.registerWorldAdapter(nmsVersion);
-                    geyserLogger.debug("Using spigot NMS adapter for nms version: " + nmsVersion);
-                } catch (Exception e) { // Likely running on Paper 1.20.5+
-                    geyserLogger.debug("Unable to find spigot world manager: " + e.getMessage());
-                    //noinspection deprecation
-                    int protocolVersion = Bukkit.getUnsafe().getProtocolVersion();
-                    PaperAdapters.registerClosestWorldAdapter(protocolVersion);
-                    isPaper = true;
-                    geyserLogger.debug("Using paper world adapter for protocol version: " + protocolVersion);
-                }
+                host.initializeWorldAdapter();
 
                 if (isViaVersion && isViaVersionNeeded()) {
-                    this.geyserWorldManager = new GeyserSpigotLegacyNativeWorldManager(this, isPaper);
+                    this.geyserWorldManager = new GeyserSpigotLegacyNativeWorldManager(this, host);
                 } else {
                     // No ViaVersion
-                    this.geyserWorldManager = new GeyserSpigotNativeWorldManager(this, isPaper);
+                    this.geyserWorldManager = new GeyserSpigotNativeWorldManager(plugin, host);
                 }
                 geyserLogger.debug("Using world manager of type: " + this.geyserWorldManager.getClass().getSimpleName());
             } catch (Throwable e) {
@@ -299,7 +286,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
         if (this.geyserWorldManager == null) {
             // No NMS adapter
-            this.geyserWorldManager = new GeyserSpigotWorldManager(this);
+            this.geyserWorldManager = new GeyserSpigotWorldManager(plugin, host);
             geyserLogger.debug("Using default world manager.");
         }
 
@@ -332,11 +319,11 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
         // Events cannot be unregistered - re-registering results in duplicate firings
         GeyserSpigotBlockPlaceListener blockPlaceListener = new GeyserSpigotBlockPlaceListener(geyser, this.geyserWorldManager);
-        pluginManager.registerEvents(blockPlaceListener, this);
+        pluginManager.registerEvents(blockPlaceListener, plugin);
 
-        pluginManager.registerEvents(new GeyserPistonListener(geyser, this.geyserWorldManager), this);
+        pluginManager.registerEvents(new GeyserPistonListener(geyser, this.geyserWorldManager), plugin);
 
-        pluginManager.registerEvents(new GeyserSpigotUpdateListener(), this);
+        pluginManager.registerEvents(new GeyserSpigotUpdateListener(), plugin);
     }
 
     @Override
@@ -350,15 +337,11 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
     public void onGeyserShutdown() {
         if (geyser != null) {
             geyser.shutdown();
+            geyser = null;
         }
         if (geyserInjector != null) {
             geyserInjector.shutdown();
         }
-    }
-
-    @Override
-    public void onDisable() {
-        this.onGeyserShutdown();
     }
 
     @Override
@@ -393,7 +376,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
     @Override
     public Path getConfigFolder() {
-        return getDataFolder().toPath();
+        return plugin.getDataFolder().toPath();
     }
 
     @Override
@@ -413,14 +396,14 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
     @Override
     public SocketAddress getSocketAddress() {
-        return this.geyserInjector.getServerSocketAddress();
+        return this.geyserInjector == null ? null : this.geyserInjector.getServerSocketAddress();
     }
 
     /**
      * @return the server version before ViaVersion finishes initializing
      */
-    public ProtocolVersion getServerProtocolVersion() {
-        return ProtocolVersion.getClosest(this.minecraftVersion);
+    public int getServerProtocolVersion() {
+        return ProtocolVersion.getClosest(this.minecraftVersion).getVersion();
     }
 
     /**
@@ -429,9 +412,9 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
      * @return true if there is any block mappings difference between the server and client.
      */
     private boolean isViaVersionNeeded() {
-        ProtocolVersion serverVersion = getServerProtocolVersion();
+        int serverVersion = getServerProtocolVersion();
         List<ProtocolPathEntry> protocolList = Via.getManager().getProtocolManager().getProtocolPath(GameProtocol.getJavaProtocolVersion(),
-                serverVersion.getVersion());
+                serverVersion);
         if (protocolList == null) {
             // No translation needed!
             return false;
@@ -465,7 +448,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
     @Override
     public Path getFloodgateKeyPath() {
         Plugin floodgate = Bukkit.getPluginManager().getPlugin("floodgate");
-        Path geyserDataFolder = getDataFolder().toPath();
+        Path geyserDataFolder = plugin.getDataFolder().toPath();
         Path floodgateDataFolder = floodgate != null ? floodgate.getDataFolder().toPath() : null;
 
         return FloodgateKeyLoader.getKeyPath(geyserConfig, floodgateDataFolder, geyserDataFolder, geyserLogger);
@@ -473,7 +456,7 @@ public class GeyserSpigotPlugin extends JavaPlugin implements GeyserBootstrap {
 
     @Override
     public MetricsPlatform createMetricsPlatform() {
-        return new SpigotMetrics(this);
+        return new SpigotMetrics(plugin);
     }
 
     private void warnInvalidProxySetups(String platform) {

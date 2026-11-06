@@ -1,4 +1,4 @@
-main: org.geysermc.geyser.platform.spigot.GeyserSpigotPlugin
+main: org.geysermc.geyser.platform.spigot.GeyserSpigotEntrypoint
 name: ${name}-Spigot
 author: ${author}
 website: ${url}

@@ -35,6 +35,7 @@ import org.geysermc.erosion.bukkit.SchedulerUtils;
 import org.geysermc.geyser.level.WorldManager;
 import org.geysermc.geyser.registry.BlockRegistries;
 import org.geysermc.geyser.session.GeyserSession;
+import org.geysermc.geyser.platform.spigot.host.SpigotHost;
 import net.minecraft.world.level.GameType;
 
 import java.util.Map;
@@ -46,9 +47,11 @@ import java.util.function.Consumer;
  */
 public class GeyserSpigotWorldManager extends WorldManager {
     private final Plugin plugin;
+    protected final SpigotHost host;
 
-    public GeyserSpigotWorldManager(Plugin plugin) {
+    public GeyserSpigotWorldManager(Plugin plugin, SpigotHost host) {
         this.plugin = plugin;
+        this.host = host;
     }
 
     @Override
@@ -88,7 +91,17 @@ public class GeyserSpigotWorldManager extends WorldManager {
 
     @Override
     public void getDecoratedPotData(GeyserSession session, Vector3i pos, Consumer<Map<String, String>> apply) {
-        // FIXME 26.3
+        Player player = Bukkit.getPlayer(session.getPlayerEntity().getUsername());
+        if (player == null) {
+            return;
+        }
+        Block block = player.getWorld().getBlockAt(pos.getX(), pos.getY(), pos.getZ());
+        SchedulerUtils.runTask(plugin, () -> {
+            Map<String, String> assets = host.decoratedPotAssets(block);
+            if (assets != null) {
+                apply.accept(assets);
+            }
+        }, block);
     }
 
     /**
