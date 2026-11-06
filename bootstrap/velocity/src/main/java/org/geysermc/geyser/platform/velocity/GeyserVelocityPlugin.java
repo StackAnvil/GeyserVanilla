@@ -25,15 +25,10 @@
 
 package org.geysermc.geyser.platform.velocity;
 
-import com.google.inject.Inject;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ListenerBoundEvent;
-import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.network.ListenerType;
 import com.velocitypowered.api.network.ProtocolVersion;
-import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.proxy.ProxyServer;
 import lombok.Getter;
@@ -58,6 +53,7 @@ import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.execution.ExecutionCoordinator;
 import org.incendo.cloud.velocity.VelocityCommandManager;
 import org.slf4j.Logger;
+import org.geysermc.geyser.vanilla.runtime.VanillaHostInjector;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -65,11 +61,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-@Plugin(id = "geyser", name = GeyserImpl.NAME + "-Velocity", version = GeyserImpl.VERSION, url = "https://geysermc.org", authors = "GeyserMC")
 public class GeyserVelocityPlugin implements GeyserBootstrap {
 
     private final ProxyServer proxyServer;
     private final PluginContainer container;
+    private final VanillaHostInjector hostInjector;
     private final GeyserVelocityLogger geyserLogger;
     private GeyserPluginConfig geyserConfig;
     private GeyserVelocityInjector geyserInjector;
@@ -81,10 +77,10 @@ public class GeyserVelocityPlugin implements GeyserBootstrap {
     @Getter
     private final Path configFolder = Paths.get("plugins/" + GeyserImpl.NAME + "-Velocity/");
 
-    @Inject
-    public GeyserVelocityPlugin(ProxyServer server, PluginContainer container, Logger logger) {
+    public GeyserVelocityPlugin(ProxyServer server, PluginContainer container, Logger logger, VanillaHostInjector hostInjector) {
         this.proxyServer = server;
         this.container = container;
+        this.hostInjector = hostInjector;
         this.geyserLogger = new GeyserVelocityLogger(logger);
     }
 
@@ -113,7 +109,7 @@ public class GeyserVelocityPlugin implements GeyserBootstrap {
         }
 
         this.geyser = GeyserImpl.load(this);
-        this.geyserInjector = new GeyserVelocityInjector(proxyServer);
+        this.geyserInjector = new GeyserVelocityInjector(hostInjector);
 
         // We need to register commands here, rather than in onGeyserEnable which is invoked during the appropriate ListenerBoundEvent.
         // Reason: players can connect after a listener is bound, and a player join locks registration to the cloud CommandManager.
@@ -155,7 +151,7 @@ public class GeyserVelocityPlugin implements GeyserBootstrap {
 
         // No need to re-register events
         if (!GeyserImpl.getInstance().isReloading()) {
-            proxyServer.getEventManager().register(this, new GeyserVelocityUpdateListener());
+            proxyServer.getEventManager().register(container, new GeyserVelocityUpdateListener());
         }
     }
 
@@ -169,7 +165,11 @@ public class GeyserVelocityPlugin implements GeyserBootstrap {
     @Override
     public void onGeyserShutdown() {
         if (geyser != null) {
-            geyser.shutdown();
+            try {
+                geyser.shutdown();
+            } finally {
+                geyser = null;
+            }
         }
         if (geyserInjector != null) {
             geyserInjector.shutdown();
@@ -201,17 +201,6 @@ public class GeyserVelocityPlugin implements GeyserBootstrap {
         return geyserPingPassthrough;
     }
 
-    @Subscribe
-    public void onInit(ProxyInitializeEvent event) {
-        this.onGeyserInitialize();
-    }
-
-    @Subscribe
-    public void onShutdown(ProxyShutdownEvent event) {
-        this.onGeyserShutdown();
-    }
-
-    @Subscribe
     public void onProxyBound(ListenerBoundEvent event) {
         if (event.getListenerType() == ListenerType.MINECRAFT && !started) {
             // Avoid enabling multiple times

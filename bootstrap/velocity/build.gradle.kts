@@ -7,6 +7,7 @@ plugins {
 dependencies {
     annotationProcessor(libs.velocity.api)
     api(projects.core)
+    api(projects.vanillaHost)
 
     compileOnly(libs.velocity.proxy)
     compileOnly(libs.netty.transport.native.io.uring)
@@ -34,9 +35,9 @@ tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
 
     dependencies {
         exclude(dependency("com.google.*:.*"))
-        exclude(dependency("io.netty:.*"))
         exclude(dependency("org.slf4j:.*"))
-        exclude(dependency("org.ow2.asm:.*"))
+        // Retain engine-only Netty modules such as HAProxy. The downloaded client libraries
+        // take precedence inside the isolated loader, while host helpers use Velocity's Netty.
         // Exclude all Kyori dependencies
         exclude(dependency("net.kyori:.*:.*"))
     }

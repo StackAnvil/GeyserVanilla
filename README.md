@@ -5,10 +5,11 @@ It replaces MCProtocolLib with the vanilla Minecraft client, including its netwo
 The launcher downloads the pinned Java 26.3 client and libraries into a local cache and checks their sizes and SHA-1 hashes.
 The built Geyser jar does not contain Minecraft classes.
 
-The standalone jar starts and stops successfully with the downloaded client.
+The standalone jar and the Velocity 4.3.1 plugin start and stop successfully with the downloaded client.
+Velocity tests cover injected status requests, styled chat conversion, console commands, and shutdown without stopping the proxy's network workers.
 Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, components, and core translation behavior.
-Hosted platforms compile, but their runtime loading is still under development.
-Plugin and mod jars are not ready for deployment, and full Bedrock-to-Java gameplay testing remains incomplete.
+Runtime loading for the other hosted platforms is still under development.
+Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
 
 Build and run the standalone jar with Java 25 or newer.
 The upstream information below describes Geyser's features and protocol targets, rather than a completed compatibility claim for this fork.
@@ -66,7 +67,8 @@ java -jar bootstrap/standalone/build/libs/Geyser-Standalone.jar --nogui
 
 The build and the first launch need network access to download the pinned client and libraries.
 Later launches use the cache after the launcher checks each artifact.
-The default runtime cache is `cache/vanilla`, relative to the launch directory.
+Standalone uses `cache/vanilla` as its runtime cache, relative to the launch directory.
+Velocity uses `plugins/Geyser-Velocity/cache/vanilla`.
 To change it, pass `-Dgeyser.vanilla.cache=/path/to/cache` before `-jar`.
 
 ## Contributing

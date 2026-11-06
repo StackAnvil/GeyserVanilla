@@ -64,11 +64,13 @@ public class MessageTranslator {
     public static Component fromVanilla(net.minecraft.network.chat.Component message, net.minecraft.core.RegistryAccess registries) {
         var json = net.minecraft.network.chat.ComponentSerialization.CODEC.encodeStart(
             registries.createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE), message).getOrThrow();
-        return net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().deserializeFromTree(json);
+        // Hosted Adventure uses the host's Gson classes. Keep their values out of native codecs.
+        return net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().deserialize(json.toString());
     }
 
     public static net.minecraft.network.chat.Component toVanilla(Component message, net.minecraft.core.RegistryAccess registries) {
-        var json = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().serializeToTree(message);
+        var json = com.google.gson.JsonParser.parseString(
+            net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson().serialize(message));
         return net.minecraft.network.chat.ComponentSerialization.CODEC.parse(
             registries.createSerializationContext(com.mojang.serialization.JsonOps.INSTANCE), json).getOrThrow();
     }

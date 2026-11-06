@@ -22,6 +22,9 @@ tasks.test {
     // Match the standalone loader: vanilla's libraries precede older bundled platform libraries.
     classpath = vanillaTestRuntime + classpath
     systemProperty("java.awt.headless", "true")
+    doFirst {
+        systemProperty("geyser.test.engine.classpath", classpath.asPath)
+    }
 }
 
 dependencies {

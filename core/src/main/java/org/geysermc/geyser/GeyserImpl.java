@@ -840,12 +840,24 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
             throw new RuntimeException("Geyser has not been loaded yet!");
         }
 
-        if (getInstance().isReloading()) {
-            instance.startInstance();
-        } else {
-            instance.initialize();
+        try {
+            if (getInstance().isReloading()) {
+                instance.startInstance();
+            } else {
+                instance.initialize();
+            }
+            instance.setEnabled(true);
+        } catch (RuntimeException | Error failure) {
+            // Startup can allocate workers and listeners before the enabled flag is set.
+            try {
+                instance.disable();
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) {
+                    failure.addSuppressed(cleanup);
+                }
+            }
+            throw failure;
         }
-        instance.setEnabled(true);
     }
 
     public GeyserLogger getLogger() {

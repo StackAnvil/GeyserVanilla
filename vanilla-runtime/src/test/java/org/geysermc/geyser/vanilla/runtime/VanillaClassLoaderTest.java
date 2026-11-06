@@ -83,6 +83,43 @@ class VanillaClassLoaderTest {
         assertThrows(ClassNotFoundException.class, () -> loader.loadClass("fixture.Engine"));
     }
 
+    @Test
+    void callsHostedDelegatesWithTheirContextAndPreservesTheirFailures() throws Exception {
+        Path classes = compile("delegate", Map.of("fixture.Delegate", """
+            package fixture;
+            public class Delegate {
+                public Delegate(String value) throws java.io.IOException {
+                    if (Thread.currentThread().getContextClassLoader() != getClass().getClassLoader()) {
+                        throw new AssertionError("wrong constructor context");
+                    }
+                    if (value.equals("fail")) { throw new java.io.IOException("constructor failed"); }
+                }
+                public ClassLoader context() { return Thread.currentThread().getContextClassLoader(); }
+                public void fail() throws java.io.IOException { throw new java.io.IOException("delegate failed"); }
+                public void fatal() { throw new AssertionError("delegate error"); }
+            }
+            """));
+        ClassLoader previous = Thread.currentThread().getContextClassLoader();
+        var loader = new VanillaClassLoader(new URL[] {classes.toUri().toURL()}, getClass().getClassLoader(), List.of());
+        try (var runtime = new VanillaHostedRuntime(loader)) {
+            Object delegate = runtime.create("fixture.Delegate", new Class<?>[] {String.class}, "ok");
+            assertSame(previous, Thread.currentThread().getContextClassLoader());
+            assertSame(loader, runtime.invoke(delegate, "context", new Class<?>[0]));
+            var failure = assertThrows(java.io.IOException.class,
+                () -> runtime.invoke(delegate, "fail", new Class<?>[0]));
+            assertEquals("delegate failed", failure.getMessage());
+            assertSame(previous, Thread.currentThread().getContextClassLoader());
+            var fatal = assertThrows(AssertionError.class,
+                () -> runtime.invoke(delegate, "fatal", new Class<?>[0]));
+            assertEquals("delegate error", fatal.getMessage());
+            assertSame(previous, Thread.currentThread().getContextClassLoader());
+            var constructor = assertThrows(java.io.IOException.class,
+                () -> runtime.create("fixture.Delegate", new Class<?>[] {String.class}, "fail"));
+            assertEquals("constructor failed", constructor.getMessage());
+        }
+        assertSame(previous, Thread.currentThread().getContextClassLoader());
+    }
+
     private static Map<String, String> fixtures(String source) {
         return Map.of(
             "fixture.api.HostApi", "package fixture.api; public class HostApi { public static String name() { return \"" + source + "\"; } }",
