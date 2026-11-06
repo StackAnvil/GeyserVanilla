@@ -34,7 +34,7 @@ import org.geysermc.geyser.level.block.Blocks;
 import org.geysermc.geyser.level.block.type.Block;
 import org.geysermc.geyser.level.block.type.BlockState;
 import org.geysermc.geyser.registry.BlockRegistries;
-import net.minecraft.world.level.chunk.PalettedContainer;
+import org.geysermc.geyser.vanilla.protocol.VanillaBlockPalette;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.translator.protocol.PacketTranslator;
@@ -57,7 +57,7 @@ public class JavaSectionBlocksUpdateTranslator extends PacketTranslator<Clientbo
         packet.runUpdates((javaPosition, javaState) -> {
             Vector3i position = org.geysermc.geyser.util.MathUtils.toVector3i(javaPosition);
             int blockId = net.minecraft.world.level.block.Block.getId(javaState);
-            PalettedContainer<net.minecraft.world.level.block.state.BlockState> palette = null;
+            VanillaBlockPalette palette = null;
             if (session.getChunkCache().isCache()) {
                 palette = session.getChunkCache().getChunkSection(position.getX() >> 4, position.getY() >> 4, position.getZ() >> 4, true);
                 if (palette == null) {
@@ -74,13 +74,13 @@ public class JavaSectionBlocksUpdateTranslator extends PacketTranslator<Clientbo
 
             int oldBlock;
             if (palette != null) {
-                oldBlock = net.minecraft.world.level.block.Block.getId(palette.get(position.getX() & 0xF, position.getY() & 0xF, position.getZ() & 0xF));
+                oldBlock = palette.get(position.getX() & 0xF, position.getY() & 0xF, position.getZ() & 0xF);
                 if (blockId == oldBlock) {
                     // Skip unchanged blocks which may occur with older versions of Minecraft
                     return;
                 }
 
-                palette.set(position.getX() & 0xF, position.getY() & 0xF, position.getZ() & 0xF, javaState);
+                palette.set(position.getX() & 0xF, position.getY() & 0xF, position.getZ() & 0xF, blockId);
             } else {
                 oldBlock = -1;
             }

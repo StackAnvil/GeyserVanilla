@@ -64,8 +64,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 
 import java.io.IOException;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.PalettedContainer;
+import org.geysermc.geyser.vanilla.protocol.VanillaBlockPalette;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
 import net.minecraft.world.level.chunk.Palette;
 import net.minecraft.world.level.chunk.GlobalPalette;
@@ -74,7 +73,6 @@ import net.minecraft.util.BitStorage;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import org.geysermc.geyser.vanilla.protocol.VanillaChunks;
-import org.geysermc.geyser.vanilla.protocol.VanillaPalettes;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +94,7 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
         int yOffset = session.getChunkCache().getChunkMinY();
         int chunkSize = session.getChunkCache().getChunkHeightY();
 
-        PalettedContainer<net.minecraft.world.level.block.state.BlockState>[] javaChunks = new PalettedContainer[chunkSize];
+        VanillaBlockPalette[] javaChunks = new VanillaBlockPalette[chunkSize];
         PalettedContainerRO<Holder<Biome>>[] javaBiomes = new PalettedContainerRO[chunkSize];
 
         final List<NbtMap> bedrockBlockEntities = new ObjectArrayList<>();
@@ -116,11 +114,11 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
         GeyserChunkSection[] sections = new GeyserChunkSection[chunkSize + sectionCountDiff];
 
         try {
-            LevelChunkSection[] decodedSections = VanillaChunks.readSections(packet.chunkData(), session.vanillaRegistries(), chunkSize);
+            VanillaChunks.Section[] decodedSections = VanillaChunks.readSections(packet.chunkData(), session.vanillaRegistries(), chunkSize);
             for (int sectionY = 0; sectionY < chunkSize; sectionY++) {
-                LevelChunkSection javaSection = decodedSections[sectionY];
-                javaChunks[sectionY] = javaSection.getStates();
-                javaBiomes[sectionY] = javaSection.getBiomes();
+                VanillaChunks.Section javaSection = decodedSections[sectionY];
+                javaChunks[sectionY] = javaSection.states();
+                javaBiomes[sectionY] = javaSection.biomes();
 
                 int bedrockSectionY = sectionY + sectionCountDiff;
                 int subChunkIndex = sectionY + yOffset;
@@ -134,8 +132,8 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
                     continue;
                 }
 
-                var view = VanillaPalettes.view(javaSection.getStates());
-                Palette<net.minecraft.world.level.block.state.BlockState> javaPalette = view.palette();
+                var view = javaSection.states().view();
+                Palette<Integer> javaPalette = view.palette();
                 BitStorage javaData = view.storage();
 
                 if (javaPalette instanceof GlobalPalette) {
@@ -166,7 +164,7 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
 
                 if (javaPalette instanceof SingleValuePalette) {
                     // There's only one block here. Very easy!
-                    int javaId = net.minecraft.world.level.block.Block.getId(javaPalette.valueFor(0));
+                    int javaId = javaPalette.valueFor(0);
                     int bedrockId = session.getBlockMappings().getBedrockBlockId(javaId);
                     BlockStorage blockStorage = new BlockStorage(SingletonBitArray.INSTANCE, IntLists.singleton(bedrockId));
 
@@ -187,7 +185,7 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
 
                 // Iterate through palette and convert state IDs to Bedrock, doing some additional checks as we go
                 for (int i = 0; i < javaPalette.getSize(); i++) {
-                    int javaId = net.minecraft.world.level.block.Block.getId(javaPalette.valueFor(i));
+                    int javaId = javaPalette.valueFor(i);
                     bedrockPalette.add(session.getBlockMappings().getBedrockBlockId(javaId));
 
                     if (BlockRegistries.WATERLOGGED.get().get(javaId)) {
@@ -213,7 +211,7 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
                     for (int yzx = 0; yzx < BlockStorage.SIZE; yzx++) {
                         int paletteId = javaData.get(yzx);
                         if (bedrockOnlyBlockEntityIds.get(paletteId)) {
-                            BlockState state = BlockState.of(net.minecraft.world.level.block.Block.getId(javaPalette.valueFor(paletteId)));
+                            BlockState state = BlockState.of(javaPalette.valueFor(paletteId));
                             bedrockBlockEntities.add(((BedrockChunkWantsBlockEntityTag) state.block()).createTag(session,
                                     Vector3i.from((packet.x() << 4) + (yzx & 0xF), ((sectionY + yOffset) << 4) + ((yzx >> 8) & 0xF), (packet.z() << 4) + ((yzx >> 4) & 0xF)),
                                     state
@@ -283,7 +281,7 @@ public class JavaLevelChunkWithLightTranslator extends PacketTranslator<Clientbo
                     return;
                 }
                 var section = javaChunks[sectionIndex];
-                BlockState blockState = BlockState.of(net.minecraft.world.level.block.Block.getId(section.get(x, y & 0xF, z)));
+                BlockState blockState = BlockState.of(section.get(x, y & 0xF, z));
 
                 // Note that, since 1.20.5, tags can be null, but Bedrock still needs a default tag to render the item
                 // Also, some properties - like banner base colors - are part of the tag and is processed here.

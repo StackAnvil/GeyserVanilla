@@ -8,7 +8,7 @@ The built Geyser jar does not contain Minecraft classes.
 The standalone jar, Velocity 4.3.1 plugin, and BungeeCord build 2111 plugin start and stop successfully with the downloaded client.
 Velocity tests cover injected status requests, styled chat conversion, console commands, and shutdown without stopping the proxy's network workers.
 BungeeCord tests cover injected status requests, console commands, reload with an existing connection, and shutdown without stopping the proxy's network workers.
-Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, components, and core translation behavior.
+Automated tests cover native networking, codecs, registry isolation, sparse custom item IDs, custom block palettes, components, and core translation behavior.
 Runtime loading for the other hosted platforms is still under development.
 Full Bedrock-to-Java gameplay testing remains incomplete, and these development builds are not ready for deployment.
 
